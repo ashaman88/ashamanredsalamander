@@ -275,7 +275,7 @@ XPH := (3600*XP) / (Sec);
 SalamandersPH := (3600*SalamanderCount) / Sec;
 SetArrayLength(SmartLines, 9);
 SmartLines[0]:= '==========================';
-SmartLines[1]:= '=====AshamanRedSalamander=====';
+SmartLines[1]:= '===AshamanRedSalamanderV4.1===';
 SmartLines[2]:= 'Time Running: ' + TimeRunning;
 SmartLines[3]:= 'Salamanders Caught: ' + IntToStr(SalamanderCount);
 SmartLines[4]:= 'Experience Earned: ' + IntToStr(XP);
@@ -285,7 +285,7 @@ SmartLines[7]:= '===========================';
 SmartLines[8]:= '===========================';
 PrintOnSmart(SmartLines,Point(15,15),clWhite);
 Writeln('==========================');
-Writeln('=======AshamanRedSalamander===========');
+Writeln('=====AshamanRedSalamanderV4.1=========');
 Writeln('Time Running: ' + TimeRunning);
 Writeln('Salamanders Caught: ' + IntToStr(SalamanderCount));
 Writeln('Experience Earned: ' + IntToStr(XP));
@@ -409,6 +409,7 @@ If ObjDTM_Walk('80:80:2:2:7:95:89:2:7:132:102:4:85:72:85:91:70:91:72:71',0,80,10
     End;
 End;
 Begin
+  AutoUpdateMe;
   Smart_Server := 10;
   Smart_Members := True;
   Smart_Signed := True;
