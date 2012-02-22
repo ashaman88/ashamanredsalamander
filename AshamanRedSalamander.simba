@@ -391,6 +391,7 @@ Begin
 End;
 
 Begin
+  ClearDebug;
   AutoUpdateMe;
   Smart_Server := 10;
   Smart_Members := True;
@@ -412,8 +413,6 @@ Begin
   SetRun(True);
   ObjDTM_Setup;
   Walktospot;
-  Wait(300);
-  ClearDebug;
   Repeat
     FindEmptyTree;
     CheckNet;
