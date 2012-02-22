@@ -1,0 +1,423 @@
+Program AshamanRedSalamander;
+  {$Define SMART}
+  {$Define Crashsmart}
+  {$Include SRL/SRL/Misc/SMART.simba}
+  {$i SRL/SRL.simba}
+  {$i ObjectDTM\ObjDTMInclude.simba}
+  {$I SRL/SRL/Misc/Debug.simba}
+
+{
+
+AshamanRedSalamander v4.2
+-Make sure you have EXACTLY 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
+-Make sure you are standing in the area around the three trees.
+-Don't be an A hole, find an empty world
+-Make sure you put the number of pouches you are using, even if it's 0!!
+}
+
+Var
+  SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec: Integer;
+  PouchDTM, SalDTM, RopeDTM, CheckDTM, NWDTM, SWDTM: Integer;
+  aFound: Extended;
+  PouchCount: Integer;
+  T1: Integer;
+
+Const
+  SRLStats_Username = ''; //Leave blank if you don't have a stats account
+  SRLStats_Password = '';
+  ScriptVersion = '4.2'; // DON'T CHANGE THIS
+  UseAutoChecker = True;    //Checks for script update
+  A = 102;
+  B = 100;              //Area to look for sallys
+  C = 417;
+  D = 340;
+
+Procedure DeclarePlayers;
+Begin
+  HowManyPlayers := 1;
+  NumberOfPlayers(HowManyPlayers);
+  CurrentPlayer := 0;
+
+  Players[0].Name := ''; //Username
+  Players[0].Pass := ''; //Password
+  Players[0].Active := True;
+
+
+End;
+
+{*******************************************************************************
+Function AutoupdateMe;
+By: Shuttleu
+Edited By: Ashaman88
+Description: Autoupdates Script.
+*******************************************************************************}
+Procedure AutoUpdateMe;
+Var
+  Neifile: Integer;
+  OnlineVersion, NewScript, NeiFeilNennen: String;
+Begin
+  If UseAutoChecker then
+  Begin
+    Writeln('Checking for script updates...');
+    OnlineVersion := GetPage('http://ashamanredsalamander.googlecode.com/git/Version.txt');
+    Writeln(OnlineVersion);
+    Writeln(ScriptVersion)
+    If (trim(OnlineVersion) > ScriptVersion) Then
+    Begin
+      WriteLn('Newer script version online!');
+      WriteLn('Autoupdating to newer version.');
+      NewScript := GetPage('http://ashamanredsalamander.googlecode.com/git/AshamanRedSalamander.simba');
+
+      NeiFeilNennen := ScriptPath+ 'ScriptName V'+OnlineVersion+' by User.simba';
+      Neifile := Rewritefile(NeiFeilNennen, true);
+      Try
+        WriteFileString(Neifile, NewScript);
+      Except
+        Begin
+          WriteLn('Fatal error writing to '+NeiFeilNennen+'!!');
+          Terminatescript;
+        End;
+      End;
+      CloseFile(Neifile);
+      WriteLn('New script downloaded to '+NeiFeilNennen+'!! Please use this one!!');
+      TerminateScript;
+    End Else
+      WriteLn('You have the latest version of the script!');
+  End Else
+    WriteLn('!!!!! Not checking for latest version, you may be outdated!');
+End;
+
+Procedure SetDTM;
+Begin
+  SalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmDwAGJbIOZiZGBgAmIBIA6S4mFwFOVk8JPkZuAHqoNhRiQMBABmpgJp');
+  RopeDTM := DTMFromString('mbQAAAHicY2VgYHBkYmBwAGIPILYGYmcgfgQUv80AoZ9BsbsJF4OfvRKDtb4UQ6iLKoOXtQIDP1AcHTNiwWAAAI72CS0=');
+  CheckDTM := DTMFromString('mQwAAAHicY2ZgYOAEYj4GCGBHog3VZBkEeDkZxIX5GLiAfBhmRMJAAAAo2gEc');
+  SWDTM := DTMFromString('mQwAAAHicY2ZgYChiYmAoY4LQYUB+JBAHAvH///8ZomNiwJgfyIdhRiQMBAA7wQe3');
+  NWDTM := DTMFromString('mQwAAAHicY2ZgYChhYmAoA+IqIA4D8iOBOAmI////zxAdEwPG/EA+DDMiYSAAAEDSB9I=');
+End;
+Procedure Fr33DTM;
+Begin
+  FreeDTM(PouchDTM);
+  FreeDTM(SalDTM);
+  FreeDTM(RopeDTM);
+  FreeDTM(CheckDTM);
+  FreeDTM(SWDTM);
+  FreeDTM(NWDTM);
+End;
+
+Function Release: Boolean;
+Var
+  X3, Y3: Integer;
+  I: Integer;
+  T: Integer;
+Begin
+  If (Not(LoggedIn)) Then
+  Exit;
+  MouseSpeed := RandomRange(15, 17);
+  MarkTime(T);
+  FindNormalRandoms;
+  For I:=0 to 1 Do
+  Begin
+    If FindDTM(SalDTM,X3,Y3,MIX1,MIY1,MIX2,MIY2) Then
+      Begin
+      Mouse(X3,Y3,0,0,False);
+      Wait(RandomRange(750,800));
+      ChooseOption('ease');
+      Wait(RandomRange(700,750));
+      End;
+  End;
+  Repeat
+    Wait(100);
+  Until (TimeFromMark(T) > RandomRange(2450,2550));
+End;
+
+Function FindEmptyTree: Boolean;
+Var
+  X4, Y4, H1, I2, CTS: Integer;
+  X5, Y5: Integer;
+  pArray: TPointArray;
+  aPArray: T2DPointArray;
+Begin
+  If Not LoggedIn Then
+  Exit;
+  FindNormalRandoms;
+  If Not FindDTM(RopeDTM,X5,Y5,MIX1,MIY1,MIX2,MIY2) Then
+    Begin
+      Exit;
+    End;
+  Wait(RandomRange(400,500));
+  MouseSpeed := RandomRange(17, 18);
+  If FindBlackChatMessage('isn') Then
+    Begin
+      Writeln('Sorry someone crashed your world...logging out');
+      Case RandomRange(0,8) Of
+        0: Typesend('jerk');
+        1: Typesend('i hope you get poo in your eyes');
+        2: Typesend('if only i could rip your heart out');
+        3: Typesend('i will destroy all that you love');
+        4: Typesend('i will fart on your face');
+      End;
+      Logout;
+      Terminatescript;
+    End;
+  CTS := GetColorToleranceSpeed;
+  ColorToleranceSpeed(2);
+  SetColorSpeed2Modifiers(0.09, 0.65);
+  FindColorsSpiralTolerance(MSCX, MSCY, pArray, 2238509, A, B, C, D, 2);
+  aPArray := TPAtoATPAEx(pArray, 20, 20);
+  If (Length(aPArray) = 0) Then
+    Begin
+      ColorToleranceSpeed(CTS);
+      SetColorSpeed2Modifiers(0.2, 0.2);
+      Result := False;
+    End;
+  H1 := High(aPArray);
+  For I2 := 0 To H1 Do
+    Begin
+      MiddleTPAEx(aPArray[I2], X4, Y4);
+      MMouse(X4, Y4, 0, 0);
+      Wait(RandomRange(200, 300));
+      If (IsUpText('Set')) Then
+        Begin
+          Mouse(X4,Y4,0,0,False);
+          Wait(RandomRange(300,400));
+          If OptionsExist(['Take'],False) Then
+            Begin
+            ColorToleranceSpeed(CTS);
+            SetColorSpeed2Modifiers(0.2, 0.2);
+            ChooseOption('Take');
+            Wait(RandomRange(2500,3000));
+            Mouse(261,177,1, 1,False);
+            Wait(RandomRange(300,500));
+            ChooseOption('Take');
+            Wait(RandomRange(600, 800));
+            FindEmptyTree;
+            End;
+          If OptionsExist(['Set'],False) Then
+            Begin
+              ChooseOption('Set');
+              ColorToleranceSpeed(CTS);
+              SetColorSpeed2Modifiers(0.2, 0.2);
+              Release;
+              Result := True;
+              Exit;
+            End;
+        End;
+    End;
+  ColorToleranceSpeed(CTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+End;
+
+{*******************************************************************************
+Function PrintonSmart;
+By: Shuttleu
+Edited By: Ashaman88
+Description: Will put progress report on screen.
+*******************************************************************************}
+Procedure PrintOnSmart(TP: TStringArray; Placement: TPoint; Colour: Integer);
+Var
+  mx, my, Pic, I, E, H, TPH, Numb: Integer;
+  TTP: TPointArray;
+  Canvas: TCanvas;
+Begin
+  SmartSetDebug(True);
+  GetClientDimensions(mx, my);
+  Pic := BitmapFromString(mx, my, '');
+  TPH := High(TP);
+  For I := 0 To TPH Do
+  Begin
+    TTP := LoadTextTPA(TP[i], UpChars, H);
+    For E := 0 To High(TTP) Do
+      Begin
+        Numb := ((I + 1) * 13);
+        FastSetPixel(Pic, TTP[E].x + 1, TTP[E].y + Numb + 1,131072);
+        FastSetPixel(Pic, TTP[E].x, TTP[E].y + Numb, Colour);
+      End;
+  End;
+  Canvas := TCANVAS.Create;
+  Canvas.Handle := SmartGetDebugDC;
+  DrawBitmap(Pic, Canvas, Placement.x, Placement.y);
+  FreeBitmap(Pic);
+End;
+
+{*******************************************************************************
+Function ProgressReport;
+By: Sin and parts by Shuttleu
+Edited By: Ashaman88
+Description: Will Make a progress report.
+*******************************************************************************}
+Procedure ProgressReport;
+Var
+  SmartLines: TStringArray;
+Begin
+  Sec:= (1+((Getsystemtime-StartTime)/1000));
+  XPH := (3600*XP) / (Sec);
+  SalamandersPH := (3600*SalamanderCount) / Sec;
+  SetArrayLength(SmartLines, 9);
+  SmartLines[0]:= '==========================';
+  SmartLines[1]:= '===AshamanRedSalamanderV4.2===';
+  SmartLines[2]:= 'Time Running: ' + TimeRunning;
+  SmartLines[3]:= 'Salamanders Caught: ' + IntToStr(SalamanderCount);
+  SmartLines[4]:= 'Experience Earned: ' + IntToStr(XP);
+  SmartLines[5]:= 'Experience/Hour: ' + IntToStr(XPH);
+  SmartLines[6]:= 'Salamanders/H Is: ' + IntToStr(SalamandersPH);
+  SmartLines[7]:= '===========================';
+  SmartLines[8]:= '===========================';
+  PrintOnSmart(SmartLines,Point(15,15),clWhite);
+  Writeln('==========================');
+  Writeln('=====AshamanRedSalamanderV4.2=========');
+  Writeln('Time Running: ' + TimeRunning);
+  Writeln('Salamanders Caught: ' + IntToStr(SalamanderCount));
+  Writeln('Experience Earned: ' + IntToStr(XP));
+  Writeln('Experience/Hour: ' + IntToStr(XPH));
+  Writeln('Salamanders/H Is: ' + IntToStr(SalamandersPH));
+  Writeln('===========================');
+  Writeln('===========================');
+  Stats_IncVariable('Hunter EXP (Gained)', 272);
+  Stats_IncVariable('Items Picked Up', 1);
+  Stats_Commit;
+End;
+
+Function CheckNet: Boolean;
+Var
+  X6, Y6: Integer;
+Begin
+  If (Not(LoggedIn)) Then
+  Exit;
+  FindNormalRandoms;
+  If Not FindDTMRotated(CheckDTM,X6,Y6,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+  Exit;
+  Wait(RandomRange(700,800));
+  If FindDTMRotated(CheckDTM,X6,Y6,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+    Begin
+      MouseSpeed := RandomRange(14,17);
+      Mouse(X6,Y6,0,0,False);
+      Wait(RandomRange(300,400));
+      If OptionsExist(['Take'],False) Then
+        Begin
+          ChooseOption('Take');
+          Wait(RandomRange(1800,2000));
+          CheckNet;
+        End;
+      If OptionsExist(['Check'],False) Then
+        Begin
+          ChooseOption('Check');
+          Wait(randomRange(1800,2000));
+          SalamanderCount := SalamanderCount + 1;
+          XP := SalamanderCount * 272;
+          ProgressReport;
+        End;
+    End;
+  If FindBlackChatMessage('advanced') Then
+    Begin
+      WriteLn('Gained a Level!');
+      HoverSkill('Hunter',False);
+      Wait(RandomRange(1500,2100));
+    End;
+End;
+
+Function FailedTrap: Boolean;
+Var
+  X7, Y7: Integer;
+  X8, Y8: Integer;
+  X9, Y9: Integer;
+  X10, Y10: Integer;
+  E, F, G, H: Integer;
+Begin
+  If (Not(LoggedIn)) Then
+  Exit;
+  FindNormalRandoms;
+  If FindDTM(SWDTM,X8,Y8,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X9,Y9,MMX1,MMY1,MMX2,MMY2) Then
+    Begin
+      E := 102;
+      F := 100;
+      G := 417;          //Large search area
+      H := 340;
+    End
+    Else
+    Begin
+      E := 132;
+      F := 80;           //Small search area
+      G := 333;
+      H := 265;
+    End;
+  Wait(RandomRange(500,800));
+  If FindObjEx(X7,Y7,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
+    Begin
+      Mouse(X7,Y7,0,0,False);
+      Wait(RandomRange(200,300));
+      If OptionsExist(['Take'],False) Then
+        Begin
+          MouseSpeed := RandomRange(14, 17);
+          ChooseOption('Take');
+          Wait(RandomRange(2500, 3000));
+          Mouse(261,177,1,1,False);
+          Wait(RandomRange(200,300));
+          ChooseOption('Take');
+          Wait(RandomRange(600,800));
+        End;
+    End;
+  If FindObjEx(X10,Y10,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
+    Begin
+    Mouse(X10,Y10,0,0,False);
+    Wait(RandomRange(200,300));
+    If OptionsExist(['Take'],False) Then
+      Begin
+        MouseSpeed := RandomRange(14, 17);
+        ChooseOption('Take');
+        Wait(RandomRange(2500, 3000));
+        Mouse(261,177,1,1,False);
+        Wait(RandomRange(200,300));
+        ChooseOption('Take');
+        Wait(RandomRange(600,800));
+      End;
+    End;
+  MoveMouse(Random(400),Random(400));
+End;
+
+Procedure Walktospot;
+Begin
+  If (Not(LoggedIn)) Then
+  Exit;
+  FindNormalRandoms;
+  If ObjDTM_Walk('80:80:2:2:7:95:89:2:7:132:102:4:85:72:85:91:70:91:72:71',0,80,100,True) Then
+    If IsMoving Then
+      Begin
+        Repeat
+          Wait(100);
+        Until(Not IsMoving);
+      Writeln('You are now in the correct spot, good luck!');
+      End;
+End;
+
+Begin
+  AutoUpdateMe;
+  Smart_Server := 10;
+  Smart_Members := True;
+  Smart_Signed := True;
+  SetupSRL;
+  SmartSetRefresh(75);
+  If (SRLStats_Username = '') then
+    SetupSRLStats(586, 'Anonymous', 'anon1337')
+  Else
+    SetupSRLStats(586, SRLStats_Username, SRLStats_Password);
+  SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
+  DeclarePlayers;
+  LoginPlayer;
+  SetDTM;
+  SMART_ClearMS;
+  MakeCompass('N');
+  SetAngle(SRL_ANGLE_HIGH);
+  StartTime:=GetSystemTime;
+  SetRun(True);
+  ObjDTM_Setup;
+  Walktospot;
+  Wait(300);
+  ClearDebug;
+  Repeat
+    FindEmptyTree;
+    CheckNet;
+    FailedTrap;
+  Until (Not(LoggedIn));
+  Fr33DTM;
+End.
