@@ -17,10 +17,8 @@ AshamanRedSalamander v4.3
 
 Var
   SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec: Integer;
-  PouchDTM, SalDTM, RopeDTM, CheckDTM, NWDTM, SWDTM: Integer;
+  SalDTM, RopeDTM, CheckDTM, NWDTM, SWDTM: Integer;
   aFound: Extended;
-  PouchCount: Integer;
-  T1: Integer;
 
 Const
   SRLStats_Username = ''; //Leave blank if you don't have a stats account
@@ -402,10 +400,9 @@ Begin
   SetupSRL;
   SmartSetRefresh(75);
   If (SRLStats_Username = '') then
-    SetupSRLStats(586, 'Anonymous', 'anon1337')
+    SetupSRLStats(754, 'Anonymous', 'anon1337')
   Else
-    SetupSRLStats(586, SRLStats_Username, SRLStats_Password);
-  SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
+    SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
   DeclarePlayers;
   LoginPlayer;
   SetDTM;
