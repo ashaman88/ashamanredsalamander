@@ -68,7 +68,7 @@ Begin
       WriteLn('Autoupdating to newer version.');
       NewScript := GetPage('http://ashamanredsalamander.googlecode.com/git/AshamanRedSalamander.simba');
 
-      NeiFeilNennen := ScriptPath+ 'ScriptName V'+OnlineVersion+' by User.simba';
+      NeiFeilNennen := ScriptPath+ 'AshamanRedSalamander V'+OnlineVersion+' by User.simba';
       Neifile := Rewritefile(NeiFeilNennen, true);
       Try
         WriteFileString(Neifile, NewScript);
