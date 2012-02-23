@@ -8,7 +8,7 @@ Program AshamanRedSalamander;
 
 {
 
-AshamanRedSalamander v4.2
+AshamanRedSalamander v4.3
 -Make sure you have EXACTLY 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Make sure you are standing in the area around the three trees.
 -Don't be an A hole, find an empty world
@@ -25,7 +25,7 @@ Var
 Const
   SRLStats_Username = ''; //Leave blank if you don't have a stats account
   SRLStats_Password = '';
-  ScriptVersion = '4.2'; // DON'T CHANGE THIS
+  ScriptVersion = '4.3'; // DON'T CHANGE THIS
   UseAutoChecker = True;    //Checks for script update
   A = 102;
   B = 100;              //Area to look for sallys
@@ -123,7 +123,7 @@ Begin
       Mouse(X3,Y3,0,0,False);
       Wait(RandomRange(750,800));
       ChooseOption('ease');
-      Wait(RandomRange(700,750));
+      Wait(RandomRange(690,690));
       End;
   End;
   Repeat
@@ -158,12 +158,11 @@ Begin
         4: Typesend('i will fart on your face');
       End;
       Logout;
-      Terminatescript;
     End;
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
   SetColorSpeed2Modifiers(0.09, 0.65);
-  FindColorsSpiralTolerance(MSCX, MSCY, pArray, 2238509, A, B, C, D, 2);
+  FindColorsSpiralTolerance(MSCX, MSCY, pArray, 2238509, A, B, C, D, 3);
   aPArray := TPAtoATPAEx(pArray, 20, 20);
   If (Length(aPArray) = 0) Then
     Begin
@@ -186,7 +185,9 @@ Begin
             ColorToleranceSpeed(CTS);
             SetColorSpeed2Modifiers(0.2, 0.2);
             ChooseOption('Take');
-            Wait(RandomRange(2500,3000));
+            Repeat
+              Wait(RandomRange(200,220));
+            Until (Not (Ismoving));
             Mouse(261,177,1, 1,False);
             Wait(RandomRange(300,500));
             ChooseOption('Take');
@@ -253,26 +254,25 @@ Begin
   Sec:= (1+((Getsystemtime-StartTime)/1000));
   XPH := (3600*XP) / (Sec);
   SalamandersPH := (3600*SalamanderCount) / Sec;
-  SetArrayLength(SmartLines, 9);
-  SmartLines[0]:= '==========================';
-  SmartLines[1]:= '===AshamanRedSalamanderV4.2===';
+  SetArrayLength(SmartLines, 8);
+  SmartLines[0]:= '====AshamanRedSalamander=====';
+  SmartLines[1]:= ('========Version: '+ScriptVersion+'==========');
   SmartLines[2]:= 'Time Running: ' + TimeRunning;
   SmartLines[3]:= 'Salamanders Caught: ' + IntToStr(SalamanderCount);
   SmartLines[4]:= 'Experience Earned: ' + IntToStr(XP);
   SmartLines[5]:= 'Experience/Hour: ' + IntToStr(XPH);
   SmartLines[6]:= 'Salamanders/H Is: ' + IntToStr(SalamandersPH);
-  SmartLines[7]:= '===========================';
-  SmartLines[8]:= '===========================';
+  SmartLines[7]:= '==========================';
   PrintOnSmart(SmartLines,Point(15,15),clWhite);
   Writeln('==========================');
-  Writeln('=====AshamanRedSalamanderV4.2=========');
+  Writeln('=====AshamanRedSalamander=======');
+  Writeln('=========Version: '+ScriptVersion+'===========');
   Writeln('Time Running: ' + TimeRunning);
   Writeln('Salamanders Caught: ' + IntToStr(SalamanderCount));
   Writeln('Experience Earned: ' + IntToStr(XP));
   Writeln('Experience/Hour: ' + IntToStr(XPH));
   Writeln('Salamanders/H Is: ' + IntToStr(SalamandersPH));
-  Writeln('===========================');
-  Writeln('===========================');
+  Writeln('===============================');
   Stats_IncVariable('Hunter EXP (Gained)', 272);
   Stats_IncVariable('Items Picked Up', 1);
   Stats_Commit;
@@ -350,7 +350,10 @@ Begin
         Begin
           MouseSpeed := RandomRange(14, 17);
           ChooseOption('Take');
-          Wait(RandomRange(2500, 3000));
+          Wait(100);
+          Repeat
+            Wait(RandomRange(150,200));
+          Until (Not (Ismoving));
           Mouse(261,177,1,1,False);
           Wait(RandomRange(200,300));
           ChooseOption('Take');
