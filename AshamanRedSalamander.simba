@@ -8,7 +8,7 @@ Program AshamanRedSalamander;
 
 {
 
-AshamanRedSalamander v4.3
+AshamanRedSalamander v4.4
 -Make sure you have EXACTLY 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Make sure you are standing in the area around the three trees.
 -Don't be an A hole, find an empty world
@@ -23,7 +23,7 @@ Var
 Const
   SRLStats_Username = ''; //Leave blank if you don't have a stats account
   SRLStats_Password = '';
-  ScriptVersion = '4.3'; // DON'T CHANGE THIS
+  ScriptVersion = '4.4'; // DON'T CHANGE THIS
   UseAutoChecker = True;    //Checks for script update
   A = 102;
   B = 100;              //Area to look for sallys
@@ -95,7 +95,6 @@ Begin
 End;
 Procedure Fr33DTM;
 Begin
-  FreeDTM(PouchDTM);
   FreeDTM(SalDTM);
   FreeDTM(RopeDTM);
   FreeDTM(CheckDTM);
