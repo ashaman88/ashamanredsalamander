@@ -7,54 +7,56 @@ Program AshamanRedSalamander;
   {$I SRL/SRL/Misc/Debug.simba}
 
 {
-
-AshamanRedSalamander v4.7
--Make sure you have EXACTLY 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
+AshamanRedSalamander v4.8
+-Make sure you have AT LEAST 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Make sure you all characters are standing in the area around the three trees.
 -Don't be an A hole, find an empty world
--Make sure you put the number of pouches you are using, even if it's 0!!
 }
 
 Var
-  SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec, RunTime, T: Integer;
-  SalDTM, RopeDTM, CheckDTM, NWDTM, SWDTM, Proggy: Integer;
+  SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec, RunTime, T, TrapCount: Integer;
+  SalDTM, CheckDTM, NWDTM, SWDTM, Proggy: Integer;
   aFound: Extended;
 
 Const
-  SRLStats_Username = ''; //Leave blank if you don't have a stats account
-  SRLStats_Password = '';
-  ScriptVersion = '4.7'; // DON'T CHANGE THIS
-  UseAutoChecker = True; //Checks for script update
-  OnScreenProggy = True; // Set to False if you don't want proggy on screen.
   A = 102;
   B = 100;    // Don't Change these - Area to look for sallys
   C = 417;
   D = 340;
-  TimetoRun = 6;      //Enter number of hours to run per character (default at 6hrs)
+
+  SRLStats_Username = ''; // ***Leave blank if you don't have a stats account***
+  SRLStats_Password = '';
+
+  ScriptVersion = '4.8'; // DON'T CHANGE THIS
+  UseAutoChecker = True; // ***Checks for script update***
+
+  OnScreenProggy = True; // ***Set to False if you don't want proggy on screen.***
+
+  TimetoRun = 6;      // ***Enter number of hours to run per character (default at 6hrs)***
 
 Procedure DeclarePlayers;
 Begin
-  HowManyPlayers := 1;   // Change to however many players you want
+  HowManyPlayers := 1;   // ***Change to however many players you want***
   NumberOfPlayers(HowManyPlayers);
   CurrentPlayer := 0;
 
-  Players[0].Name := ''; //Username
-  Players[0].Pass := ''; //Password
+  Players[0].Name := ''; // ***Username***
+  Players[0].Pass := ''; // ***Password***
   Players[0].Active := True;
 
-  {                                         //Delete the brackets to add a player
+  {
   Players[1].Name := 'billy';
-  Players[1].Pass := '';
+  Players[1].Pass := '';                     // ***Delete the brackets to add a player***
   Players[1].Nick := '';
-  Players[1].Active := True;       // Change to true if you're using this character
+  Players[1].Active := True;
 
   }
 
   {
   Players[2].Name := '';
-  Players[2].Pass := '';
+  Players[2].Pass := '';              // ***Delete the brackets to add a player***
   Players[2].Nick := '';
-  Players[2].Active := True;       // Change to true if you're using this character
+  Players[2].Active := True;
    }
 End;
 
@@ -80,7 +82,6 @@ Begin
       WriteLn('Newer script version online!');
       WriteLn('Autoupdating to newer version.');
       NewScript := GetPage('http://ashamanredsalamander.googlecode.com/git/AshamanRedSalamander.simba');
-
       NeiFeilNennen := ScriptPath+ 'AshamanRedSalamander V'+OnlineVersion+' by Ashaman88.simba';
       Neifile := Rewritefile(NeiFeilNennen, true);
       Try
@@ -103,8 +104,7 @@ End;
 Procedure SetDTM;
 Begin
   SalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmDwAGJbIOZiZGBgAmIBIA6S4mFwFOVk8JPkZuAHqoNhRiQMBABmpgJp');
-  RopeDTM := DTMFromString('mbQAAAHicY2VgYHBkYmBwAGIPILYGYmcgfgQUv80AoZ9BsbsJF4OfvRKDtb4UQ6iLKoOXtQIDP1AcHTNiwWAAAI72CS0=');
-  CheckDTM := DTMFromString('mQwAAAHicY2ZgYOAEYj4GCGBHog3VZBkEeDkZxIX5GLiAfBhmRMJAAAAo2gEc');
+  CheckDTM := DTMFromString('mQwAAAHicY2ZgYFgKxMuBeAYQszIyMPwH0oxAut5EiEFOXJDBw1yMgR8oBsOMSBgIAN37BL8=');
   SWDTM := DTMFromString('mQwAAAHicY2ZgYChiYmAoY4LQYUB+JBAHAvH///8ZomNiwJgfyIdhRiQMBAA7wQe3');
   NWDTM := DTMFromString('mQwAAAHicY2ZgYChhYmAoA+IqIA4D8iOBOAmI////zxAdEwPG/EA+DDMiYSAAAEDSB9I=');
   Proggy := BitmapFromString(510, 133, 'meJzsvXd4G8e1N+xd0jYs2WZc' +
@@ -1471,7 +1471,6 @@ End;
 Procedure Fr33DTM;
 Begin
   FreeDTM(SalDTM);
-  FreeDTM(RopeDTM);
   FreeDTM(CheckDTM);
   FreeDTM(SWDTM);
   FreeDTM(NWDTM);
@@ -1490,58 +1489,52 @@ If OnScreenProggy = True Then
       SMART_DrawText(100,449,StatChars,TimeRunning,clWhite);
      End;
 End;
-Function Release: Boolean;
+Procedure Release;
 Var
-  X3, Y3: Integer;
+  X, Y: Integer;
   I: Integer;
-  T: Integer;
+  T1: Integer;
 Begin
   If (Not(LoggedIn)) Then
-  Exit;
+    Begin
+      Players[CurrentPlayer].Active := False;
+      NextPlayer(Players[CurrentPlayer].Active);
+      Exit;
+    End;
   MouseSpeed := RandomRange(15, 17);
-  MarkTime(T);
-  If FindNormalRandoms Then
-      Begin
-        Players[CurrentPlayer].Active := False;
-        NextPlayer(Players[CurrentPlayer].Active);
-        Exit;
-      End;
+  MarkTime(T1);
+  FindNormalRandoms;
   OnScreen;
   SMART_DrawText(225,462,StatChars,'Releasing Salamanders',clWhite) ;
   For I:=0 to 1 Do
   Begin
-    If FindDTM(SalDTM,X3,Y3,MIX1,MIY1,MIX2,MIY2) Then
+    If FindDTM(SalDTM,X,Y,MIX1,MIY1,MIX2,MIY2) Then
       Begin
-      Mouse(X3,Y3,0,0,False);
-      Wait(RandomRange(750,800));
-      ChooseOption('ease');
-      Wait(RandomRange(690,690));
+        Mouse(X,Y,0,0,False);
+        Wait(RandomRange(750,800));
+        ChooseOption('ease');
+        Wait(RandomRange(690,690));
       End;
   End;
   Repeat
     Wait(100);
-  Until (TimeFromMark(T) > RandomRange(2450,2550));
+  Until (TimeFromMark(T1) > RandomRange(2450,2550));
 End;
 
-Function FindEmptyTree: Boolean;
+Procedure FindEmptyTree;
 Var
-  X4, Y4, H1, I2, CTS: Integer;
-  X5, Y5: Integer;
+  X, Y, H, I, CTS: Integer;
   pArray: TPointArray;
   aPArray: T2DPointArray;
 Begin
   If Not LoggedIn Then
-  Exit;
-  If FindNormalRandoms Then
-      Begin
-        Players[CurrentPlayer].Active := False;
-        NextPlayer(Players[CurrentPlayer].Active);
-        Exit;
-      End;
-  If Not FindDTM(RopeDTM,X5,Y5,MIX1,MIY1,MIX2,MIY2) Then
     Begin
+      Players[CurrentPlayer].Active := False;
+      NextPlayer(Players[CurrentPlayer].Active);
       Exit;
     End;
+  FindNormalRandoms;
+  If TrapCount = 3 Then Exit;
   OnScreen;
   SMART_DrawText(225,462,StatChars,'Finding Empty Trap Spot',clWhite) ;
   Wait(RandomRange(400,500));
@@ -1568,39 +1561,38 @@ Begin
     Begin
       ColorToleranceSpeed(CTS);
       SetColorSpeed2Modifiers(0.2, 0.2);
-      Result := False;
     End;
-  H1 := High(aPArray);
-  For I2 := 0 To H1 Do
+  H := High(aPArray);
+  For I := 0 To H Do
     Begin
-      MiddleTPAEx(aPArray[I2], X4, Y4);
-      MMouse(X4, Y4, 0, 0);
+      MiddleTPAEx(aPArray[I], X, Y);
+      MMouse(X, Y, 0, 0);
       Wait(RandomRange(200, 300));
       If (IsUpText('Set')) Then
         Begin
-          Mouse(X4,Y4,0,0,False);
+          Mouse(X,Y,0,0,False);
           Wait(RandomRange(300,400));
           If OptionsExist(['Take'],False) Then
             Begin
-            ColorToleranceSpeed(CTS);
-            SetColorSpeed2Modifiers(0.2, 0.2);
-            ChooseOption('Take');
-            Repeat
-              Wait(RandomRange(200,220));
-            Until (Not (Ismoving));
-            Mouse(261,177,1, 1,False);
-            Wait(RandomRange(300,500));
-            ChooseOption('Take');
-            Wait(RandomRange(600, 800));
-            FindEmptyTree;
+              ColorToleranceSpeed(CTS);
+              SetColorSpeed2Modifiers(0.2, 0.2);
+              ChooseOption('Take');
+              Repeat
+                Wait(RandomRange(200,220));
+              Until (Not (Ismoving));
+              Mouse(261,177,1, 1,False);
+              Wait(RandomRange(300,500));
+              ChooseOption('Take');
+              Wait(RandomRange(600, 800));
+              FindEmptyTree;
             End;
           If OptionsExist(['Set'],False) Then
             Begin
               ChooseOption('Set');
+              TrapCount := TrapCount + 1;
               ColorToleranceSpeed(CTS);
               SetColorSpeed2Modifiers(0.2, 0.2);
               Release;
-              Result := True;
               Exit;
             End;
         End;
@@ -1634,27 +1626,25 @@ Begin
   Stats_Commit;
 End;
 
-Function CheckNet: Boolean;
+Procedure CheckNet;
 Var
-  X6, Y6: Integer;
+  X, Y: Integer;
 Begin
   If (Not(LoggedIn)) Then
-  Exit;
-  If FindNormalRandoms Then
-      Begin
-        Players[CurrentPlayer].Active := False;
-        NextPlayer(Players[CurrentPlayer].Active);
-        Exit;
-      End;
-  If Not FindDTMRotated(CheckDTM,X6,Y6,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
-  Exit;
+    Begin
+      Players[CurrentPlayer].Active := False;
+      NextPlayer(Players[CurrentPlayer].Active);
+      Exit;
+    End;
+  FindNormalRandoms;
+  If Not FindDTMRotated(CheckDTM,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then Exit;
   OnScreen;
   SMART_DrawText(225,462,StatChars,'Checking for Caught Salamanders',clWhite) ;
   Wait(RandomRange(700,800));
-  If FindDTMRotated(CheckDTM,X6,Y6,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+  If FindDTMRotated(CheckDTM,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
     Begin
       MouseSpeed := RandomRange(14,17);
-      Mouse(X6,Y6,0,0,False);
+      Mouse(X,Y,0,0,False);
       Wait(RandomRange(300,400));
       If OptionsExist(['Take'],False) Then
         Begin
@@ -1665,6 +1655,7 @@ Begin
       If OptionsExist(['Check'],False) Then
         Begin
           ChooseOption('Check');
+          TrapCount := TrapCount - 1;
           Wait(randomRange(1800,2000));
           SalamanderCount := SalamanderCount + 1;
           XP := SalamanderCount * 272;
@@ -1676,28 +1667,28 @@ Begin
       WriteLn('Gained a Level!');
       HoverSkill('Hunter',False);
       Wait(RandomRange(1500,2100));
+      ExamineInv;
     End;
 End;
 
-Function FailedTrap: Boolean;
+Procedure FailedTrap;
 Var
-  X7, Y7: Integer;
-  X8, Y8: Integer;
-  X9, Y9: Integer;
-  X10, Y10: Integer;
+  X, Y: Integer;
+  X1, Y1: Integer;
+  X2, Y2: Integer;
+  X3, Y3: Integer;
   E, F, G, H: Integer;
 Begin
   If (Not(LoggedIn)) Then
-  Exit;
-  If FindNormalRandoms Then
-      Begin
-        Players[CurrentPlayer].Active := False;
-        NextPlayer(Players[CurrentPlayer].Active);
-        Exit;
-      End;
+    Begin
+      Players[CurrentPlayer].Active := False;
+      NextPlayer(Players[CurrentPlayer].Active);
+      Exit;
+    End;
+  FindNormalRandoms;
   OnScreen;
   SMART_DrawText(225,462,StatChars,'Looking for Failed Traps',clWhite) ;
-  If FindDTM(SWDTM,X8,Y8,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X9,Y9,MMX1,MMY1,MMX2,MMY2) Then
+  If FindDTM(SWDTM,X1,Y1,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X2,Y2,MMX1,MMY1,MMX2,MMY2) Then
     Begin
       E := 102;
       F := 100;
@@ -1712,9 +1703,9 @@ Begin
       H := 265;
     End;
   Wait(RandomRange(500,800));
-  If FindObjEx(X7,Y7,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
+  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
     Begin
-      Mouse(X7,Y7,0,0,False);
+      Mouse(X,Y,0,0,False);
       Wait(RandomRange(200,300));
       If OptionsExist(['Take'],False) Then
         Begin
@@ -1727,12 +1718,13 @@ Begin
           Mouse(261,177,1,1,False);
           Wait(RandomRange(200,300));
           ChooseOption('Take');
+          TrapCount := TrapCount - 1;
           Wait(RandomRange(600,800));
         End;
     End;
-  If FindObjEx(X10,Y10,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
+  If FindObjEx(X3,Y3,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
     Begin
-    Mouse(X10,Y10,0,0,False);
+    Mouse(X3,Y3,0,0,False);
     Wait(RandomRange(200,300));
     If OptionsExist(['Take'],False) Then
       Begin
@@ -1751,13 +1743,12 @@ End;
 Procedure Walktospot;
 Begin
   If (Not(LoggedIn)) Then
-  Exit;
-  If FindNormalRandoms Then
-      Begin
-        Players[CurrentPlayer].Active := False;
-        NextPlayer(Players[CurrentPlayer].Active);
-        Exit;
-      End;
+    Begin
+      Players[CurrentPlayer].Active := False;
+      NextPlayer(Players[CurrentPlayer].Active);
+      Exit;
+    End;
+  FindNormalRandoms;
   OnScreen;
   SMART_DrawText(225,462,StatChars,'Walking to Spot',clWhite) ;
   If ObjDTM_Walk('80:80:2:2:7:95:89:2:7:132:102:4:85:72:85:91:70:91:72:71',0,80,100,True) Then
@@ -1770,6 +1761,7 @@ Begin
       End;
 End;
 
+Procedure Setup;
 Begin
   ClearDebug;
   AutoUpdateMe;
@@ -1778,7 +1770,7 @@ Begin
   Smart_Signed := True;
   SetupSRL;
   SmartSetRefresh(75);
-  If (SRLStats_Username = '') then
+  If (SRLStats_Username = '') Then
     SetupSRLStats(754, 'Anonymous', 'anon1337')
   Else
     SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
@@ -1787,15 +1779,19 @@ Begin
   SetDTM;
   SMART_ClearMS;
   SMART_ClearCanvas;
-  MakeCompass('N');
-  SetAngle(SRL_ANGLE_HIGH);
   StartTime:=GetSystemTime;
   SetRun(True);
   RunTime := TimetoRun * 60 * 60 * 1000 + Random(30000);
   ObjDTM_Setup;
-  MarkTime(T);
+End;
+
+Begin
+  Setup;
   Repeat
-  Walktospot;
+    MakeCompass('N');
+    SetAngle(SRL_ANGLE_HIGH);
+    Walktospot;
+    MarkTime(T);
     Repeat
       FindEmptyTree;
       CheckNet;
@@ -1803,6 +1799,6 @@ Begin
     Until (RunTime < TimeFromMark(T)) or (Not(LoggedIn));
     NextPlayer(Players[CurrentPlayer].Active)
     MarkTime(T) ;
-  Until (False);
+  Until (AllPlayersInactive);
   Fr33DTM;
 End.
