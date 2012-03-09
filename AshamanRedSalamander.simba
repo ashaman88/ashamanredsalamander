@@ -7,16 +7,16 @@ Program AshamanRedSalamander;
   {$I SRL/SRL/Misc/Debug.simba}
 
 {
-AshamanRedSalamander v4.8
+AshamanRedSalamander v5.0
 -Make sure you have AT LEAST 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Make sure you all characters are standing in the area around the three trees.
 -Don't be an A hole, find an empty world
 }
 
 Var
-  SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec, RunTime, T, TrapCount: Integer;
+  SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec, T: Integer;
   SalDTM, CheckDTM, NWDTM, SWDTM, Proggy: Integer;
-  aFound: Extended;
+  aFound, TrapCount, RunTime: Extended;
 
 Const
   A = 102;
@@ -27,12 +27,12 @@ Const
   SRLStats_Username = ''; // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
 
-  ScriptVersion = '4.8'; // DON'T CHANGE THIS
+  ScriptVersion = '5.0'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
   OnScreenProggy = True; // ***Set to False if you don't want proggy on screen.***
 
-  TimetoRun = 6;      // ***Enter number of hours to run per character (default at 6hrs)***
+  TimetoRun = 6.0;      // ***Enter number of hours to run per character (default at 6hrs)***
 
 Procedure DeclarePlayers;
 Begin
@@ -1572,24 +1572,11 @@ Begin
         Begin
           Mouse(X,Y,0,0,False);
           Wait(RandomRange(300,400));
-          If OptionsExist(['Take'],False) Then
-            Begin
-              ColorToleranceSpeed(CTS);
-              SetColorSpeed2Modifiers(0.2, 0.2);
-              ChooseOption('Take');
-              Repeat
-                Wait(RandomRange(200,220));
-              Until (Not (Ismoving));
-              Mouse(261,177,1, 1,False);
-              Wait(RandomRange(300,500));
-              ChooseOption('Take');
-              Wait(RandomRange(600, 800));
-              FindEmptyTree;
-            End;
           If OptionsExist(['Set'],False) Then
             Begin
               ChooseOption('Set');
               TrapCount := TrapCount + 1;
+              Writeln(ToStr(TrapCount)+' Traps Laid');
               ColorToleranceSpeed(CTS);
               SetColorSpeed2Modifiers(0.2, 0.2);
               Release;
@@ -1646,16 +1633,11 @@ Begin
       MouseSpeed := RandomRange(14,17);
       Mouse(X,Y,0,0,False);
       Wait(RandomRange(300,400));
-      If OptionsExist(['Take'],False) Then
-        Begin
-          ChooseOption('Take');
-          Wait(RandomRange(1800,2000));
-          CheckNet;
-        End;
       If OptionsExist(['Check'],False) Then
         Begin
           ChooseOption('Check');
           TrapCount := TrapCount - 1;
+          Writeln(ToStr(TrapCount)+' Traps Laid');
           Wait(randomRange(1800,2000));
           SalamanderCount := SalamanderCount + 1;
           XP := SalamanderCount * 272;
@@ -1706,35 +1688,43 @@ Begin
   If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
     Begin
       Mouse(X,Y,0,0,False);
-      Wait(RandomRange(200,300));
-      If OptionsExist(['Take'],False) Then
+      If WaitOption('Take',RandomRange(300,400)) Then
         Begin
+          TrapCount := TrapCount - 0.5;
+          Writeln(ToStr(TrapCount)+' Traps Laid');
           MouseSpeed := RandomRange(14, 17);
-          ChooseOption('Take');
           Wait(600);
           Repeat
             Wait(RandomRange(150,200));
           Until (Not (Ismoving));
           Mouse(261,177,1,1,False);
-          Wait(RandomRange(200,300));
-          ChooseOption('Take');
-          TrapCount := TrapCount - 1;
-          Wait(RandomRange(600,800));
+          If WaitOption('Take',RandomRange(300,400)) Then
+            Begin
+              TrapCount := TrapCount - 0.5;
+              Writeln(ToStr(TrapCount)+' Traps Laid');
+              Wait(RandomRange(600,800));
+            End;
         End;
     End;
   If FindObjEx(X3,Y3,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
     Begin
     Mouse(X3,Y3,0,0,False);
-    Wait(RandomRange(200,300));
-    If OptionsExist(['Take'],False) Then
+    If WaitOption('Take',RandomRange(300,400)) Then
       Begin
+        TrapCount := TrapCount - 0.5;
+        Writeln(ToStr(TrapCount)+' Traps Laid');
         MouseSpeed := RandomRange(14, 17);
-        ChooseOption('Take');
-        Wait(RandomRange(2500, 3000));
+        Wait(600);
+        Repeat
+          Wait(RandomRange(150,200));
+        Until (Not (Ismoving));
         Mouse(261,177,1,1,False);
-        Wait(RandomRange(200,300));
-        ChooseOption('Take');
-        Wait(RandomRange(600,800));
+        If WaitOption('Take',RandomRange(300,400)) Then
+          Begin
+            TrapCount := TrapCount - 0.5;
+            Writeln(ToStr(TrapCount)+' Traps Laid');
+            Wait(RandomRange(600,800));
+          End;
       End;
     End;
   MoveMouse(Random(400),Random(400));
