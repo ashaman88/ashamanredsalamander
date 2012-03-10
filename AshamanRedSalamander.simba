@@ -7,16 +7,16 @@ Program AshamanRedSalamander;
   {$I SRL/SRL/Misc/Debug.simba}
 
 {
-AshamanRedSalamander v5.1
--Make sure you have AT LEAST 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
+AshamanRedSalamander v5.2
+-Make sure you have ONLY 3 nets and ropes  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Make sure you all characters are standing in the area around the three trees.
 -Don't be an A hole, find an empty world
 }
 
 Var
   SalamanderCount, XP, StartTime, SalamandersPH, XPH, Sec, T, T2, Invcnt: Integer;
-  SalDTM, CheckDTM, NWDTM, SWDTM, Proggy: Integer;
-  aFound, TrapCount, RunTime: Extended;
+  SalDTM, RopeDTM, CheckDTM, NWDTM, SWDTM, Proggy: Integer;
+  aFound, RunTime: Extended;
 
 Const
   A = 102;
@@ -27,7 +27,7 @@ Const
   SRLStats_Username = ''; // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
 
-  ScriptVersion = '5.1'; // DON'T CHANGE THIS
+  ScriptVersion = '5.2'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
   OnScreenProggy = True; // ***Set to False if you don't want proggy on screen.***
@@ -104,6 +104,7 @@ End;
 Procedure SetDTM;
 Begin
   SalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmDwAGJbIOZiZGBgAmIBIA6S4mFwFOVk8JPkZuAHqoNhRiQMBABmpgJp');
+  RopeDTM := DTMFromString('mbQAAAHicY2VgYHBkYmBwAGIPILYGYmcgfgQUv80AoZ9BsbsJF4OfvRKDtb4UQ6iLKoOXtQIDP1AcHTNiwWAAAI72CS0=');
   CheckDTM := DTMFromString('mQwAAAHicY2ZgYFgKxMuBeAYQszIyMPwH0oxAut5EiEFOXJDBw1yMgR8oBsOMSBgIAN37BL8=');
   SWDTM := DTMFromString('mQwAAAHicY2ZgYChiYmAoY4LQYUB+JBAHAvH///8ZomNiwJgfyIdhRiQMBAA7wQe3');
   NWDTM := DTMFromString('mQwAAAHicY2ZgYChhYmAoA+IqIA4D8iOBOAmI////zxAdEwPG/EA+DDMiYSAAAEDSB9I=');
@@ -1471,6 +1472,7 @@ End;
 Procedure Fr33DTM;
 Begin
   FreeDTM(SalDTM);
+  FreeDTM(RopeDTM);
   FreeDTM(CheckDTM);
   FreeDTM(SWDTM);
   FreeDTM(NWDTM);
@@ -1527,6 +1529,7 @@ End;
 Procedure FindEmptyTree;
 Var
   X, Y, H, I, CTS: Integer;
+  X1, Y1: Integer;
   pArray: TPointArray;
   aPArray: T2DPointArray;
 Begin
@@ -1537,7 +1540,8 @@ Begin
       Exit;
     End;
   FindNormalRandoms;
-  If TrapCount > 2 Then Exit;
+  If Not FindDTM(RopeDTM,X1,Y1,MIX1,MIY1,MIX2,MIY2) Then
+    Exit;
   If OnScreen Then
     SMART_DrawText(225,462,StatChars,'Finding Empty Trap Spot',clWhite) ;
   Wait(RandomRange(400,500));
@@ -1578,8 +1582,6 @@ Begin
           If OptionsExist(['Set'],False) Then
             Begin
               ChooseOption('Set');
-              TrapCount := TrapCount + 1;
-              Writeln(ToStr(TrapCount)+' Traps Laid');
               ColorToleranceSpeed(CTS);
               SetColorSpeed2Modifiers(0.2, 0.2);
               Release;
@@ -1639,7 +1641,6 @@ Begin
       If OptionsExist(['Check'],False) Then
         Begin
           ChooseOption('Check');
-          Writeln(ToStr(TrapCount)+' Traps Laid');
           InvCnt := InvCount;
           MarkTime(T2);
           Repeat
@@ -1647,7 +1648,6 @@ Begin
           Until ((InvCount = InvCnt + 3) Or (TimeFromMark(T2) > 8000));
           If TimeFromMark(T2) < 8000 Then
             Begin
-              TrapCount := TrapCount - 1;
               SalamanderCount := SalamanderCount + 1;
               XP := SalamanderCount * 272;
               ProgressReport;
@@ -1701,8 +1701,6 @@ Begin
       Invcnt := InvCount;
       If WaitOption('Take',RandomRange(300,400)) Then
         Begin
-          TrapCount := TrapCount - 0.5;
-          Writeln(ToStr(TrapCount)+' Traps Laid');
           MouseSpeed := RandomRange(14, 17);
           MarkTime(T2);
           Repeat
@@ -1716,11 +1714,6 @@ Begin
               Repeat
                 Wait(RandomRange(100,200));
               Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T2) > 6000));
-              If TimeFromMark(T2) < 6000 Then
-                Begin
-                  TrapCount := TrapCount - 0.5;
-                  Writeln(ToStr(TrapCount)+' Traps Laid');
-                End;
             End;
         End;
     End;
@@ -1730,8 +1723,6 @@ Begin
     Invcnt := InvCount;
     If WaitOption('Take',RandomRange(300,400)) Then
       Begin
-        TrapCount := TrapCount - 0.5;
-        Writeln(ToStr(TrapCount)+' Traps Laid');
         MouseSpeed := RandomRange(14, 17);
         MarkTime(T2);
         Repeat
@@ -1745,11 +1736,6 @@ Begin
             Repeat
               Wait(RandomRange(100,200));
             Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T2) > 6000));
-            If TimeFromMark(T2) < 6000 Then
-              Begin
-                TrapCount := TrapCount - 0.5;
-                Writeln(ToStr(TrapCount)+' Traps Laid');
-              End;
           End;
       End;
     End;
@@ -1804,7 +1790,6 @@ End;
 Begin
   Setup;
   Repeat
-    TrapCount := 0;
     MakeCompass('N');
     SetAngle(SRL_ANGLE_HIGH);
     Walktospot;
