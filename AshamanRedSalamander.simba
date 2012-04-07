@@ -34,11 +34,11 @@ Const
 
   SRLStats_Username = '';   // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  OnScreenProggy = False;    // ***Set to False if you don't want proggy on screen.***
+  OnScreenProggy = True;    // ***Set to False if you don't want proggy on screen.***
   TimetoRun = 4.8;          // ***Enter number of hours to run until SmartManager restarts or time per character (default at 5hrs)***
   HealthMin = 300;          // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
-  CatchType = 'Green';        // ***Set to Green if catching green salamanders, Red if catching red salamanders***
-  PTS = 0;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
+  CatchType = 'Red';        // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  PTS = 1;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
   Debug = False;            // Set to True if you are having problems. To see debug info (help me figure out when it went wrong)
 
 Procedure DeclarePlayers;
@@ -86,7 +86,7 @@ Var
   Crashed,SetTheTrap: Boolean;
 
 Const
-  ScriptVersion = '6.0'; // DON'T CHANGE THIS
+  ScriptVersion = '6.01'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
 
@@ -1594,6 +1594,9 @@ Var
 Begin
   LProc:= 'SummoningRenew';
 
+  If PouchToSummon = 0 Then
+    Exit;
+
   If UsingFamiliar Then
   Begin
     If Debug Then
@@ -1605,7 +1608,7 @@ Begin
 
   Case PouchToSummon Of
     0: Exit;
-    1: Pouch := DTMFromString('mQwAAAHicY2ZgYMhmYmAoAeJiEGZkYCgD4hwgPnXiIENReQXDycNrGfiB6mCYEQkDAQBdqwjR');          //arctic bear
+    1: Pouch := DTMFromString('mQwAAAHicY2aAAA4g5gRidiifC4hPnTjIcPLwWoai8goGESAfhhmRMBAAANrMBlI=');          //arctic bear
   End;
 
   Summoning := DTMFromString('mWAAAAHicY2FgYHBigmBXIPYEYn1GBgYrILaE4vz8Ega5a3cZZC/dBKpmYkgBkuxImBENgwAAgewHaA==');              //Potion to drink.
