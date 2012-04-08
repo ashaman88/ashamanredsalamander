@@ -91,7 +91,7 @@ Var
   Crashed: Boolean;
 
 Const
-  ScriptVersion = '6.02'; // DON'T CHANGE THIS
+  ScriptVersion = '6.03'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
 
@@ -1891,7 +1891,7 @@ Begin
         ChooseOption('ease') Else
         If WaitOption('ease',800) Then
         Begin
-          Wait(RandomRange(600,680));
+          Wait(RandomRange(680,750));
           Exit;
         End;
 
@@ -1910,7 +1910,7 @@ Begin
             Break;
         Until (InvCount < InvCnt);
 
-        Wait(RandomRange(900,950));
+        Wait(RandomRange(980,1100));
         Exit;
       End;
     End;
@@ -2091,7 +2091,7 @@ Begin
     Level:=3;
 
   If XPH = 0 Then
-    XPH:=1;
+    XPH:=50000;
 
   XPTL:= (((StartingXP-XP) / (XPH/1000))*3600);
 
@@ -2142,7 +2142,7 @@ Begin
 
     HumanMMouse(X,Y,3,3);
 
-    If WaitUpTextMulti(['Chec','heck'],RandomRange(300,400)) Then
+    If WaitUpTextMulti(['Chec','heck'],RandomRange(500,650)) Then
     Begin
       ClickMouse2(False);
 
