@@ -14,13 +14,17 @@ Program Ashaman2IOSalamander;
   {$I SRL/SRL/Skill/Fighting.Simba}
   {$I SRL/SRL/Misc/PaintSmart.Simba}
 
+Var
+  PTS: Integer;
+
 {
 Ashaman2IOSalamander v6.0
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
 -Don't be an A hole, find an empty world
--Fill out the stuff below
+-FILL OUT THE STUFF BELOW
+-READ THE OP DIRECTIONS
 }
 
 
@@ -34,11 +38,10 @@ Const
 
   SRLStats_Username = '';   // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  OnScreenProggy = True;    // ***Set to False if you don't want proggy on screen.***
+  OnScreenProggy = False;    // ***Set to False if you don't want proggy on screen.***
   TimetoRun = 4.8;          // ***Enter number of hours to run until SmartManager restarts or time per character (default at 5hrs)***
   HealthMin = 300;          // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType = 'Red';        // ***Set to Green if catching green salamanders, Red if catching red salamanders***
-  PTS = 1;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
   Debug = False;            // Set to True if you are having problems. To see debug info (help me figure out when it went wrong)
 
 Procedure DeclarePlayers;
@@ -49,6 +52,7 @@ Begin
 
   Players[0].Name := '';     // ***Username***
   Players[0].Pass := '';     // ***Password***
+  PTS := 1;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
   Players[0].Active := True;
   Players[0].BoxRewards := ['Xp', 'mote', 'ostume', 'oins', 'aphire', 'ssence'];
   LampSkill := 'hunter';
@@ -79,14 +83,15 @@ Don't touch anything below this line unless you know what you are doing!!
 *******************************************************************************}
 
 Var
-  SalamanderCount,XP,StartTime,RunTime,TS,StartingExperience,SalamandersPH,XPH,T,T2,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase: Integer;
+  SalamanderCount,XP,StartTime,RunTime,TS,StartingExperience,SalamandersPH,XPH,T,T2,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
+  StartingXP,LevelsGained,XPTL: Integer;
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Proggy,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat: Extended;
   LProc: String;
-  Crashed,SetTheTrap: Boolean;
+  Crashed: Boolean;
 
 Const
-  ScriptVersion = '6.01'; // DON'T CHANGE THIS
+  ScriptVersion = '6.02'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
 
@@ -1608,7 +1613,7 @@ Begin
 
   Case PouchToSummon Of
     0: Exit;
-    1: Pouch := DTMFromString('mQwAAAHicY2aAAA4g5gRidiifC4hPnTjIcPLwWoai8goGESAfhhmRMBAAANrMBlI=');          //arctic bear
+    1: Pouch := DTMFromString('mQwAAAHicY2aAAE4g5gBidiDmgoqdOnGQoai8guHk4bUMckA+DDMiYSAAANpKBnA=');          //arctic bear
   End;
 
   Summoning := DTMFromString('mWAAAAHicY2FgYHBigmBXIPYEYn1GBgYrILaE4vz8Ega5a3cZZC/dBKpmYkgBkuxImBENgwAAgewHaA==');              //Potion to drink.
@@ -1622,6 +1627,7 @@ Begin
     FreeDTM(Summoning);
     FreeDTM(Empty);
     MarkTime(TS);
+    PTS:=0;
     Exit;
   End;
 
@@ -1637,6 +1643,7 @@ Begin
       FreeDTM(Pouch);
       FreeDTM(Summoning);
       FreeDTM(Empty);
+      PTS:=0;
       Exit;
     End;
 
@@ -1714,7 +1721,7 @@ Begin
 
       Wait(RandomRange(1000,1200));
 
-      If (Tries > 5) Then
+      If (Tries > 2) Then
       Begin
         FreeDTM(Pouch);
         FreeDTM(Summoning);
@@ -1813,7 +1820,6 @@ Begin
     If (lastX <> Round(xs)) Or (lastY <> Round(ys)) Then
       MoveMouse(Round(xs), Round(ys));
 
-    SMART_DrawDotsEx(False, [Point(lastX, lastY)], 65280);
     step:= hypot(xs - lastX, ys - lastY);
     //W := round((maxWait - minWait) * (step / maxStep) + minWait);
     wait(W);
@@ -1855,7 +1861,6 @@ Begin
     Exit;
 
   MouseSpeed := RandomRange(18, 23);
-  MarkTime(T1);
 
   If FindNormalRandoms Then
   Begin
@@ -1879,20 +1884,37 @@ Begin
       HumanMMouse(X,Y,3,3);
       ClickMouse2(False);
 
-      Wait(RandomRange(750,800));
+      If I=0 Then
+        Wait(RandomRange(750,800));
 
-      ChooseOption('ease');
+      If I=0 Then
+        ChooseOption('ease') Else
+        If WaitOption('ease',800) Then
+        Begin
+          Wait(RandomRange(600,680));
+          Exit;
+        End;
 
-      Wait(RandomRange(800,900));
+      If I=0 Then
+        Wait(RandomRange(800,900));
 
-      If Not OnScreen Then
-        SMART_ClearCanvas;
+    End Else
+    Begin
+      InvCnt := InvCount;
+      MarkTime(T1);
+      If I=0 Then
+      Begin
+        Repeat
+          Wait(100);
+          If TimeFromMark(T1)>3500 Then
+            Break;
+        Until (InvCount < InvCnt);
+
+        Wait(RandomRange(900,950));
+        Exit;
+      End;
     End;
   End;
-
-  Repeat
-    Wait(100);
-  Until (TimeFromMark(T1) > RandomRange(J,K));
 End;
 
 Procedure FindEmptyTree;
@@ -1933,8 +1955,6 @@ Begin
     Writeln('Finding Empty Trap Spot') Else
     If Debug Then
       Writeln('Looking for Laid Traps');
-
-  Wait(RandomRange(400,500));
 
   MouseSpeed := RandomRange(18, 23);
 
@@ -1992,11 +2012,9 @@ Begin
 
     HumanMMouse(X+Increase,Y,1,1);
 
-    Wait(RandomRange(200,300));
-
     If SetTrap=1 Then
     Begin
-      If (IsUpTextMultiCustom(['Dism','sman','mant','antle'])) Then
+      If (WaitUpTextMulti(['Dism','sman','mant','antle'],RandomRange(200,300))) Then
       Begin
         If Debug Then
           Writeln('FOUND DISMANTLE OPTION, CLICKING');
@@ -2020,7 +2038,7 @@ Begin
     Else
 
     Begin
-      If (IsUpTextMultiCustom(['Set'])) Then
+      If (WaitUpTextMulti(['Set'],RandomRange(200,300))) Then
       Begin
         If Debug Then
           Writeln('FOUND UPTEXT SET');
@@ -2036,8 +2054,6 @@ Begin
           SetColorSpeed2Modifiers(0.2, 0.2);
 
           Release;
-
-          SetTheTrap:=True;
 
           Exit;
         End;
@@ -2057,17 +2073,33 @@ Description: Will Make a progress report.
 *******************************************************************************}
 Procedure ProgressReport;
 Begin
-  ClearDebug;
+  If Not Debug Then
+    ClearDebug;
 
   XP := (GetXPBarTotal - StartingExperience);
-  XPH := Round((XP * 3600) / (GetTimeRunning / 1000));
-  SalamandersPH := Round((SalamanderCount * 3600) / (GetTimeRunning / 1000));
+  XPH := Round((XP / (GetTimeRunning / 1000)) * 3600);
+  SalamandersPH := Round((SalamanderCount / (GetTimeRunning / 1000)) * 3600);
+
+  If (StartingXP - XP) < 0 Then
+  Begin
+    StartingXP:= (XpTillNextLevel(Skill_Hunter)+XP);
+    Writeln('Gained a level!!');
+    LevelsGained := LevelsGained + 1;
+  End;
+
+  If ((CurrentLevel+LevelsGained)>=40) Then
+    Level:=3;
+
+  If XPH = 0 Then
+    XPH:=1;
+
+  XPTL:= (((StartingXP-XP) / (XPH/1000))*3600);
 
   Writeln('========AshamanSalamander v'+ScriptVersion+'=========');
   Writeln('Time Running: ' + TimeRunning);
   Writeln('Catching: ' + CatchType+' Salamanders');
-  Writeln('Salamanders Caught: ' + IntToStr(SalamanderCount));
-  Writeln('Experience Earned: ' + IntToStr(XP));
+  Writeln('Salamanders Caught: ' + IntToStr(SalamanderCount)+'    TTL: '+MsToTime(XPTL, Time_Formal));
+  Writeln('Experience Earned: ' + IntToStr(XP)+ '   Levels Gained: ' +IntToStr(LevelsGained));
   Writeln('Experience/Hour: ' + IntToStr(XPH));
   Writeln('Salamanders/H: ' + IntToStr(SalamandersPH));
   Writeln('=======================================');
@@ -2101,16 +2133,6 @@ Begin
   If Debug Then
     Writeln('Checking for Caught Salamanders');
 
-  If SetTheTrap Then
-  Begin
-    If Debug Then
-      Writeln('YOU JUST SET A TRAP, WAITING A LITTLE');
-
-    Wait(RandomRange(400,500));
-
-    SetTheTrap:=False;
-  End;
-
   MouseSpeed := RandomRange(18, 23);
 
   If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
@@ -2121,29 +2143,28 @@ Begin
     HumanMMouse(X,Y,3,3);
 
     If WaitUpTextMulti(['Chec','heck'],RandomRange(300,400)) Then
+    Begin
       ClickMouse2(False);
 
-    Wait(RandomRange(300,400));
+      If WaitOptionMulti(['Check'],800) Then
+      Begin
 
-    If OptionsExist(['Check'],False) Then
-    Begin
-      ChooseOption('Check');
+        If Debug Then
+          Writeln('CHOSE CHECK NET OPTION');
 
-      If Debug Then
-        Writeln('CHOSE CHECK NET OPTION');
+        InvCnt := InvCount;
 
-      InvCnt := InvCount;
+        MarkTime(T2);
 
-      MarkTime(T2);
+        Repeat
+          Wait(RandomRange(200,300));
+          If TimeFromMark(T2) > 8000 Then
+            Exit;
+        Until (InvCount = InvCnt + 3);
 
-      Repeat
-        Wait(RandomRange(200,300));
-        If TimeFromMark(T2) > 8000 Then
-          Exit;
-      Until (InvCount = InvCnt + 3);
-
-      SalamanderCount := SalamanderCount + 1;
-      ProgressReport;
+        SalamanderCount := SalamanderCount + 1;
+        ProgressReport;
+      End;
     End;
   End;
 
@@ -2495,6 +2516,7 @@ Begin
   SMART_ClearCanvas;
 
   StartTime:=GetSystemTime;
+                     //4.8
   RunTime := Round(TimetoRun * 60 * 60 * 1000 + Random(30000));
   Writeln('You are going to run for ' + MsToTime(RunTime, Time_Formal));
 
@@ -2517,7 +2539,13 @@ Begin
   If GetSkillLevel(Skill_Hunter) < 40 Then
     Level:= 2 Else
     Level:= 3;
-  Writeln('You can use '+IntToStr(Level)+' trap spots with my scipt at your level.');
+  Writeln('You can use '+IntToStr(Level)+' trap spots with my script at your level.');
+
+  CurrentLevel:= GetSkillLevel(Skill_Hunter);
+
+  StartingXP:= XpTillNextLevel(Skill_Hunter);
+
+  LevelsGained:= 0;
 
   SetAllChats('Filter','On','Off','Off','Off','Off','Off');
 
@@ -2539,10 +2567,10 @@ Begin
       K := 2550;
       Check := CheckDTM;
       Sal := SalDTM;
-      Color := 2238509;
-      Tolerance := 3;
-      Hue := 0.09;
-      Sat := 0.65;
+      Color := 2106666;
+      Tolerance := 4;
+      Hue := 0.26;
+      Sat := 0.26;
       Width := 10;
       Height := 14;
       Increase := 4;
