@@ -42,6 +42,8 @@ Const
   TimetoRun = 4.8;          // ***Enter number of hours to run until SmartManager restarts or time per character (default at 5hrs)***
   HealthMin = 300;          // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType = 'Red';        // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  PlaySounds= True;         //***Plays a sound if another player logs into your spot, set to false if you don't want that***
+
   Debug = False;            // Set to True if you are having problems. To see debug info (help me figure out when it went wrong)
 
 Procedure DeclarePlayers;
@@ -52,9 +54,9 @@ Begin
 
   Players[0].Name := '';     // ***Username***
   Players[0].Pass := '';     // ***Password***
-  PTS := 1;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
+  PTS := 0;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
   Players[0].Active := True;
-  Players[0].BoxRewards := ['Xp', 'mote', 'ostume', 'oins', 'aphire', 'ssence'];
+  Players[0].BoxRewards := ['Xp', 'lamp', 'oins', 'aphire', 'ssence'];
   LampSkill := 'hunter';
   {
   Players[1].Name := '';
@@ -87,11 +89,11 @@ Var
   StartingXP,LevelsGained,XPTL: Integer;
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Proggy,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat: Extended;
-  LProc: String;
+  LProc,SoundPath: String;
   Crashed: Boolean;
 
 Const
-  ScriptVersion = '6.03'; // DON'T CHANGE THIS
+  ScriptVersion = '6.05'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
 
@@ -1575,13 +1577,13 @@ Begin
 
     Repeat
       GetMousePos(X,Y);
-      Wait(1000);
+      Wait(Random(300));
     Until(PointInBox(Point(X,Y),IntToBox(691,131,720,159)));
 
 
     Result:= True;
 
-    If (WaitUptextMulti(['elect', 'lect'], 500)) Then
+    If (WaitUptextMulti(['elect', 'lect'], RandomRange(300,500))) Then
       Result:= False;
   End;
 End;
@@ -1885,19 +1887,23 @@ Begin
       ClickMouse2(False);
 
       If I=0 Then
-        Wait(RandomRange(750,800));
+        Wait(RandomRange(800,850));
 
       If I=0 Then
         ChooseOption('ease') Else
         If WaitOption('ease',800) Then
-        Begin
-          Wait(RandomRange(680,750));
           Exit;
-        End;
 
+      InvCnt:=CountItems('DTM',Sal,[]);
+      MarkTime(T1);
       If I=0 Then
-        Wait(RandomRange(800,900));
-
+      Begin
+        Repeat
+          Wait(100);
+          If TimeFromMark(T1)>2000 Then
+            Break;
+        Until (CountItems('DTM',Sal,[]) < InvCnt);
+      End;
     End Else
     Begin
       InvCnt := InvCount;
@@ -1910,7 +1916,7 @@ Begin
             Break;
         Until (InvCount < InvCnt);
 
-        Wait(RandomRange(980,1100));
+        Wait(RandomRange(1100,1200));
         Exit;
       End;
     End;
@@ -1919,7 +1925,7 @@ End;
 
 Procedure FindEmptyTree;
 Var
-  X,Y,H,I,CTS: Integer;
+  X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY: Integer;
   E,F,G,H1: Integer;
   pArray: TPointArray;
   aPArray: T2DPointArray;
@@ -1987,8 +1993,23 @@ Begin
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
 
+  GetMousePos(XX, YY);
+  SearchFromX := MSCX;
+  SearchFromY := MSCY;
+
+  If (XX > (MSCX + 30)) Then
+    SearchFromX:= (MSCX + 35)
+  Else If (XX < (MSCX - 30)) Then
+    SearchFromX:= (MSCX - 35);
+
+  If (YY > (MSCY + 30)) Then
+    SearchFromY:= (MSCY + 35)
+  Else If (YY < (MSCY - 30)) Then
+    SearchFromY:= (MSCY - 35);
+
   SetColorSpeed2Modifiers(Hue,Sat);
-  FindColorsSpiralTolerance(MSCX,MSCY,pArray,Color,E,F,G,H1,Tolerance);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,pArray,Color,E,F,G,H1,Tolerance);
+
 
   aPArray := SplitTPAEx(pArray, Width, Height);
 
@@ -2010,7 +2031,7 @@ Begin
     If Length(aPArray[I]) < 22 then
       Continue;
 
-    HumanMMouse(X+Increase,Y,1,1);
+    HumanMMouse(X+Increase,Y,0,2);
 
     If SetTrap=1 Then
     Begin
@@ -2077,8 +2098,9 @@ Begin
     ClearDebug;
 
   XP := (GetXPBarTotal - StartingExperience);
-  XPH := Round((XP / (GetTimeRunning / 1000)) * 3600);
-  SalamandersPH := Round((SalamanderCount / (GetTimeRunning / 1000)) * 3600);
+ // Sec:= (1+((Getsystemtime-StartTime)/1000));
+  XPH := Round(XP * (3600 / (GetTimeRunning / 1000)));
+  SalamandersPH := Round((SalamanderCount * (3600 / (GetTimeRunning / 1000))));
 
   If (StartingXP - XP) < 0 Then
   Begin
@@ -2090,8 +2112,8 @@ Begin
   If ((CurrentLevel+LevelsGained)>=40) Then
     Level:=3;
 
-  If XPH = 0 Then
-    XPH:=50000;
+  If XPH < 1000 Then
+    XPH:=1000;
 
   XPTL:= (((StartingXP-XP) / (XPH/1000))*3600);
 
@@ -2515,6 +2537,12 @@ Begin
   SMART_ClearMS;
   SMART_ClearCanvas;
 
+  If PlaySounds Then
+    If (Not FileExists(ScriptPath+'noyelling.wav')) Then
+      writeln('No audio file found to alert when another person logs in. Please download audio file from OP.');
+
+  SoundPath:=ScriptPath+'noyelling.wav';
+
   StartTime:=GetSystemTime;
                      //4.8
   RunTime := Round(TimetoRun * 60 * 60 * 1000 + Random(30000));
@@ -2637,6 +2665,9 @@ Begin
     Begin
       If TimeFromMark(Crash)>60000 Then
       Begin
+        If PlaySounds Then
+          PlaySound(SoundPath);
+
         MarkTime(Crash);
 
         Crashed := False;
@@ -2660,8 +2691,10 @@ Begin
   Begin
     If (Length(GetMiniMapDotsIn('w',610,74,642,102))>0) Then
     Begin
-      If Debug Then
-        Writeln('FOUND ANOTHER PLAYER, IF THEY DONT LEAVE IN 60 SECONDS, WE WILL HOP');
+      If PlaySounds Then
+        PlaySound(SoundPath);
+
+      Writeln('FOUND ANOTHER PLAYER, IF THEY DONT LEAVE IN 60 SECONDS, WE WILL HOP');
 
       MarkTime(Crash);
 
