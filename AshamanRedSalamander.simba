@@ -18,7 +18,7 @@ Var
   PTS: Integer;
 
 {
-Ashaman2IOSalamander v6.0
+Ashaman2IOSalamander v6.06
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -85,15 +85,15 @@ Don't touch anything below this line unless you know what you are doing!!
 *******************************************************************************}
 
 Var
-  SalamanderCount,XP,StartTime,RunTime,TS,StartingExperience,SalamandersPH,XPH,T,T2,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
+  SalamanderCount,XP,StartTime,RunTime,TS,StartingExperience,T,T2,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
   StartingXP,LevelsGained,XPTL: Integer;
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Proggy,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
-  aFound,Hue,Sat: Extended;
+  aFound,Hue,Sat,SalamandersPH,XPH: Extended;
   LProc,SoundPath: String;
   Crashed: Boolean;
 
 Const
-  ScriptVersion = '6.05'; // DON'T CHANGE THIS
+  ScriptVersion = '6.06'; // DON'T CHANGE THIS
   UseAutoChecker = True; // ***Checks for script update***
 
 
@@ -1749,9 +1749,9 @@ Begin
     SMART_DrawBitmap(True, proggy,Point(6,344));
     SMART_DrawText(307,356,SmallChars,'v'+ScriptVersion,clWhite);
     SMART_DrawText(137,380,StatChars,IntToStr(SalamanderCount),clWhite);
-    SMART_DrawText(137,396,StatChars,IntToStr(SalamandersPH),clWhite);
+    SMART_DrawText(137,396,StatChars,ToStr(SalamandersPH),clWhite);
     SMART_DrawText(83,415,StatChars,IntToStr(XP),clWhite);
-    SMART_DrawText(83,432,StatChars,IntToStr(XPH),clWhite);
+    SMART_DrawText(83,432,StatChars,ToStr(XPH),clWhite);
     SMART_DrawText(100,449,StatChars,TimeRunning,clWhite);
     Result := True;
   End Else
@@ -2098,9 +2098,8 @@ Begin
     ClearDebug;
 
   XP := (GetXPBarTotal - StartingExperience);
- // Sec:= (1+((Getsystemtime-StartTime)/1000));
-  XPH := Round(XP * (3600 / (GetTimeRunning / 1000)));
-  SalamandersPH := Round((SalamanderCount * (3600 / (GetTimeRunning / 1000))));
+  XPH := Round(XP * (3600.0 / (GetTimeRunning / 1000.0)));
+  SalamandersPH := Round((SalamanderCount * (3600.0 / (GetTimeRunning / 1000.0))));
 
   If (StartingXP - XP) < 0 Then
   Begin
@@ -2113,17 +2112,17 @@ Begin
     Level:=3;
 
   If XPH < 1000 Then
-    XPH:=1000;
+    XPH:=1000.0;
 
-  XPTL:= (((StartingXP-XP) / (XPH/1000))*3600);
+  XPTL:= Round(((StartingXP-XP) / (XPH/1000.0))*3600.0);
 
   Writeln('========AshamanSalamander v'+ScriptVersion+'=========');
   Writeln('Time Running: ' + TimeRunning);
   Writeln('Catching: ' + CatchType+' Salamanders');
-  Writeln('Salamanders Caught: ' + IntToStr(SalamanderCount)+'    TTL: '+MsToTime(XPTL, Time_Formal));
+  Writeln('Salamanders Caught: ' + ToStr(SalamanderCount)+'    TTL: '+MsToTime(XPTL, Time_Formal));
   Writeln('Experience Earned: ' + IntToStr(XP)+ '   Levels Gained: ' +IntToStr(LevelsGained));
-  Writeln('Experience/Hour: ' + IntToStr(XPH));
-  Writeln('Salamanders/H: ' + IntToStr(SalamandersPH));
+  Writeln('Experience/Hour: ' + ToStr(XPH));
+  Writeln('Salamanders/H: ' + ToStr(SalamandersPH));
   Writeln('=======================================');
 
   Stats_IncVariable('Hunter EXP (Gained)', 272);
@@ -2426,7 +2425,8 @@ Begin
 
         Writeln('You are now in the correct spot, good luck!');
       End;
-    End;
+    End Else
+      Writeln('You are not in the correct spot!!');
   End Else
   Begin
     If FindDTM(GSpotDTM,X,Y,575,45,680,127) Then
