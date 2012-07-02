@@ -1,25 +1,18 @@
-
 {NOTE! THERE WILL NEVER BE BANKING ADDED TO THE PUBLIC VERSION. DO NOT ASK.
 DO NOT REQUEST FROM ANYONE TO ADD IT. DO NOT POST BANKING ON THE THREAD.
 IF YOU ADD IT FOR PERSONAL USE, UNDER NO CIRCUMSTANCES SHOULD YOU RELEASE.
 IF THERE IS A BANKING VERSION RELEASED OR TOO MANY PEOPLE NAG, I WILL TAKE
 DOWN THE GREEN SALAMANDER OPTION ALL TOGETHER. DO NOT ASK FOR BANKING!!!}
 
-
 Program Ashaman2IOSalamander;
   {$Define SMART}
-  {$Include SRL/SRL/Misc/SMART.simba}
-  {$i SRL/SRL.simba}
-  {$I SRL/SRL/Misc/Debug.simba}
+  {$I SRL/SRL.Simba}
   {$I SRL/SRL/Skill/Fighting.Simba}
-  {$I SRL/SRL/Misc/PaintSmart.Simba}
-
-Var
-  PTS: Integer;
+  {$I SRL/SRL/Misc/Debug.Simba}
 
 {
-Ashaman2IOSalamander v6.06
--Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions
+Ashaman2IOSalamander v6.07
+-Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
 -Don't be an A hole, find an empty world
@@ -28,74 +21,56 @@ Ashaman2IOSalamander v6.06
 }
 
 
+///////////////////////////////////////////////////////////////////////
+//                                                                   //
+//                  Begin of user setup                              //
+//                Fill in the fields below                           //
+//                                                                   //
+///////////////////////////////////////////////////////////////////////
+
 Const
-
-{*****************************************************************************************
-
-********This is junk for you to fill out!! Make sure you read over it carefully***********
-
-******************************************************************************************}
-
-  SRLStats_Username = '';   // ***Leave blank if you don't have a stats account***
+  SRLStats_Username = '';       // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  OnScreenProggy = False;    // ***Set to False if you don't want proggy on screen.***
-  TimetoRun = 4.8;          // ***Enter number of hours to run until SmartManager restarts or time per character (default at 5hrs)***
-  HealthMin = 300;          // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
-  CatchType = 'Red';        // ***Set to Green if catching green salamanders, Red if catching red salamanders***
-  PlaySounds= True;         //***Plays a sound if another player logs into your spot, set to false if you don't want that***
-
-  Debug = False;            // Set to True if you are having problems. To see debug info (help me figure out when it went wrong)
+  OnScreenProggy    = False;    // ***Set to False if you don't want proggy on screen.***
+  TimetoRun         = 4.8;      // ***Enter number of hours to run until SmartManager restarts or time per character (default at 5hrs)***
+  HealthMin         = 300;      // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
+  CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  PlaySounds        = True;     // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
+  Hopper            = False;    // ***Hops if another player logs into your world and stays for more than 60 seconds***
 
 Procedure DeclarePlayers;
 Begin
-  HowManyPlayers := 1;       // ***Change to however many players you want***
+  HowManyPlayers := 1;          // ***Change to however many players you want***
   NumberOfPlayers(HowManyPlayers);
   CurrentPlayer := 0;
 
-  Players[0].Name := '';     // ***Username***
-  Players[0].Pass := '';     // ***Password***
-  PTS := 0;                  //Pouch To Summon.. 1 for arctic bear, 0 for nothing.
+  Players[0].Name := '';        // ***Username***
+  Players[0].Pass := '';        // ***Password***
   Players[0].Active := True;
   Players[0].BoxRewards := ['Xp', 'lamp', 'oins', 'aphire', 'ssence'];
   LampSkill := 'hunter';
-  {
-  Players[1].Name := '';
-  Players[1].Pass := '';      // ***Delete the brackets to add a player***
-  Players[1].Nick := '';
-  Players[1].Active := True;
-  Players[1].BoxRewards := ['Xp', 'mote', 'ostume', 'oins', 'aphire', 'ssence'];
-
-  }
-
-  {
-  Players[2].Name := '';
-  Players[2].Pass := '';      // ***Delete the brackets to add a player***
-  Players[2].Nick := '';
-  Players[2].Active := True;
-  Players[2].BoxRewards := ['Xp', 'mote', 'ostume', 'oins', 'aphire', 'ssence'];
-   }
 End;
 
-{*******************************************************************************
-
-
-Don't touch anything below this line unless you know what you are doing!!
-
-
-*******************************************************************************}
+///////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                       //
+//                            End of user setup                                          //
+//           Don't touch below this line unless you know what you're doing!!             //
+//                                                                                       //
+///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,StartTime,RunTime,TS,StartingExperience,T,T2,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
-  StartingXP,LevelsGained,XPTL: Integer;
-  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Proggy,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
+  SalamanderCount,XP,StartTime,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
+  StartingXP,LevelsGained,XPTL,TrapTime,XT,YT,PTS: Integer;
+  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat,SalamandersPH,XPH: Extended;
-  LProc,SoundPath: String;
-  Crashed: Boolean;
+  SoundPath: String;
+  Crashed,QuickClick: Boolean;
+  DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.06'; // DON'T CHANGE THIS
-  UseAutoChecker = True; // ***Checks for script update***
-
+  ScriptVersion = '6.07';
+  UseAutoChecker = True;
+  Debug = False;
 
 {*******************************************************************************
 Function AutoupdateMe;
@@ -140,1395 +115,48 @@ End;
 
 Procedure SetDTM;
 Begin
-  RSpotDTM := DTMFromString('mWAAAAHicY2FgYChkYmDIBuJyIM4D4mCgWCAQBwBxJBD/fsPNUOqhwRAdGQnG/4Fi/EiYEQ2DAADrJwk8');
-  GSpotDTM := DTMFromString('mWAAAAHicY2FgYMhnYmAoA+IsKA4AivkAsR8QRwKxi7U2Q1R4KBz/B4rxI2FGNAwCAKfPB/U=');
-  SalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmDwAGJbIOZiZGBgAmIBIA6S4mFwFOVk8JPkZuAHqoNhRiQMBABmpgJp');
-  GSalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmCwAWJ3IH4K5L8B4ntALKQlzCCoLsggoCLAwA/kwzAjEgYCAM+HBIo=');
+  Case LowerCase(CatchType) Of
+    'red':
+    Begin
+      RSpotDTM := DTMFromString('mWAAAAHicY2FgYChkYmDIBuJyIM4D4mCgWCAQBwBxJBD/fsPNUOqhwRAdGQnG/4Fi/EiYEQ2DAADrJwk8');
+      SalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmDwAGJbIOZiZGBgAmIBIA6S4mFwFOVk8JPkZuAHqoNhRiQMBABmpgJp');
+      SWDTM := DTMFromString('mQwAAAHicY2ZgYChiYmAoY4LQYUB+JBAHAvH///8ZomNiwJgfyIdhRiQMBAA7wQe3');
+      NWDTM := DTMFromString('mQwAAAHicY2ZgYChhYmAoA+IqIA4D8iOBOAmI////zxAdEwPG/EA+DDMiYSAAAEDSB9I=');
+      CheckDTM := DTMFromString('mQwAAAHicY2ZgYFgKxMuBeAYQszIyMPwH0oxAut5EiEFOXJDBw1yMgR8oBsOMSBgIAN37BL8=');
+    End;
+    'green':
+    Begin
+      GSpotDTM := DTMFromString('mWAAAAHicY2FgYMhnYmAoA+IsKA4AivkAsR8QRwKxi7U2Q1R4KBz/B4rxI2FGNAwCAKfPB/U=');
+      GSalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmCwAWJ3IH4K5L8B4ntALKQlzCCoLsggoCLAwA/kwzAjEgYCAM+HBIo=');
+      GCheckDTM := DTMFromString('mWAAAAHicY2FgYPBkZGBwgmJ/IF4CFFsIxLOAeD4Qq4aoMfBysTOwszIzcHGwMnABxZAxIxoGAQAkOgSy');
+      Position := DTMFromString('mlwAAAHicY2dgYOgBYnUgdmRkYJgGpHcwQIAkEGcAsTMQiwIxH1T8PBAnArGCogKDk4c5g7OzFYNDZgRDYJgXg7KKMoOahhqDCFAehvnRMCMeDAUAoe4Jkw==');
+      FireDTM := DTMFromString('mQwAAAHicY2ZgYFAFYm0gVoLSJkCsAsTxgQYMFhamDDfmyDLwA/kwzIiEgQAAnsgEPw==');
+    End;
+  End;
   RopeDTM := DTMFromString('mbQAAAHicY2VgYHBkYmBwAGIPILYGYmcgfgQUv80AoZ9BsbsJF4OfvRKDtb4UQ6iLKoOXtQIDP1AcHTNiwWAAAI72CS0=');
-  CheckDTM := DTMFromString('mQwAAAHicY2ZgYFgKxMuBeAYQszIyMPwH0oxAut5EiEFOXJDBw1yMgR8oBsOMSBgIAN37BL8=');
-  GCheckDTM := DTMFromString('mWAAAAHicY2FgYPBkZGBwgmJ/IF4CFFsIxLOAeD4Qq4aoMfBysTOwszIzcHGwMnABxZAxIxoGAQAkOgSy');
-  Position := DTMFromString('mlwAAAHicY2dgYOgBYnUgdmRkYJgGpHcwQIAkEGcAsTMQiwIxH1T8PBAnArGCogKDk4c5g7OzFYNDZgRDYJgXg7KKMoOahhqDCFAehvnRMCMeDAUAoe4Jkw==');
-  SWDTM := DTMFromString('mQwAAAHicY2ZgYChiYmAoY4LQYUB+JBAHAvH///8ZomNiwJgfyIdhRiQMBAA7wQe3');
-  NWDTM := DTMFromString('mQwAAAHicY2ZgYChhYmAoA+IqIA4D8iOBOAmI////zxAdEwPG/EA+DDMiYSAAAEDSB9I=');
-  FireDTM := DTMFromString('mQwAAAHicY2ZgYFAFYm0gVoLSJkCsAsTxgQYMFhamDDfmyDLwA/kwzIiEgQAAnsgEPw==');
-  If OnScreenProggy Then
-    Proggy := BitmapFromString(510, 133, 'meJzsvXd4G8e1N+xd0jYs2WZc' +
-            'RKtRVKEqVSn2DoDoAAGQ6I0AqyRLsuUqWVbvvXdSIlVIsfembss1c' +
-            'Zw4cZKb3Nzc3PRy+1u+53n/+mbO7FksaFJWbhxbdkjOg2exmJ2ZPX' +
-            'vmd+rMPvTQ6N/o3+jf6N/o3+jf6N/o3+jf6N/o3+jf6N/o3+jf6N/' +
-            'o3zfwj+O2c9w2jtsCn5s5biN87oDzO+GY/bQVDrbAGfJ1D8ft5ri9' +
-            'cLwND3ZCta1Yh3zdDzV3QeXd8PUAVD4Ix7ugbMXKe6DfXVh2w5m92' +
-            'BFrgQ1jJw57F45zJ/y6E1vbBcdsbLuxwg7JT+TkPih74XO3pD5rUy' +
-            'TLRrxwh6SXnVBtB36yr/vgc8soSUdJOkrSB4qkUVGbH33szcnTVyb' +
-            'lBxdlVT0X9/JjY7dGP7z7G01Scvwmx73EcRUPPWQbDvnPQDnJcaex' +
-            '1EiOz8DnychCKpznuLN44SmOq8b6x+ArOTjBcRd47grUrIXPC1DIQ' +
-            'R3HXeK5emykhqdnatgxF3FcC19JuQjHbGBnccysVEM7rNTAmRrJLb' +
-            'AKbJAn4PM8VmB9sVGxOzoHNcV7OYmf1djsWSjncEg12Np5qMN6PzZ' +
-            'K0lGSjpL0QSApzx+XjT349HNrZy4uV3jKjJVVRStWFz+/qmj5cpN/' +
-            'eWre6mmz33zqmQOPjTnO8ye+cSQlDR4HQfDCQw95h0P+do5r5rgmj' +
-            'mvkaAtNcKaV4zokJ+vxuBF/bcJCzlzBY1azBSqQ870c1wnH5MxVju' +
-            'uGNknp57g++NoOFdjJZqjZjgdi+51YrRNba4PWmqGvy3DchJ2Skw3' +
-            'YzlWocAVKPR5flTTeCWPoxYG14SXslpvhDBsYa7YBKjTC+W4cfxeU' +
-            'DmitBX5tGiXpKElHSfqVk1Q2Zl/83DVphlJtWZW2coW6tEJXVmmtX' +
-            'G6pqDSXldurqhxVVfaK8qJQMEezfO7CdbHj9z/yyPlvEEkbQYgc4r' +
-            'h1HBccDvkHodlBKNc57hbH3eC4AWitC5rthwp92As7vg71e6AOOXM' +
-            'NPrugjtjgTWiKfe3HZm9AuQZnrmHpw5Z7sX4nNE5auA19XYeD29hm' +
-            'D3bXjS0MQgsd2FcvPqMeKH3w1Ng4b+LYWFNvcdwdaHkAGmzDxtmoB' +
-            'rHxLmxnAEh0F6+6CS2wpm5D5RujJB0l6ShJv1qSPvzw8VRdyLhspa' +
-            'Z8mbq8qiBUSWDfVLm8eNlKa0Wl0e+3hoJFoVBRMGgvDdlLS+3ka8C' +
-            'fkrEmKqrvm0JSJgSPg8+nbDjkZ12/BeMUR3sTm70F90V6fBvKLfjp' +
-            'bXwuA0gfdsxGNYD130Ga3MTHx2h1LfJzEC/px35Zs7ewR9b+XRzDD' +
-            'cnYbmEjIlnY2G7ByevwyUjUh9VuYOPs2b0Dn6zTfnzEbMbdwgEPIm' +
-            '0HkFZvw3jYte9z3Ls41BtI/FGSjpJ0lKRfDUmjolrmpJQZl680VC5' +
-            'XlVYQ5Cf4ry2r0IbKCssrjaFSndtjDviLgiXWgN9eWkKKoyzkqSh3' +
-            'lgXjp+37ppB0AJT/U+DwWTYc8vdLtIubEmVjENnyNsq1Wzj4tyQdi' +
-            'XfXjwKLyURGHHY7d/GS2ygQb0q6YDKrX8LqrM3r+PQZY9zF8zfw3p' +
-            'nkvY73y9SA25HKkkgTUZXqkzCY+CxEQT+I1XqxkWvYIBvbHXjiH0J' +
-            '5F47fg0fDbnYA72WUpKMkHSXpV0LSa+OnvaotW26sWKEDzNdVPq+r' +
-            'WK4prTCUlhkCIUMgYAwEiM5fTEpp0F5GFX53Rbm3qsJTXlbkrhw7t' +
-            'ukbQdJBcA1VQ3y5agSdvxcpeQPpOShp4W3kzzvY43s4pLfhgF0iPh' +
-            'om8u5ga7fxmNXpx+d1HdvvRYeVSCVmXrHKPTiwARRn13GyiCd70Qw' +
-            'cREtKlHoD8FM3nL+J9iN7jnclmobYTr/E9ryFjVzHrm8g192FR0/K' +
-            'd5AItyX3NUrSUZKOkvSrIemYx7fne8oNlSsNFcsJ4OurVmorn9dXP' +
-            'a8tr9SFyk2l5aaSoDlISok1VOKorHQRzF9WFVz5fMnyZb7KcndZKD' +
-            'Xj1W8ESQfQ27N5BOTvkZgkA0j8PrRcxPPXccCiy/E9oMBtNILeloz' +
-            '2LZRug1hEW2ZAIkx7JGS5gQx/S/K1Gy9h3H5d8ggG0ey9gW7S68gA' +
-            'okXcg1GYHmyhD4l2SzLFBnCQ7N47oSarMIDO1QEQ9EwovyUR9+KjH' +
-            'JToIaMkHSXpKEm/ApJGRVcvUZeoy1eoSqvUZcs05St0y1drl602LF' +
-            '9NRIC+bJk+VKYPhvR+n97rKSoNuauqPMuWuSsr/cuX+5cv8y9b5q+' +
-            'qcIcq4qYc/vqTtA/ivCdH1vmZgGBhJpZI0I+Mx278DrqtmMhj9H8b' +
-            '5dFNNFtuo0hiX/slrqobEma+jmNjYn1AEua4iVYbk1/dMJ4+NHwG0' +
-            'KLpl7g6ezDgxTihG8cvhuDb4fIBFIj9yGaiadaDA2Bho+tI8NuRqs' +
-            'UNuPcBGCR7Xu9I/HXdOKR+ScujJB0l6ShJvzyS8nz71MRKdeXzBaE' +
-            'qbcXzuoqVBPANK9aYVq4xrHhRX7lSV75cUxLSlAS1Xq/e5zWHgraK' +
-            'Cmdllbuq0r9iOYV9ovZXlfsrK3SFKx99tOVrTtJeoM9J8POXjoD8A' +
-            '5I0g1648BqeZ4MZQKfTHWQ2MdjxAZDiPTgeRKa9iZzcL+HnWxI/3m' +
-            '10fA3AUIf81IvGbxeO6lokeQfQqTWApGZ9tWNuQLfE8BHdaHTK8OY' +
-            '/8s//P978B052B29c/LyBQbcufHy9EjPtfXziRAf4NtwyezoDXNKn' +
-            'tE3/f3Gx70hI9xmSJv6AVnP8Oyd7eyhJ475Lfyr/v1zsx/ciadJPs' +
-            'KP3hydp4qd4d29/aSSVqCI3vjCSCrkNopn8P+FSXv5rSo3MX37tuP' +
-            'SBJemDPPHHxryhCFYUhCppKa3SVKw0Ln/R9Pway+qX9ctf0FGHzzJ' +
-            'taZmmpETn8+l8XlMgUFxRYSsvd4Lm71+xIrBieaCqiiB/oLJiydLN' +
-            'PD/wdSYpSxU7DgvKhkX+XhSgndAdyz7qRtlxXWDIuO/QSTRsMf+JS' +
-            '/wxsmIvL//ViDVZ5RgWsrlGAGqYCpm/4OK+LbHpBlDGdYcjXDHv8J' +
-            'n/dK9etL/mZKLNyBqhTMLLfxmuI/9nlMiit7CHi7mB4/w9dtePHlc' +
-            'm8d8GF99H6Je7JeA5K/7/xkc/DEn58v+DXf8S1RhmAF4nF+Lt/wo4' +
-            '7ZZkdvcKsJD4iaSj/0ID+TrWBJL6/0uoQOXLHezipiAynv9/XNwHA' +
-            'klj3g5XFkv5/+GSfkyIgOpWNxdz/V50Jg0mfiowZNy3R37ov+cSvy' +
-            't5gkNJyst/j8P7Hlr9MLtj3sIW/sBISpoSasbcHsqliT8Ufkr6KT0' +
-            'T867kWf9OSlKR8QRWj30r/GhGYifyvBJ/dK865IlQvoUhJf14xGpy' +
-            'wt7voG7Wh5p/BJcisl1D5v8MlwrJ5O33IOlQLhVJKkDQiFw6dOJLu' +
-            'BT13lvonRiOS4VGutGRNQyXohI7iC0jlwp4PvLEFxzgvUg35FKuk4' +
-            '86n6wP6EHhV4Yq1WXLdVWrtMtW6Za/YFhBYJ96+1WllfqyCo2/RON' +
-            'ykVIYKikqK7NVlNnLyhzl5R6i+S+rDFRVlixfFly+zOapjI298HUm' +
-            '6QBEeE/BYt7ykZF/EOnZIyF+n+CSiv2AqKP3RgA+8+dM9NwL+R3/x' +
-            'smYOCP62C/uhSdJP5IslBhE8cqoOjAMZEXM09/iLXRKpkw3l/DJ0F' +
-            '4Svi9Jo4Xbj0D+DvSm3kBFiz3xd9ARR+rfHUqZzJ8OT9LYdyK6jnk' +
-            'HbbpBLulnEuz9/7C7O6jewCMmQD0EnSjB+1Hos0nRG5YgDIti3hYc' +
-            'j0k/Qmh9h96U7CZ5Fveif9x3Bd9CzO17wv6PBDMz9v3PAU864H8Yi' +
-            'aS8/DfY74d4y4O0ZgwSTUD+wTBo01uL5FJEZiLmgGLvRvRu/qNIUs' +
-            'Huo8jfy8Xc+hx2kv+LYPWjZBmmEIkZ+57ApYnf/xw6UMb7BD23n+F' +
-            'SwX0tanddcHeRXCr4Q9pw8c7ncamUpEKdnvua+IK3mTGY6I64AzA1' +
-            'HJcKrfXinB2U6K5hLoWvvUiBATx/U4Kcw098lAii//8GesD6notfp' +
-            'Q5WqYKVef5yBTkoW64qX0EAX79stWHZanJQECwvCJWr/MECt1tht2' +
-            'vcTqPfZ/R5zSUBC83tDHqIqr+sKrhiWXBZRaCiIrisatGSnV9nkvY' +
-            'D8t9D57+BjXeiLiGGn24J4iPmPazWBxLqOvZ7h4v9MMzPFNWvicjP' +
-            'xb2PakwnMvCg0KDsJifrR3/dAFLyBgVnBFIBowRiiisZOyV64O8l1' +
-            'hZr55YkJ2oADWewgGTDqbhERZex4Ih4p7ciG2ekYCO/jjaamFvbTa' +
-            'TMMPM69oNhSIpaN7b/J4GksutDZAchqSS6xDq6yWt/N3JHN1CX6Bp' +
-            '6j+QGaZ1rgj9KoCqBu5sRJBUeRLga9TvJgIVi3pNgbyRJBdMVGJja' +
-            'cf2ocgxGkDT2roRD+oclqQT5Rf6HxxpG/j8ykkbq/JFcmvhjRP4fU' +
-            'y6NuTuUYtQJRuedBPkHgBTIpWG5/0eRpGEuReMObIprEupFcmnMrQ' +
-            'iSCr4LuB2Uv9QiG5ZLpSQVvLjDkVTwJ3QgJH4Ol0aQVHAv3LyviS8' +
-            'cDDfxhdSUCC7F8feMOPGHkFSc+MKvI5B0CJdKSQrt8HxXssanClZo' +
-            'S4nCX6EMVWmIzl+5Ulf5vLp8hbZihaqsShEsLSgJyl0ehcNeYLOpH' +
-            'Tadx2XwuA0ej9nntQUC7ooyf1WFv6IsUFFOwb+qIi1zLc/3f21J2g' +
-            '/LeI9x3CaOCw2H/J1IyU6JtO1ETpOKngGJ/OqDn3qosifOa+BVoiP' +
-            'dS9tJ+gd6rew2VczIDE38BId6TbBZEr4nVNb+RtLdIEr8HtqF/z/v' +
-            'pVM5/hXs7j6kfA9YIr+QjkGi0f0Sbv+mIExj7kiQvxM5jQlQJpffx' +
-            'bhMn+BUFxTan4aVXv9/fpakvOPPDFFFjxMMciDsGcj8WQSJBCcATP' +
-            '+Ijn4u6ei/sA7TKAYF5Cf6vKjS09jBexJvz4e0cuw7QP+fgPOnB+6' +
-            'ulemckmF8Cjh2h3/+nqSOeQuf3Q1saiCCpBJjZySSfo6HUHgc3ZHe' +
-            'nutDuTQC+fvC1or212HZSq3O2xJvj+hR7xY8YGHk78NfMYQnfQqfL' +
-            'cwjJOFSkaQYrOwOC1bz71AhjOBS9NsPfA5JhSF1Ijbek0sFYLmJg+' +
-            'lBBfWvm/hhLwRyqeC7iCSp4NyI4NIwSaUTX7hK9OoPM/GHISmUsTH' +
-            '7ch0hVUlZQUm5vKS8IFhpqHzeWLVKU75CU75cXb6MaPua0vICfyDf' +
-            '4VTa7XmWQoXVorIXa+x2vctp8XuL/D5HqMQVCvrKSwOV5f6KcnKgU' +
-            'K8eM6bla0vSLsjqPA1ZncN6e/rR5OzGFkSbQnC1RbjH7wXp4ESV//' +
-            'PIdX4siOkI/20/dgQ0jMDeLlRmxDwHoFjsHSIXPmc8soHwHYnSRFD' +
-            'YbknFE/k17Fcc6u0Rn8JNtPhuCg+L1BTxhM76IYLgHyNIKsNmiTgT' +
-            'EYl0Ee6OqKODWOe3eC04BiM6+g0on59EdiSaPP0C8oNyGw6jkMtFr' +
-            'It7F1pAE4A+kQGJz6GTS/wO/vQDSoF7ID8RcLJbgknyudAtePCGJ+' +
-            'k9eCaSTzolyP/WEC6V+Pl/BPbCnfA9Ev1E1BaITMRjiXXcx0whSXe' +
-            'iBjUg8J40oDMU9n8jcunn+I6Ep/CeJJ4rzjvmOrgmUfauoyF/HWFh' +
-            'AIVFD5Z7cqmgH4ou4j4ML/bcz8THIXVL6osC61oElwpK+M2hJA0Ho' +
-            'PuHIal04gtfRdgcbuKLXEr9GAxR2wkFJkx7Ue4rVfrLlAD7ikC5qr' +
-            'RKU0o3bVAQcRAsV4fKVcFQjtOV53DmW4uyjQa5pVBVVKR3Oo0up9X' +
-            'nLfJ6XaUhd3nIV15GCtX8y8ssjmVPP3Pla0vSdtj55xTHbRhB52eV' +
-            'OzAo0ImU78NhX7u3T546OeM+Qp/bgAiqcPJaJH92CAcRyC+GscDMi' +
-            'fsgAk4F92YXerrEyE4/7pvEjJ0WFvDi5T9HPP9IuAXZQFhJpjMUzD' +
-            'TZzfAMJZqz7LrwNGMQfgXkZ53eRmEtmmzdRG2TXH5NsCwk8oiLvR0' +
-            'macKHiEI/iZCkjn+VQEGXoKgTeoa9gn1hAKe+KdZmD9VjIzrqHor8' +
-            'QNLPxtBBye8SZQeMJ5Kkol8o6fv0a4Qo7JUEIlnOGLNMb9zb0AMOe' +
-            'QcZYBiSSuyg97FxFnBHj43AJx1hR03snSFcKrkpZq3ckNxjLxW40i' +
-            'BIGPmvh7k05hp29ztJ3kif0EsE0fokkBXBpZ+D/I4/QwC9XeK6H56' +
-            'kEp/AAJr8fYg57ahSjkhSdEp0oG6MJBVUxO77mfiYetQjateIyQM4' +
-            '8uvixMcxR5J0yMQfQlLpxB+ZpJ878eekBhT+Mrm/VO6nar8yWEmQn' +
-            'wC+oqQ011OipH6ekNzry3W6sottuRZLfmFhQVGR2lasKS7W2mwE/C' +
-            '1er70k4C4t9VWUBZdV+irKA+Wl/tKyCZNOf21J2g3IfwL8/MPu29O' +
-            'Pe/t0S6JFojHVCXD6T1KAEoSO7HqYyWmeDPNr9UiQ/ztox4liCJ9d' +
-            'WLn6Pd4O+Ofjvh3Wx2iGpOgiG0DZdxtJ1IH7VvVgRnQXWBz/iL1/m' +
-            '53ktQhK/v8FOuqAMKq4cIQCNOeeSK3v98BUPWh035bE2Tu5pLDWDQ' +
-            'mWGLKXOu0dfxJJKuq0XOxbEf7kCCL0kmFISNdP7yjpU0lH74RNY6L' +
-            'Si+LM8a8o/bsF6gkNUpIOMY6ALP0Sx8hPI0ia+BHSiujzAE0RyD+A' +
-            'dG7HtIq3GZNHurAwRikblHDIP8HJ4UkqYbB3JebqYCTyA5eKBCFCX' +
-            'HY9zKVknJFiVHyUYAKAQkWsAKyDyN8fJin1+d+WdNeP0xMNdgzdAv' +
-            'J3oZLWN4RLRfkSwaWxb4c7TfweeC26cMoPT1IcVT8iQA/6ckWtr/M' +
-            'eJMUQMJMvEpKGp+TnT3wcpHgsapu9ePv94sSXuL6vjTjxh5BUnPiC' +
-            'tj88Se898R959EyK1k+QnxRVsFIbItp+ZUGwQl1Snu8LKgOhgmBZg' +
-            'T+Y5/RkFdtTjcbsQlOGRpOj1ystFnVREUV+p9Pkchb5KPh7yktDK5' +
-            'YFBId/2aw5B7+2JO2GDaVPQD7/SN6ea2hY9aB51YGyoxfm9S8kKpk' +
-            'oi9vJ1zA/U0VrAAyEe6p/1DN88z5yBb+PRtA1eOi3cNky3P7n5mNQ' +
-            'Tzss9Ej4KNxm7Ltk0o3YI4WL3rDOP2xhWUMEHxB1uaR/pK6nERKfw' +
-            'AMGtgCrQJX5oSTlBfUVSJqA9k7mT+jgJX4ecFm8M3JHPxJktID8f0' +
-            'AY6QFZ/HNJX+BnSPzJsO0IhWaqsDBl+1AhNUzX5Lm3S6D7Q4lx2h3' +
-            'JIT8EvmKRqbclD3QwLBnjmDe1S5jmYcf7H0QuFR0+wxf5z4W5icF6' +
-            'IA5DiTZO1h8RARHiqph0EfY0/kHitm0XeD5xaG5YJNH+Lxf3MY1WR' +
-            'yB/T3jWJ4WdRVzsTdyhtwv35+wXeQMFAfuJmfwSktI6cC/h3J5hSI' +
-            'r4wHROCUmFOTVwPxMf5YvUQunCr0hSoWUxqhhJUgHHrkdGbJGkEi6' +
-            'FrkUv1ggTfwhJIY3/iafWZxcHlIFyVbBCE6xQlZSTovAFFb5QnidA' +
-            'MD/X5ct1E4XfTRT+DGNhtsGYrlHnm4wFVkuB1UqQ3+RxW3xuWzDgL' +
-            'Cv1VJb7qirc5WWe8lCgonxx0iaev/b1JGk7bOZ/9J46fx+6rfqg5W' +
-            '4MLrBB9oVdKILO344Sjaip4dRlLuE71B6/h2uIJpkPRvj5P1syf87' +
-            'F3o0M7vSjSw3ISwDwc9Lwfg4GdTcXe0MC0Z9Kvf3DFJoDee1eIonG' +
-            'gvtojpCoN2p/BYO5V7iZeldiRf/Vb0WScrJediEgJ5JU1oeD+U9ag' +
-            'QWFnwfHF2nkM86KyI6+Da4GEfnFKBI4kFlWCQ1cAklHclnTfP5PSN' +
-            'fAfsCE95TRkMzfAYLsn6TDkKgxHXxmOJ4OLrgBSUIym023InX+PmT' +
-            'mgUjHu4RLE380DJuR557wIcJClyjEAflbcdN1qhcxTx3I5TuYRHc9' +
-            'srvfo47di+ja93lZne8wLhWZE5m2E3dobws/UPJ8Y2+h5taK1dhdX' +
-            '2MkRX/OAKaLhEkqabMD8WQoSSURxq4IkgoY23M/E1/SRfeQiT+EpN' +
-            'jm9aEkFU7eQmSLJOkQLhX03hEmfvhrmKRkSBOmVik8JUTDV4KrRxU' +
-            'oU/tLVf6Q3BPIdXrz3P4cpyfX4c6xOTPNlgyDMVWtSlUqcg2GAotZ' +
-            'UWg2uFyFbqrzW7wemuFTVuqrqiTgH6gkan9pVt6aR2UdX0+Sdkn27' +
-            'akcIZ+/E11GYjLVNTRSBjCC3I+2TB+MUJptJZozPZJGBiQM2Yehij' +
-            '4c23UkYK9k3cFtpJvI8AOSEHYnytA+DKO0YXcd+NmO1OtGhaoXo2Z' +
-            'sOQZzo3VInKud2IuYMNCOROiRPDipM60JH1AHHvRC42LkfZSkoyQd' +
-            'JemXQlK+deYSn9IXKvCXkU8lUfU9JQp3IM/hzbG78p30U+nxyR3uf' +
-            'Lsz22zN0OtTlcoMVUGOTpuj0WRrNOpi5vBxMG+PqzToLgu5S0Oesp' +
-            'C3NKQzVT3+RMPXk6Tk5CWOOwyvfRwW+Zno6cbbEY2X6xhZGMAISz+' +
-            'uNO+VSOR2VEj6JI64AUmu0SCaLbdwVEMWPnRJ/FrSmFc/PvcefNY3' +
-            'URdid8oeRCvOKekLblqg9KLkvY0uUBYoaZeI7z786RbYy314C634Q' +
-            'pxuiY3JTLNWfCgtOLAOibrSO0rSUZKOkvTLIekjj55alOchmE/0/A' +
-            'JvUOEK5Du8Cpc3z+HOtTmyioqzi4qVbk+WpSjHWpyq06eq1SlKRbp' +
-            'SnqUqyCNqv7lQayvSFlsLPS6LmxZ7iZ8gv6c05Kso95eX2rwl33rq' +
-            '/NeTpK3whq8TgPzD+vlFS7MFu+7DPKVBZLZr2HK7JJog3mM3di3+2' +
-            'iMJf4gJabdR5N3Ck4MYnBUZWBSX7fgpir8B9Ha2469NEmboBlJLJ1' +
-            'QHTqg76C28g/63NnSmdeJTk6pbXWhOtkgcqqzNJuy6Dd+e1oYDuC6' +
-            'xvEZJOkrSUZJ+GSR9/FtbMgodSk+wwFMid/rkdk9OsUNebCPqfZbF' +
-            'mmG2ZBaas63WNKMpjcC+RpOUn7swK2NpTlaGUk4U/lydRmHUq80mk' +
-            '9NudNisPg9R+wn4O4MBova7Svwuv2/CxP1fT5I2g85/hOPWj5DV2S' +
-            'bhnB6MpIh5Au/h3kSi5dUhGZJoozF514i+KWZ3DEjKNXRV3cClcLf' +
-            'wEpFjG5GwV5HO3dhyH8rTzkiK9aA53AEXduB5RvbryDM3odM7KDqv' +
-            'S6TqAO4ZchubYsK3BUVnCyoYUq9aO9KtB32S1/CgY5SkoyQdJemXQ' +
-            '9JnJ63IKnbmO735Lk+e3ZVnc5KSU2hZIpcvLVCl6vWpem2KVpOiUa' +
-            'doNKk67YLsjIXZ6Um5Wcm52ck5WSm5WVnKfIVBr7dZDbZii8dp8bi' +
-            'LfF5HScAdCrqDAU+oJGH2rq8nSRvhlfF7R0b+FhxwK5ReXA/yDuwd' +
-            '9x6uYriJdyS6ubpRCHaix7IDD6ROyE50STET9Rbas9fhgTZD5WZ4p' +
-            'XIznGHvMu6RtCYqP+0YEOlCZakXbSLRldqKFQZxTvUguW6g3TQgec' +
-            '9yryQu1o0GmiiCW5Ebe5AP2VNuw1nMhtQokdRtoyQdJekoSb8EkvJ' +
-            '8U9wcb5bVRvT83GJHTpEtr9iRb3PkFhWnaLVLlfLFebkL83IXKfOT' +
-            'VcpF8ryFedkLMzMS01LmpixZmJq0MH1pSl5mtkalNBl09iKDvbjQS' +
-            'ZDfafN7nUTtD/jJp6c0tGDR+qio7q8hScm1ZzluH+T2DIv80jH3Y3' +
-            'rYXZ5uTPc+mp93JFlnrPFOFILdUJolr5Jn3rAWDE+w0olWm9hUHwr' +
-            '6FrxBpsNcwRba0HLpxKaaJcoSY/V+yTC68I3zPZjOKv46gGfEjtrQ' +
-            'oO7D+tckDsYWfApshIwJr8BnIxw04p2KEZkbOP7OUZJ+Y0hK97IQE' +
-            '3Lk//i3ICldmMDWmv19kPQL5NKHHzk1P8OWXWzLtFgzCy2ZJnNGoY' +
-            'WULIsl02hKUavmZ2fNyUibm5memJ05LytzAfmanDRn6eI5SQvnpyY' +
-            'tzkxNU+ZlaQqUFqO2uEhnKzI4iq1el9lNwN/nCgrgn5L54sMPN34N' +
-            'SdoAm/MfBOQPjuDtEX1WTKa8hW89ZgfihhXXUOY2o7TqxFDFVZTOb' +
-            'SBxGpC3O1H6dMHlt7AdZu8wq6QFx9yIDNCCN96AlGEEacAbbIMe+9' +
-            'HIape4PVt5YaNvRp8ODHn04hxpQ3p24ZzqxgfRKXHWdaE4bsU5xe6' +
-            'oGaNyzTgr2bAHUF1pGyXpN4OkdPWE41+5xO/QajF9sBzjiycpTSem' +
-            'yahfNUnFNc70dQYRJA0v06OkeIC4dOwTmzJM1jybI8Nkziw0E+TPL' +
-            'S7Otdnz7Y5sszlVp15aoJifQzF/blbGzJTkmSkp81KS5y5ZOGfx/A' +
-            'WpSUk5GakFeVk6VYG1UGsv0tisOrvN4HCYnM7iQMDm99u8XndpKFu' +
-            'xAt7S8oBy6cgkZch/ALw9JcMhfyuaCWKwSXwdzB3Ykvq7+PqYPomB' +
-            '2YPyrh8NjS48uIQj78VhiFYtE239GIZm0efLUFpQnjYitrSj1dMiI' +
-            'WwXPoI2JFQXBsfbcAw3JJlUbdhXs4TIzRJrqxfvqw0jR8x87kTDnN' +
-            'GzGZ6IOBm70ZpjAroTCdiG1UZJ+rUnKS8ssmvl4m7w/v/g4q7/LUg' +
-            'KC0kGRiRp0id0TQoRQLLrfxlJ496lKwvowoG790NSutaGLkv8iC5J' +
-            'i/lAJCkVB+Y/0AUysAoSt9f4m3BpdFTNxLjNMc8e4fj6+yHp49/an' +
-            'G0tyrYWZxgLcyxFBPbziu1yu0vhdOUWFaXpdaka1aL8vPm52bPTku' +
-            'MXzJ++ZOHcpMWzFy+cn7JkYXpyal52hkaRa9DKLUY10fmdDqPbaXR' +
-            '7LF6/xRuw+vz2gN8VCuVrSmSyiw8sl45M0qvg7TkM+/aMpPO3Iwsx' +
-            'dUIMJb8LL5q/hWvHbkUuVWb5Bp3IqP2YSsT8dWwM9SjHWUrSIKbmd' +
-            'qI9Uguf3XinDfi4W9EUakESsfhOj2TutEqmSSv20otpz50StmkBGr' +
-            'LBNMDAmuDgKqoWHUiEHknorR2q1UM1JkPr0d5sQ/nbLGFL5su9/EW' +
-            'QtJXnD/H8CZ4/gs9xlKRfLpfKrsPSsw/E5Vq45q6ZS/qY1/5SIFHS' +
-            'D2CDo+FISrGXLdb7fpikCR8AtN4SSJr4Ma0g6+Zib9LKjj9GkDThX' +
-            'XomphvqoOEAy/2osQDrK7mYQU7WTgQTr/3nMEljBqmoIm06/sQlvC' +
-            '+QNPYOH95TIpKksF6PbrWd+CndzlRCUrr6L+lndJ115s+FDQP/ZhN' +
-            '/wsQVBTZXQlpO1JM67tG1XPRp5KLhuXTsk3vT9fZch4uAf26xnSj/' +
-            'WZaifLsrp9ieXmhOMxjSdQT81ekG3VK1kij/i/KyF6SnLMxITcrNT' +
-            'M7LTlPkZWvVcrNJ53IYPC6jz2vy+KyBoNnrN7i8Zg/durnI59MWBW' +
-            'WyU/fJpWMfJ8Lr4OOPn3kAsJRIq2pA/nUjIH8nTkNG5D5Jm+Jbcm7' +
-            'gyUHU+hpRu+tGD6RU9olQwFixHV1YbFTMGcUQoAnbaUcc6ETNpwWR' +
-            'pB25tBstKVEBaEW9SxxMKwrBbriWKUL1MB42mIv4tR4fYid6xtolY' +
-            '2vCy1sRA9l9iaboVQRA8SrxLv7HJKV3yvMNPH85KupkVNRhUni+ju' +
-            'PqcMyjJP2yuDQGAFbWLpA09jZVzumbxRooGlP/DCUpQOvdYUia8G3' +
-            'Yp+4Ohf2kTwSSJv0QJQiQNOYGW/BLF5sToE78AJBZIClv/g381E93' +
-            'T6W7kVCS0nXKid+lLSe8T6Ceon3CXSKG6HZV5t8KJE0CaZL0sXAL1' +
-            'KBooVdRyfJnTnaNRi7MvxlC0vAegPJ/hhfuhEkqvISC7qD4t5r4PH' +
-            '9pYvzmuemqb02ZGTUhLnp8XHTs5OinU6Oe0HCycu7h/ZGasMClYx4' +
-            '/sTjPqfT48x3ufJdb7vLkOd2aQInc48un+/C7sszWvKLiTHNhsl63' +
-            'pECRplNlaFSpamWaSpmhVmZpVEqLSeMo1trtWqez0O83BwImj9/o8' +
-            'Rs8fou/xOLzW8gZl+fxJ458Lpc+IjvwzIQ1acqQ1e1OTrZGR1/6qr' +
-            'GU4QYh3VqOCwyH/L3oQGtD7m1DZ2MPjqcT++rB+21CDacTw9DdaMK' +
-            '0oFnaCQNoQEI1oqAUsaUdc5AYCDBHXzfWb8P76kB8aEV/wlUYgIhm' +
-            'V7HNNlQyWfC9EQnShNrmFRzABZ6/yPM1PF8N6FoDCnY1gNgVKFclm' +
-            'RUMbeoxaN6AFTqQ2m0SZbj9Lycpe8RkSJcA7Y/A51Eox+HrASILYA' +
-            'AdDzBJr6IvoglN9UsSqBeT2L8ckv7VXBr3Njj2wySlOnbmp5ysGc4' +
-            'DSePeQuf/UJJSrI4jel0TQPp3OFknRXL5P9Id5+hGoJSkVGok/YCq' +
-            '61Q/v0Yr010grlHnEoHoxI94+U+JOUArUAC/RrCdl/+EQj05oBhOB' +
-            'MHPKObT7Uqu0WuJqk96Mf+aNkjgVPsLMFs+5DN/ROsnfcJn/oTuXE' +
-            'GQX/svESQlcoFUiHsbZNb7aBoAScmAqa9pkPZCjZe/ycSXPbpHW+S' +
-            'dl1fw0BPPPvTs5IcnTIkeN5GCf+ykh5+bxD87T/Z0juyx14dwqWzM' +
-            'qUU5gQJfIM/pkXu9ciIC3D6VP6gLlalLSlXegNzhLvD6cm22LGtRT' +
-            'pE1w2TMMpmyjMYMvS630JRfaFIVWbVOovB7DF6fye83+gJGj9fkJo' +
-            'AfsgRDZp/f7POpra6xY4+OwKWtj449GfPc2nHTnBNmyackZczNkqu' +
-            'dbrXF+thjx75qLG2ACXhoZJ2/BWPWV3AmXomcp1dwmrdhpEnMGW7B' +
-            'WIbogGLpB91op1yRAE4bejvbUXYzNGuTYFQbnGlAb1U9PuVLkhhZK' +
-            '55swkfQJPnahQG1HlRx2+DyOujiEgzsEpQLUVH7AV0PRkXtjoraBR' +
-            'h7CA62RUXt4/mjPH8KVO5aHGo9OtDq8ZHVozgWUbTlLyFpMzh2iIZ' +
-            '/DMopAvIwpCNwQD5PgUg6BSf38vx5Mmx86A8aSS/jhV1IgcvoNboE' +
-            'w76KxkubJC4gyoWGL4ikXxCXEkymqI4kBQQmmIxoX89nwjY+mT8eh' +
-            'qRx78JuzH1UD0/6HjqLvsdICqj+Peo8T/ohl/AdQT8HkvJy2AWL2B' +
-            'RxtynIJ74ntKD9FVT7Lh2MYDh8RFWFzE95/79zshaQNSAgiH1BbAQ' +
-            'qYshVvyBYDdsQ/Yb2m/mpUCH2JoiJPi62j1oNVJb9b04GdCBXUXn0' +
-            'fYGkRLgIVkMfHTO98b/FxG969umVJpszvdDyZPz0h74VSwA/+tlJ0' +
-            'eMmRT89nn/mOf7p58ZPnzlj9pIxY1+Qcmn0wxfmJgfyPbAzj9tHDk' +
-            'hReEs0oXJlIKQqKVV6S1Q+v8LtUXo8BW5vts1e4PUonK5sq7XA5dS' +
-            '43TqPR+/1GNwE+b1Gn5+KAJfbHAgWBkp0TrfB5TK4XVnq0KOP1g7h' +
-            '0qjo2pjYtZPm2OKX6qemyuOTM6YsSZ8wf+nE+clEDGmszkcfPfJVY' +
-            '2kjbM6/h+NeHkHnvwyK7mXEtEY8U4vLAS6DtGJazSAOtQPdUO1QoQ' +
-            '4XI7Bcpi4EEGYfSbOhBnCyM5WvFb5exN4vS+ZRJ3bKRtWNKkojgkY' +
-            'rxlnEUBdb896DA2jGyFc9avK1iCqMf2oBYPcRUEXIJcc74PMwiIBD' +
-            'UJiAOB4dfZgUIil4/jgxEHj+DM+fhnsXyd4uIeA9SHoJvDp1pADaH' +
-            '0Pd/iB0TXrcGRW1HUTPcSinef4Izx+CX/fA5Q8mScVfr0oc/gzwRV' +
-            'ZpxUnUifZOOwJ7M0oo0ZXaft8k/aK5lOCnoPMT2O8ieMhr/4lWkLU' +
-            'yjKWKtPaX4Pb5DEljBgDA/wx7cn6GpPBKOOFN04kfg5dmOJKCyAAQ' +
-            'jiQpQX4ig2QNI5I0DjY4pc1GkJRaBzQ80Q5eo5+hPPqIi+kR7qj8f' +
-            '1NxI6uXkpTaF+KWhsK7db74if/YYxvz8xUFdue8HDn/9ISHvjU+ii' +
-            'D/MxOI5s8/M/6xCZOnzZkzc+686bMXjH1iDfobG3m+adr8kNIfUvh' +
-            'K5L5AQSCk8Jco/RT5C0pK1SVl5FhNRAD5ieK/W+Fyq3w+pdudZ7ep' +
-            'iSyw21V2u97t0nvcRNU3emnRuchXr9bh1DhsOqddZ7cvTFkV/fBVK' +
-            'ZeOHXtqcXJwTo56WoZiWmpOfEp2fHJW3OK08XMXp5us1tJSk7nwud' +
-            'gXvmosvQDIz7w9w+bzX5X4NxiknIcDpt1dgDNdaJJIc0o78REwVUd' +
-            'cX9aN07kV4xRNyLetmBbYgtZxEyqEV1BpFA26Szieq+htZlBwBVtr' +
-            'QGEq+hC6UWKK8cdLWC5LKjdCjxdR898NyH8QEJ6hPUPgfYDJzOVyF' +
-            'H7dC5WJRbAFDsiZ/dHRh6KjD4I4qAN/0Xl4dgymhpCUjL+OITlKGd' +
-            'L+CWj/ODp5aJs8vwMjvKScBNg/wPMHQTwdQxI9sCStRyujFQfTKsG' +
-            'uLknYtwkt6AsQjRIVpFZk6U6cMl8Nlwovd6BbmH40lKREH6ai4S8j' +
-            'KWsQ0iP/Tkk6LJdGRZ2fNcOkMxQqi51zMnNlE+IfemZiFNH5n51IF' +
-            'P5x8dNmJ86fMXtufMKs+BlznnhyBc8zo7tlxsIVKn+JKhAisK8Kli' +
-            'p8Abk3oAmWUYWfnPeXaAMhpcen8fmVbi8pcpdb7nQpXS6t11PgsGm' +
-            'cTi1R/p0OjcOhJl8d9oLiIrXdprEVaYqtKrNJZbVMn70qKuqySNIn' +
-            'Y/Zn5/sLbe4FuQVT0vKmpeVPTc+bnJQ1YV5yir7QsWKl0+NWKpVPP' +
-            'fX6V42l5PMMrOQiyO8eDvkvYVC4FvGqBiXIJQwINmHKRx8v7FMhJm' +
-            '8wpaIPVxbckEQDO9A9dQWDdIPoN2CjvQQ91mHXF1Es1qOA60JlsgX' +
-            'da81AzHr0AzRiy81Iog6J46IR7aCLeGsX4cWUdUCTyyhA6wCKdwDs' +
-            'k7I3OnobHuxDr8tRVP7J+e3R0Xvg/F4mMqKjT0VHn5G4aHaBxk4U9' +
-            'ePQEaEnQfuzPH8BlPk9cNU+aI1A/YnoqDMgAo4A2hMJso/nd/H8MW' +
-            'jhHHwS5f8wwX8ISVxG5fBBJqkY+b2MEvA8JidfRV7qxLjAZRhtPfI' +
-            'SM6iZqSu9rweMS5O+S90pfylJ6SbYPaMk/SxJx45dmZaalpMrzy20' +
-            'LlYUPBk3/aEnxxHYf3jchKmz5s6cMzd+xsy46QkJc+ZOnzX78Sfc4' +
-            'IbtjI1bpvD6VSVE7Q+ST02QqPohXbCcfFKF3x8s8PrlLhfR9vNpnr' +
-            '8zz+6QO53kWOGw5Votcqsl30zEjSXfUqi0FBZYCxVmo9JqUlsL8/R' +
-            'quVEtN+kmTnldJOmzsVt15tJCu8tscy7OV1NtPy1vckrulNTcTKvD' +
-            'tepFh99vMGgnTw6iK+ArJOll2K5tN8e9OoK3hxkjF+CTOVFrkFvOw' +
-            'fEV6tLM/AmUn0H5Cd3KnuYqfEKdh8TszfwH+r4Vul3/z+iLpYTyU/' +
-            'ITsSXpzSa8T/dpJxfSxIY2GpCixx8jPzfgQRMX2wPd/ZBem/iRGCK' +
-            'EXn5MQ2yxA4LNS4dxA6PhkEOV8BH08kPwqTZRM5aO+QdwyRVKlqRv' +
-            '85mfgL/0IlXAaGXWZjvRrqOS3+Iz34tKvkFV+uQbfOa7UU+dgZMfk' +
-            'hKV9Q6cqSbaPq2WRcq77Kfo6HN8JumaNE5u8wM+852o+EvUNBizPy' +
-            'r5JlR7Oyr5VtQYAt2bwF7YBfjPXElU4Qd9/jDAPtXtCeUh6HwUywk' +
-            'sR8HV34hemi7JZwcGdz5DUnqzDeg/b5NEXZtRt2xAbuyQJBh0ok7S' +
-            'he00SWzSBoGkAqddYSRF7UUMprTjAKolunEr2rAX0SNxBcfMQgMdv' +
-            'JDe3IMC6PO5FDMf2nFBgUiTNkTXLgy09aJa1Y8ur7+YpNR5nvjBKE' +
-            'm/KJLy/JnnngukpmRk5+TlWWyp+sKJs+Y9FDPuifETCdpPmzVr6sy' +
-            'Z1OeTuIAcT546/Ylv+UmnT49frw6Wq0rKFIGgJlRhKKvUlZbryiq0' +
-            'peVKX4AgP9XzqZLvJiXPZstzOvId9hyrJcdizi405RiNeRZTvtWkK' +
-            'LLIzcY8kyFPr1MU6uVGXb5eo7IY8g2aZ2PXUwzkr06Jf0NvdZrsLn' +
-            '2R3WJ3JuUqpixOn7Q0e3aOWhMo9a15xeb1ms2mhQsLiTr3AJCU9HU' +
-            'M/PwE+f3DIf95zP+5hAG4M2gzstyMZt7xx/DrSBx/ojGguPdpLhn1' +
-            '/v0HPcMs4hhIGBNXu5NLaM1bNBxmlrygVoYvn6LZy0xUXYCuCewP4' +
-            'LV/wIjVh3RIcXfFy6lE4NpZL5Cr3ImSsTP8blzayyDLUsAI1wUu7r' +
-            'rYOL27uHclbX5CJgjvEC6PmtXCO34jPaCfDkh7K//vqPHV2M6v6SW' +
-            'O30aPufCZV3X8NzEieP+fsRo4Dcw/pzo/wf8xxwD5j4CPiJT9PL8X' +
-            'UH0/vEmBcMhVVPUPgSw4BKKB2gVAqKuowzdhPmErslP9UJIKbnZ2k' +
-            'tmD5zGLvgWDqs2o27eiQ6AHfQjtGJDtRHtTVCMvoHeCddeAwWKReV' +
-            'i4tg557CoOoxEHdgXq1yMHsslCEZIXct7EyMLncykOQAwcNOGAxZS' +
-            'MNslyyw782iWJ2o+S9Ksl6cWnnqpMWZotV6hyjJYlat2UxEXjJ8dP' +
-            'nZEQn5AwdcasGXPmTJ89O35GQsLsOdNmzRwzdlns5Jc1pZXasip92' +
-            'TJtaaUmVKYpKVMHShU+f57LW+ANaPyBAo9P6fEqaJ6nQ+Fy5dqKc4' +
-            'qteUXWbAL+JlOu2Zht1OebjTkGfZ7RoLSY5CZ9jkaVp1MrCw25KtX' +
-            'jTxyJjm6YM/cFi8tf6PSZHB5dscNkcyblFUxOzk4rLLYuX+1Z9aLF' +
-            '4dTp9ElLrY88cvDBIOkleCHXTo57aQTkb0Ch3wQH1YA8Ym7GVUHK4' +
-            'OuiCGiziAMVB/Tru3D8J8ThdpoFIdS8i9pmCw0eQcxLqMYwmSIwM0' +
-            'trhSyRhFtCpIlq5h8TFZ2LBRcWS5Bw/AHlRRM29a6Ehs3CG7iEn75' +
-            'NF8KEl+F8LxyrghawzT8LwTiapy2+6/zPDOejZnUQYIeD7qgxR8Ny' +
-            'QZAX70RlfRCV9WH02BrhpwWDUQv6BKkx5jAmSH8YlTxIbIGo+PqoM' +
-            'YeEmmNOgANnD8D+QcD2Y6AYXEQnwBlw+xwQDQHwOO2GCdsgCQi2I5' +
-            'K0ImJEkjRCgbwKX88j81xBn8BldAW3oVLRjo7HJuxiQLLAsBW10Fb' +
-            'MtxE12Ct4bZtEia1Hj7foDxdDt1ewziW0Utm1vbygoDYht98HlwoB' +
-            '5RZEXXHSNePwRBcWi2h3owtllKQPCknHPLZu/pysnNz8JEVBilY/P' +
-            'y19yvQZ8dOnT01IiJs2Y8rMmfEzZhL8j5s6bcLk+NlL8hXegLqknM' +
-            'C+oWyZsbyKqP3aULnSH1IHS/WhMpUvqPT61B6fLhDU+4NylzvfaSf' +
-            '4n2UpzCoszDGbMnTabIM+12TI0mjkJmNBkTnPqJNDydOrM1SayfGb' +
-            'Fy9dbfOGCh1evd1jsHt0NqfWas/WGlXeEteaV32rX7K7fUZT4Zy5/' +
-            'kcePfTAkLQadP5dgPy+4ZC/FZUHFhKqRwF0HoZ9WSiyi4jn7zOHFa' +
-            'L926At/xGhvpWT9WDNm8JSwbg7zCgQVosQpT3hLjMfkMPr8XYaAaJ' +
-            '/I9gRFDZ/TE0t86/YMerzbdj7uzi5rhDjAnsBBTvzJyxlTnhBIRMK' +
-            'gmj4ExUTTBCIL5qUtQid+vE9rRTkuxD5OyhWCydbUYL8FnT+30ePP' +
-            'TNU53f8mnryF3Tz2h8IxgI9+auoqK3kclqow2czOH/2A/jvQneuuC' +
-            'rqHMR5d6NoOADlGHoAmlHJ7EE8aUBv8GdISks9MttljAHVoXrQinU' +
-            'akYuQpIIGwlIRxH0bxA1pmxBqGiWO7noEKDGn6BLyZB120SbpTmTU' +
-            'y3hr/biesQchq/F+uZT+dA5TgxrQBJYuNLuMvhFx1lzABa2jJH1QS' +
-            'PrIw9vmzMjLzMzO0OrSDMbElJT4GTOmTJseN206wfzps+bEzZgxac' +
-            'rUifFT5ixJkjs9BOR1oQoC/gpfkMC+vrxKGyzXBss0gaDKV6ILlqr' +
-            '9AVOwTOcNKDzeXKdD4bRnFpoyTYZ0nTZdpyHIn20wZKjV+UZDrtGQ' +
-            'pVZlqwuIzp+rUebptAq9i2j7FrdfZ3Mb7AT83doiu6bIXly1wr3mF' +
-            'VtZebHTbTCY46a8FB19+UEi6WXYvYHoiq+N4OcXmaQGXcFs5OcxKn' +
-            'GJ/iS7hHh+B2qeFzTkzO8RhBc8M0wDl7VKkB+GkfRRJCr+gUu4Lej' +
-            'eCbdoNfLJ/KJMS/f/BzUKWOIZ1c+bef+/S1vgEm6w3qlRkPAWLTHd' +
-            'NOgQ0cu/cQnfFbR6yGQWNH8B+S8KmWzhNt8V5FfiXb78vxHk2wUFP' +
-            'vl21KxOPNkoygVqC8zqjRpzCs/08OafQ/2b0WMPhw2B5Nuo6h9kji' +
-            'Pw9m+FUO8RCPtuhhQsxjY1jFV4fjuq/QT/SeUdELKpR8uuWaIf1iH' +
-            'nNKAKWouu5ma8hLFNLV57Ec/Xw8ka9DDXYlTxKgJUN8SbbuIy8370' +
-            'bLNfGzHMdBGv6kIuaka1s1YS4bqKc1zMgb+KXtCrEt9IO/q3O/Ee7' +
-            '4NLhUY68ev5SJKKdGtDXZ3lQoyS9IEjaVTUwWnxxrz8/HSVKlWjS0' +
-            'xJnTJtxrQZCVNmTI9jyn9CQvz0abMWLsixFhd4CKQHlP6SAn+JoYI' +
-            '6+Wm2j69EEyhR+wLmskq9v8QYCOm9AdjG35FXVJRuNGQaDUThz9Br' +
-            'MjTqbJ0mVaHIN+rzjPocnSZfryU6f45GUVBYaHS4C50+g92ts7kK3' +
-            'T5dscNgd9iWPe9a85IjFCouLsrPtT77LDHerz5gJK0HSCHI/8bIEd' +
-            '56HGcjMlUNRn+Y2nBegufvQuWLdLE58+GEfekgg2SNWPM2CzYJmWx' +
-            'J35c0cleKuqByC2YsXYEY9pb/by7xQy62Qzgm0ifzYxA3n4Q9M4Lj' +
-            '5R+wl59ysrvYy4cCzst66b6L8l8IVgA5E9vHTAC6jCUTREbmDwVpQ' +
-            'qRS5jthx47j1xEdmX8WNWb3kMGHHUFjjkSNr+WZn3/MERrwjRjk3a' +
-            'iobbRxOMCsziOQ5LMHgP04EKGGiXLwBe2Dsh2QfzdM5yvoQ2b+4au' +
-            'SIvLGJfT0XsEcg2bkonp4yjUgRBjjMZv0EuJME6qX4tpDtvHUILof' +
-            'ezGdQExI7kGTtgNdzRfRF3FeMp4ryE5iVkkDDK8G3VxX0SJuRMd1L' +
-            '97X/XGp4PfoQIeGGNqukcRexfS5WqwzStIHkaTR0ccmjjelp6fn6A' +
-            'zpesP8lNSp02dMmzlz6syZ0+cQzX8W+VySnye3O7Vev9rjpzjvD6g' +
-            'DJdoSouoHaLan11fg8Wn8AZXbr/f69URAEOQvLs6xFmaZTalabaZe' +
-            'nW3UpqqUKQpFmkKRZ9Rla1U5WrXcoJPrNXK91uB0GRwek91tdHgI+' +
-            'BNV3+Ty2le+4F7zkjMUtNuLk5f6xoypeSBJyhhyP+j8rhH8/FdRWN' +
-            'SgEGHWygXkogaqmciucbIOTBtgkaMLdP0gOSlrxfuF25FdhSWBteF' +
-            'wlQwNE1kvVL5KoV64tgXONIS1HVk3J+uHvtjAjsPqkouw6Sjp8ZJg' +
-            'VpOrZETQXOZkTC+6SGPHzC0mG6ARXqJK0c9GjIN3URWL7nkIy6jJS' +
-            'ATz/Apth6ulyTOP1UB6546oMYejxuwDfCbHBwm2Q2T2AHhpdkeNOR' +
-            '415gQN1NKTJ2j+P61DMHx3dPQROHkkOnpbdDS5di+9aszB6LEE3rd' +
-            'ER2+H9snB3ujok5DMfwDKbigE/7fiKt16yO3cC66evQD+O+GhiBHA' +
-            'erT1OpAB6vCk6AQWFcg2dCkjSQXPKpBUeO4XEGTO4/FF9CR0SxJUe' +
-            'oaSNLxXeQc6lkW1RPSHs4MLmKN+GSNWF5GXmiXpyi2o8dYj+t03lw' +
-            'r7KEZyaZhWEi4Nu0ZHSfqAkjSKPzs+1pWTnZ2t1qbp9XOXLp0xe/Y' +
-            '0gvmzZ8XPmEEO0jRahctV4HLRBB63V1NSovB4NYGAmsC+L1Dg8WoD' +
-            'JYZQua4kpHJ7tC5vDs3ttOVYzXlWc6pWk6nXpirlS/PzMjUFeXptl' +
-            'laVWkDf0pujU9F3dVkKjf6Q2mwzFDtMDo/Gajd5/O7Va1yrVntCIb' +
-            'O5eMb0l6Kiqh9UkrKrDsFenSN5expQTFyWJIWKgSrRkXgRVyVcwvq' +
-            'iDXIZhyry+SWJNL+AcqoeU1svIX1Ym414eTuuM2XsytxirPJZUGPq' +
-            'gIxnUZ6ei8xzYK5RtpdRL66P7sAdTcUNJ1t4/grszHAGPC37Mcd+K' +
-            '+ZbEnDeDlB8ABdYsTVW7PwevGQXXL4bP7fDEoD9uDRsBwiC3YIooa' +
-            'sAdhDAh6v2YUrnTihMoOzAZWJ7YIvOSwD4h8DVs5Pnt5ABowv3wSH' +
-            'pNXRWiNsV1mMKSgOaupdRD2H82YKj6kAPSR1GMxtwbFfws1YSOf07' +
-            '4dJRkkaQlKhV8XGq7MyMHJUmw2SauXjxlIQZU2YShX/O1Fmzl2Tn5' +
-            'NsdCqdb7nYTDZ/o/EqfXxMM5bvdeW6Pyu8nIkDp9SuJ8u/2KJ2urG' +
-            'JbvsORZSlM12vTdOo0jXKpIi9NKc/SqDKo5p+fpszPVCtzdeqsgnx' +
-            'FkUXn8OiKHGaXT2Mp0rt8rhdf9q56IRAM6nXF48ZtfLBJ2gT1D3Lc' +
-            '6yNEeMUVHyy7QAxJi4pEk8RaZM9IvEQ8uIgjqUUf4wVs5xzy7WXJg' +
-            'pQGSRJCoyQwIWVy8esFMFtqYHnLGZhQbBKdRUuqBs0ckZiNmBPbif' +
-            'pVB883AoyfABg/iAi8A1dX7YaQK1uZuxOg+zDu6rAXcX471t+F2/t' +
-            'sgas2R0dvBX1+O3xl0uEALgfejl79bXjtfihsmTCTLOIl4sEO0Pn3' +
-            '8/xWnidnNgERHiiSduNO6X2YvngF1ZJL2F01cshl5J9GScb7ZUxBu' +
-            'YSTpRZv8ByOhCHn3wmXjpJ0GJJGR7+RMH1+WkpyjlqTrDUkLFoUn5' +
-            'BAkH/G7LnzlqZkmC25xUW5dkeBP1AQoNs45Hv9uR5fvs+v9FPMZ0t' +
-            '38x3OfJst1+VKN1tSDfpkrTpNr0nXFmRoVQTqUxS5pCTnEymQn0bw' +
-            'Pz83R6fWOJzaYjv18zvcxSXlgdffKHnhxWBJSZG5+LnnXnvgSVoHd' +
-            'ug+yOf3Dof8TANhEaIGTBioRhl0GdeYsAwBkcEa0Y3ZKMkoa0MmvI' +
-            'yjPYUy6zIudWnjKbdfRZdXA3bdiHd0HiUaM4LOwzxi0XB2cAYaP4d' +
-            '2bjWWMzizzqAK0S0mV+A2mEfRwXIIV+DuBEDei+r3fvh1Dyr2TBBs' +
-            'Z9FYooTjeVJzY1TUm1FRGwDqNyK2ExGwE/CcbQfE2hE8PKSj6Og9Y' +
-            'AWIK7lOSjYO2odjYP7/w0xwYObnToCUB4ek4nb0nfhKIDEphTknG5' +
-            'F5mnH1+lU8aEHtpTEycHkG7k4cEtsK4xyy2TeeS0dJOiJJvxXjX5A' +
-            '4LzUlOVutTjcYZy5aNG3mzJnzFyTMm5+qNeQUFZFCdH5NqKwgWKou' +
-            'LVMHSzXlFbrSUm1JUE2sAK9P5fbkFRdlWK3p5sI8W1G6QU/37VfKl' +
-            '8rzkvJykvNzkhV5KfLcJVmZS3Ozsg06fTBo8PoMdpfR5rEGKkLr3i' +
-            'x/6WWf120vss6YHgID/AEn6QXYnH//yMh/Hhs/LwlJnMHBnELPpJh' +
-            'OzOTyFeS6JvypXbKarAEF4mk0RljjZzHxQMxJaJIYNRfRLmZu/wto' +
-            'xZxABmZtHkc6nIYKjP7nMH2CEacbN8du5Pkr6Es/CutkRTzfzfObA' +
-            'ZAF9w7Pb0dn+z7AW+bh2Qta936ItO7k+Td5fgdg/iYC9XDJTjgm4u' +
-            'PN6Gim/29Di2AbCAImODZFRzPv0Aboju32cwhFyV5wDe3D7YPYT4c' +
-            'R//fARm0nHgySMk9FM2aJdEjApx7zExrQRBXzT5own4ExfC3GsK7g' +
-            'HZ2GHs+jfnsW6pxC/8k3m0tHSfo5JOX5I+PHKxYsmL9k8cJcpTLbY' +
-            'CSa/5SZMxPmzcsxW5T+ANH5c+yOPLc71+tXlZVrK5cR5CeCQB0IqH' +
-            'w+ldercDoVTkeW1UJgP6fYkm7UZRhobDdNVZCmlKfKc5OyM5bkZGS' +
-            'qC1Qej3n5yuLlL2iKnCqzXev2e9a8UvniGq/bbSk0JCc7H374xNeB' +
-            'pKdgJddBQH7ncMjPolGn0F64gFvNnMflxmxDCXFboRYUzY2Yd9qGq' +
-            '9S7MP2sAcZ5Ej4vorFTgxbuZeTkOhSLYjSkDolwFXWk85KQGRvSSZ' +
-            'xf7KrTsGCBWUNnMRRylelLsCHPfgDh/QxCAdK3wecOgvwsYZLn1/L' +
-            '8evi6hXlX4Dz73AKfBwD298CvO0S/ECD/VgDzjYD/RCKsh+62Rkdv' +
-            'APWeue43whkiCLbCmcME9qOj2Q78BwDnmaGxDy5hUYAjuF8Q2yxuD' +
-            '+zqcPSrJmkb5hjUShLPrkrWk9agtnMM2qzBWSyqNw041FZstlaSCN' +
-            'eMCsxphMqTgKLfYC4dJel9kZRoU9OnZ8xLnJeSslSp1aZpNDMWLlq' +
-            'YkZnn8mhKylQE8Ol2DSXakpAyUJLj8+cHSvL9fjnBfI83ny7dteUW' +
-            'U8zPoU5+fYpWnaxSLlHkL5HnLczOmJeRmqSUkwrqUMhQ9bztpdct5' +
-            'cvlOrPRV+pd82rFylUBv9dcaCxQFj3xxMGvCUmZ0DkAuT2O4ZD/Eo' +
-            'z8LGoUYiSaJQ80IfN0oELSJMkcq0Ghw9KN+qA0QVOHYLT1yLpM/Wj' +
-            'ABKc6CbvWoROsDj9rI7MjLqCBfBHGxohQC/d1BtWqi+hWrcVlNRfp' +
-            'VjxUpT+AWyUw9N4GhYD5JkB1cvw6z7/G86/Amc2QRbOb5dKAqr8bI' +
-            'q37oOYOQP5d8HUH1N8AXTBv/xYQAZtYfj7R/0HJ34HhgG0Y6t2Pnv' +
-            'zDaInsR6fQVogXiLtGHwZ30Al0BJFB7kWt7yshaTPiCUst6MTMQzG' +
-            'kKOYwEAl1BHigBrn0KnqeW1E/acZ7ET2cl1E3rkGvpnib31QuHSXp' +
-            '/ZKUaF9xcXkE7JcmJ2WkpeURzV9nTLcU53v8q9dt2rT78LYDJ/cdr' +
-            '9l/onr9zn1rNm59cdN276oXCzyeVIs5zWLOsJizyKfJuFSjIpifbT' +
-            'JYvB5vWZk7ULJ89ZrXt+x4Zcv2FzZurVr75rJ1GwLrN9lWv2L0Bkt' +
-            'WralasdLrcRcXWw0Gy4QJW78+JL0APLON414cAfmroYWzWP8U9HIG' +
-            '2j+O7YjR9stY/yT0Xo1xjTYcbTv0eBJNm1o0gs4g24sxETFoVYd20' +
-            '1lUh6pRO6pFWSnayOfRpLqEI7mI1jSLpDApXAeaOfO6CDmTgNh74J' +
-            'Ng+Gb0wRLi7AXaHkOSnsY5W4N8WI33chGHXYtS/gSL8ALmb0UpsAV' +
-            'gfBNm7GwAW2AjHLyBQd69GCbehfXfxP3cWIyYeXtYPHobmBLMTUQG' +
-            'fxgfU92XSVJJdpm47qYedU6mjbBrT4CmcRRGWC3xcl9GdrqEOl6DZ' +
-            'Ln6VWSnC3hwColf/U3l0lGS3pukPF/96KOvx8S4xo/PjYubM2PGjP' +
-            'kL5iWnJKWmJufmZKu0Wq3LVehyvblh28ETNcerL528cOXw6dpt+47' +
-            'tOXJm56FTuw6d3rRr/6rX3vBULtPYbHqXU2mxmFzu8udf2Lh9z56D' +
-            'x/ccOL7/yJlzFxouXG6pudh0qubKkRM1ew+eCL78unf95tALL/t9A' +
-            'Y/LZS8uLi4iyF84Z07VuHFvyh4lamQNz597sEl6EhiGAN3qEZCfmR' +
-            'KHMDh1Em/nBMaGLkgEcR1i40H49Th6sZoxM60VhnEat5mtQVOINcI' +
-            'cYnUY/DovyTo4KZHypyVxseOYzMDmwhWUdGxSXME7PY0cfg6XO12E' +
-            'vW62sSR5Aqqgve8ARz1R9XegYnYCPk/imM8jE15Ba64WpbYwJXnBB' +
-            '8uk7VkA5C2I7QSfX8fg72ug+W9CSN+A6L0R83y2ohXAYsSvoWjYiK' +
-            'mex/B1LUx8bMBI8SZoaivsAs30gdovhaRiXnoDnmfJJKxxxu1/PUn' +
-            'rMHDGZs0JCFR9U7l0lKQjkjQ6etu4cQVT4uNmzJg6fdrkuEnj46dM' +
-            'WpA4d/GShUuSFmVnZymVcoNWYzWbV656efP2vbsPHNux98j2fcc2b' +
-            'Nu3eefBjdv2bt1zePu+o6TsOnB8+74jO0jZe3TrzoNvbty2ecuujZ' +
-            't2vLp24+trN23Zvnf/wRNHTlSfqrl84uwlcrDqpVfLVr1Q4g+47S6' +
-            'n3VlssRSajE6n02A0qNXKAqUxNSUwa+aLsbHbH3tsP7ye6QEkKQs2' +
-            'bQCdf1g//zkQDUexteMwzoOoAx/H8EQdKi2swZM4bNZLC7qwWDbCS' +
-            'ahcj0buGYw6nUP5yHqpxbTno7h3AQvrHMXxs74aMNZ/AResncd2Lm' +
-            'GbFyThFWZHX4Bg7gbESfK5GfwzO2Bt1E7Mu6uB7s6CKX0cpxgb2Gk' +
-            'MyZ3Bk+fR0L6Ca2pOIYC/AZj/EgP8qKh1UVFrAd4ZmK+Pjn4tOvoN' +
-            'idq/AyO/TMknFd5kIgAOtkncQYfB2/MmVN6DsoOUXSDFNoL9cgyC+' +
-            'Mf+1iRF8BGbEi9pxwp/PUlFEDsOs2kvTqVvJpeOkvSzJOW5U7JHyy' +
-            'ZNnDslblJ8/ORpU+MmTXhu0oTxUyZPys7JTk1LTklZkpOTnZ+Xa9B' +
-            'qvV5veXllVdXKF9e89uJLa196bf3LazeuXb9l4+ad6zZsW7th22tv' +
-            'bl23cduGLbvf3LLzjTe3rXll/apVr7zy6vqXXlm3es2rq1a/snr1y' +
-            '2vXbST1t+8+sO/gyZ17Dq9ascrn8rhdbrfdUWw2m00GW5HV7/NarI' +
-            'UKeY5GpTAZ9SaT0VxYqNE5E2aujo7e9eCRtBq2bljLcas4rmgEbw/' +
-            'zWV2EER6BcgqOzwKfsCzlE7g4nRkvZ9EMYb82YoCpGbWUi+jyOopN' +
-            'nUIruBobYVx9HAXiKeTkM3D+BMq1BvSO1qNFcw4Z+xKO/DymB5zBI' +
-            'dGO0LXCfClvQJL8dvD5bEFb7AQGzo7gEzmLdDuLT/AoWtZ1EqO+lv' +
-            'keEcNZ+5sZmBNVH4K5O5gIiI4mhWE+Ob+WaezwSQB/F9gFYoB4A/7' +
-            'KvP2HWG4//LQTN3lbC81uxKg0k2hvwr38rUlai7fPopYnkJmvoqr2' +
-            '15IUjdlaZEKRw7+pXDpK0giSEj5/8klzXNykKVMmEiWfwH7c5AmTJ' +
-            '06YOPG5efNmywsK0jPT5ybOTklNJjp/YaHJYXc4HS6vx18SCIZKyq' +
-            'qqli1btnLl8y+uXr2masWqlatfXvPaG2teW/fy6xtefG3dmpfWrl7' +
-            'z2spVL61Y+eLzz78YCpWXllV4PT6PxxPwB0pLy8vKKyqrlq9YscLv' +
-            '89uKiiwmo0FTYNSpi60Wov1bzUalMlddkK/Xqox6XaG50FxkLSoqX' +
-            'rBg5SOPnHrASHoaRDzR+V8YAfnPoW/qHBqDZ6CL/eBa3C80ldABbx' +
-            '6h7x/h4vphAMe4mDp4NclH9O0ndFOFBroHTub3cHhHBNsn6V0+87u' +
-            'kcIlv0+El3ICvH3Gyc1DzALTwMezbdp6LuUJagHa+S3dm4C7CV3Lt' +
-            'XY699jrzh5QySd+H4+8Lv8bUcjGX2TGM83t0Y/+YS/CqlLf4zDt85' +
-            'i1+6XX+WycoTj52mB7TTj8iY4NhnKEzRdYKu0Pfhaa+yyW9TR9WzF' +
-            'l6y0nv07HF9kGnn9D7pa/nq+ZndtK9mmc1UdV9VhN9A8usRlqy7kK' +
-            '/pNyOSh6IGrMTsPqV6OhXoTC9/WWQBUwiECX/DWIUgF2wFvOCmJK/' +
-            'Ew7eQMxnfqT1gPwbJekip1CvOAYP7hR6EZk3gHHjGcz4qkHbU/QtN' +
-            '2CQkblYj8M7HY6gz/A4ctpJ5FXRdSkmn1zEPEbRdL2MycbHkCGPAP' +
-            '/vQ/w5j8nbFxEhq/HC8xj2Em3Y++BS2vJxTKQ5L3CpMAdPYSy1Acc' +
-            'cyaVCs2cxsaRG4qH9Qkgq6mM1oyQdiaQ8f+bZZwomTIglOA/a/mQC' +
-            '+3GTJ06ZPIFIgbT0FLlCvihp0ZSp8Ynz5yoUeSa93qDXE/An6O33+' +
-            'kmpKKsoL6uorKgiJRQsDZaEAoFQSbCiompFqGJ5aWmFz19is7tdHq' +
-            '/T6TRbrBaLxWy2mIkCbzKajMbCwkKzudDtdvm9nuIii06tzM5K12m' +
-            'URZbCIrOxkMgBlVylyNdqVSajzlRoslqLWCNLk8off3z/g0TSs4D8' +
-            'W2CXZttwyH8Wrz2D8aNTKFyOCQyW9BbsQva/6L7EsEsbF9dGKye9L' +
-            'dnr8lp4P08Zy3RiZs6p8MZudEP+ixSuhR3Mvk37FRvJpFjKJX0gaf' +
-            'OO2CbdsS2mE9sXdmmme6yxrdvIr2xHUDrI39DNk+U/4BL6h26ebP4' +
-            'pjfAKL0z5HduBmTf/khCZJ0I2CbaDoxcOQoXfUHom9Aojj+0W70LY' +
-            'O1T+Y+Fe6A5sO8knHN+hgD9kS7fkfgraY7YCsL8B6P06wPgb8Mk8/' +
-            '+vg/FooW+meP0LAdz1UWwdfX0NhsRmExWaMPouJBIyjjqBf9xSKBj' +
-            'GYeAmRh7kd6nF1SSOuFSWz7zi6sNiL4PeBFDiNaomIRcxfwfzbLej' +
-            'TOCZ6LHkhPbsWGZ6xxHEEwAuoIV/EUotJKfUYq7qI2uB9cCkFwCPY' +
-            '/hmcUydR9WJEOItK1zH0LRzEy0UP/PkvmqR1CP5iEssp6HeUpENJy' +
-            'vPV8fHyBQsS58yZOWXKpMng24+Pmzj+uXFz5yZkZKTn5ubMS5wzbc' +
-            'a0SVPi5s6ZKc/O0qvVTpvdUWx3OVyk+L0E6EtLQ+WVpZVV5VVBf9D' +
-            'tdnu9/pJQqcVSZDIWGkymQmuRzW4vKioyW4udLrel2EbA36DXFahU' +
-            'eiJKjAaDQW8vLjbqdJmZGUuSlijkudZCQ6FRb7NaCg06tSJPo1YaD' +
-            'ToQE2YL/JnNppxM27PPbH5gSHoaJMV2jnt5hB3bTqMxWI1aSjUyFf' +
-            'MKnhT2nCSImvkxVc6T3uNkdKgEMwUkpIhHVPTziMynURU5xsV1CjA' +
-            'rgraI/FSC9FKsFpD/Q3Kz2OYf4cx3OFlNGEK14l76HeG3A8gaUEzc' +
-            'oAf+fwUzBAaZAC/hcvw2akEnPx9w2/EryQtTiN5Oan6fixtkTlphl' +
-            '+a4G8KFrCktvBTA8XuhfRBeuMv0H3CfzzsUITNBhDETg472h6TfqG' +
-            'T61oCoLGILXIVLfkkwHzz5rwKGv8YCEBjhXYtunx0YodgAC8RIYYG' +
-            'D11FAsJ/eAAZoRGZgj7sa7UrGNicwQsRg5ATy5HlJ2kkz7hF3EvNL' +
-            'xRjEBtYvJBQdQ95gaQx1eCD6N6rRg12Hfu/LGHY8hwrMEWDjsxL8P' +
-            'I8wVYfjFB0UdVjz87kUFJ5j0Pg5dJwewrlwFn0pZxFjxbl2GOeUqH' +
-            'XXf3Ekbca8xDqcpCwrj6VonsPGR0kaJulTT3mXLFmakpa2aPHCWTO' +
-            'nTZo0fuKEcZMmPrd0yaLszAxFfu78+XNnzZn5zIRJTz33XFryEnlO' +
-            'jlapMOn0Pi91+HhcnlAgVBosDfmDAa/f5/G5He6AP+D3+S1UObfaH' +
-            'E67y2V3OIod9iK73e71FFqtRHcn6r7BaCT4bjQZlEoF6WjBwoWzEu' +
-            'cmJS1SyvNMOi3BfCcxA8iv+dlqpVyvUxcWEjOBSBLyZyw0GYrMpsz' +
-            '0iocfrnkwSHoEdP7toPPbR/DzX8RE0GbUT6qxHbAvqFfn2xS9cZ98' +
-            'LvEG6UtQ5uWfCpAovr1FJnqcTgkqPXuJCcXnQepmeR5fgMJaYJ9Ed' +
-            'nDV2CbD29/RF6YwoJZs0Q9vUcF3wYRfGdMv0fl/C6p7z1CdX/4dqv' +
-            'PP7+O1nxIwl1gi9cKLIP3/QSnAkJ829TtBZpGRCHLkD5QyKAVw12i' +
-            'G/Eznvz2Mzr+gO2rMHuoFij8DCM+CAusxbvsmBHbXRUdvxCRPFvbd' +
-            'Fh29BRTvLeD/oalBcMD8/DQXiOePIpOIM/osLn48h5BSh27kk5gYX' +
-            'Iu+QYYMdfCq9+O4axDLU2Wr0l7h+TUgp9bCuobdEDY6I8lPED3b9Y' +
-            'hUZ/DkVdRR6zCedRK91qKmJ013PIM1xbyFOvSC3geXCrrxSWjqJAL' +
-            'sacS9atSXqtE5cyrMpXSaHIV2TuHs+ytJKir/tZiWX40a/gGYkgcx' +
-            'S/MImP+jJBVI+sTjurjJE2fNTJifOGfhAqLgz5waP2n6tCkZ6WkF8' +
-            'nxFft68+XMTEmY8MS72oTFPzpg5IyMtOTsjo0AhLzQZXU6C6a6Qry' +
-            'ToKyGfPpfHUWRz2x0Bn99uI38Op9NFPqw2m5VgvoP8aCPHFpu9iJy' +
-            '029QaTXZ2Vk5udlZ2ekrykpgJk2fMnL106ZKsjFSNQmE2aK1Go5Ui' +
-            'f45SkatVKw06jcGgLS62EGPD63Z6XI45s9bxfO2DQVLW8i6OWzNyh' +
-            'PcsKip1GKWqRlFCmYro3qDE/oRLGODN/yKgdGzLEHyTgPB1ujl/wi' +
-            'AnqxZ05vAe9R8IyE9ECWuKqNbyH8CZ7wtb8Ue0ibv9J0o8S7JmAfm' +
-            'TPhIAGdxNCNG9XEIfF9fOJXQK5sPMXuFlK1Mu8Y8dCgsvdDTRgEIS' +
-            'vMZF/kNKMSZESFPkeSV0Y7M32WhJ4wLgE9nB7kX7j/S9jdpPIpBf+' +
-            'wP6Gnd6yZ/oRs3xdcTi4OUfsMAugv86XAiwHYLCm2D/h43M8w9rwb' +
-            'ZApHg9yIIdLHEUIgXrMRy8BaCYQcpxCZudxGBiDSb9ikbiJZz4FBB' +
-            '4/gjsU7Fbsr5gEyadku5e5fl1GFNeB4LgAEYVq1G3rMd15czWu4g/' +
-            '1SN/nsbsYpb8dhiDXBfQe3kc8e0MmrQsL70abeHP51KcVkcx/lWLD' +
-            'YpqEguwVqMpXS0Jth7A+cjA8+BfQdIzqKhfwXIZneosMnsIjf3jUA' +
-            '7A8C7jHf1dk5Sw4jPfWhA3ecK0KXHxcZOmTBofHzdh6qQJC+bPyc/' +
-            'N1RQUEJCflzgvYfbMx56lyP/kuHEpyUk5mam5uVkqpUKn0RSZC+3W' +
-            'Iru12GN3kuJ2unxON1HxiyxWB5ELbk+xzUYAv9huAxeNudBi1hkMO' +
-            'oNOpVbm5GZlZmXm5mZnZqZNmTF9zLfGTZ9NkZ+UzLSlGmWexWiwWy' +
-            '1E4c/Pz9HrNVarmTTmcjuJAWGjniDLuHFbHxiSngE2YCu5htX5z2L' +
-            'mMFsMIm4BV4dS6TgX00TxWQRk/79xMQQqwQVk/mdOdozpz4IPRIrb' +
-            'BELhQi6uB+H0N6gnf8xAm0u8id7yTwUnv/lfOFkd2gg3EJwvCJKCH' +
-            'rcK7iCxkEuGePUpVvcLjhruYFQyqPTmn9JtEDIj3wuT+R0afQCbgo' +
-            'uF3fMYyFPkPxBGfmLjmH8Rvoq+NeYOF9MsfXsj7/9j1FMHBeTPfIe' +
-            'mEml/CMfvRT11OirrblTyNYDxdYDkr0PZBmi/SZKASmD/FfT5iJn8' +
-            'G/HXNzEivJlVhjwlMSeQYQ7bK549zRpJru9pSXYBDQ7y/CFchrYXc' +
-            '0234eaim6Bxivw8/zIsc34DykbYOPQQBn/P4WJSpuie46m2c0KyEK' +
-            'lasjaTcS9zdTL4EiHrPCYwXICx1aN75BTqq5/HpbQFhoHncWynUBF' +
-            'iWa+i0iu2eRYn43GEcTY99/6PSCqqr+z8VfSrX8BxnkOgZsl+R/De' +
-            'zyE4/L2T9JFHnn/uuclxcROnxU+ZNmXy1LiJU+MmzJgal5aSIs/Nl' +
-            'Wdnpy5dunDRwjmJ86OfGvfQE089/syzs+ckJC9ZkJOVlpOTmZ+Xo9' +
-            'Oq9Fq1XqcxajRmna6o0ETzc7Qao0FvtVqKLdbCQqPBoNeoCzQqpV6' +
-            'vU6tVGo1apS7IzcvJIyU/NzMrPXHB3MfGPTfmmdhps2ctXrJ4afKS' +
-            'RQvmaRR5Rq2mqNBoMmjVaoXJqNMbtAT/dTqtjij/tKjj4tY+MCQ9A' +
-            '71sgazO4uGQvw4NhKtoSzZiTsJlZI86OirZBU5WQ9R4HMlBTsbSFQ' +
-            '5DYkwL5TrZaZrkQ2vWQ2ZONRzUCUmnsmoh2C07Ligt9CdQh2RXhNk' +
-            'kq0UT9RxEio/Rq2R1gt5CzsjYoo8T0MtFobBlILJzUE5BRwfpjJCx' +
-            'KQAbtY3ZFjVmbzRNktzGP7aLf2wPDPUKjO0ctFOPRvdZCFXsAVvpE' +
-            'Iz2hBCXoYM5De2fwCl/Gt5EQwZzDDD5DYqcY9g2bnTb/+gxbPuFA7' +
-            'g5/ybcyWEdrvlaD+C/Hp3/6yAWsDs6eg9UWAs4vBEAme38wxYIv4E' +
-            'uo40w9w+gHiimbYip4GfDJBXyjQ9APuoGzBfaALC/HmPHm2HtA1v1' +
-            'thYKw/9XQCS9CptIHEI2uMALO8pWSxY+H0durA2TlBIQSUpHiyQVD' +
-            'k5EkFQwdU+iSnPfXCoE106EuVRQsQ6jB+Y0htJOox5ejQskj+MYWE' +
-            'rG/ZP0GAL4KTxzWuBSwQHLyiXU645L8P8AfJ7AjP2/Z5KefnysadJ' +
-            'EoudPnh4fP2PqlOlT4qZMHD9n5vTs9PT8rCyilGekpSUtTZo+a9ZD' +
-            'Tz770JNPj5s0aeachHnzZqWmJ6emp2RkpOXmZOdkZ8lzc1TyfI0i3' +
-            '6hVawoUSnluQYG8QE3+C1SK/Pzc7LzszAJ5HtHeya8Ex/Oys7MzM2' +
-            'jJTl+0aP60GdMejx0ve+a5yTMSkpYuSU4h2L9Ap1IYNCob0exN+vy' +
-            '8bIU8r0ApV6vVWo3aaNSZDDoiC1JSfI88cvzBIOkZkCMbwNszrM7P' +
-            'mmrghfdC1uHuoA2Y9MuSDY4j0x5FHjuN5QLoJDXouhS9nacx21nMQ' +
-            'DuDcYez0NcFXPlyCeNQdbhyQUyIOoaz7ABOk+Noq9Zg/uFFGO0piQ' +
-            'XN6h9B2lLBChrsJnBWbwE024iJE6Lyw1LsRPl7CFWp/fB5AG3zI7i' +
-            'DiriWpxZjbQRR1yIs74kW3rG7Q7LP/xZw2u+GgzfQsbMWEJXg/0ZW' +
-            'KMJTSbEVnPnrIAqwHbJ9NkC0dyNm+LCFAOReNt0fSckToW97xwtfA' +
-            'VnzCkoQtvXQFgB5tnnRelD1GfgTKfAyGClvYLZnHVqjjQhN1V80SU' +
-            '+idfx3wqV/1ySNitr/9DOLJk8cP2XyxKmTJ8VPnjBl4nNx42NTlyz' +
-            'MyUjPTkvNSU9fvHhx4oLE8fFTHxr7NP/k0xOmTpk1Z+aMWQlz05MT' +
-            'M9KScrKS/n/23vs9rvNKE2QVIRKkSIIkck4FoHLOOScUqgqZAAnmB' +
-            'CIQAJFzJJEIEsykKFGJli233bbbbtvd7bY90z3Tvbs9s8/sPDP7w8' +
-            'x0T8/sPjvz0+7+BXvv+fCWSxbZ6x5LopqidFW6Vbh1w6nve096z/k' +
-            'sRrVOqzfp7XaL22HxOKxet93jdgSDfl/Q73XarUadzWRw2ywui8Vp' +
-            'MTttNg72bVar1WYz2qxqg1YmE9dK6rLyC/dm5xdUVGm1Gp1e63RYI' +
-            '8FAQyTc2BCLBr0up41TH9wpw8FAJBqKRSOcGxHn/hdKHjp05+sh0n' +
-            'cpDszZ/D0vYXUy0tcP0Efo2ygiYCP2Y4zJO2ARrII8vEGD5zkyU7x' +
-            'fKdypL0uxTD9ArPIexuoKDdRUmukBIqX30qiwz+gr78A4YdbOLbxl' +
-            'mYv3IYqnVOzGNOltnJZVMdxFcoRnMgiF12E5c+A2Q2j5ALJ9DHrtN' +
-            'uylDZpKG3TDG7RtgTi9Da77u6jleZoWpntEJv0qeizfRH+2TaRuGf' +
-            'DOEaQz2B9g3P6MjGEK7K+hCoyPAmXw3ZtnqZMbg+sVNP+cRPynXyh' +
-            'cgtX0D4j0DrWzmIKzMI+6gEkQeJYI86dIP25Rb7oxsvZnKMjDfT5I' +
-            'em2Cnp098l2Yvu+BivbwixbpQ2TKvgmj9Bst0rfeGsrLKyosyCPYL' +
-            'y4rLSwvKaipKHNZzUaN2mY0GHRaBWeRKxXZJeW7DuVmHM0rE1XW1t' +
-            'bUysQyq1HhsKocVrndovU4tG4nv8CW226ym61Om8FisntdZqedA36' +
-            'D0WCymixOq93jsnrcRpfL4HKZ/X6Tz2cMBdV2q1whk8gkBwsK92QX' +
-            'Hi0pVahVJrPRYTP7vM5o0J/kgN/nspmNTpvV73WHQ/5IJBgOB6Ic/' +
-            'tdHYrFoefmckP+tX7lIGY9okZD/hTb/B+gTnlrK7RMwx56n5SluI7' +
-            'PMgopbNORY2PAuYphPmVWJsfoOqMX3QVvaRqXhEwzOR3A530FdDFO' +
-            'OD0B2fQSa0x0owcfwi2+lUSnuQ4em5tQm/O4HYFBcR4R8mZq2LYBO' +
-            'cA83cwcPuEadjhgnaoUutEonvJ1maL2DyXg/bTI+ZhwPofAOmq2xN' +
-            'RzXYPyzHm4M2MfA0hkmEGbm9wqt7TXJ1nlBnGeYFX9RUIitJpBqEM' +
-            'TOsAAc+LxI+bdC4TY6Cy0icTCHFhPs7Tg1ghghwF+i1wky9ceA/Jz' +
-            'NP0TH3EDUcRtA9z5+hfcxbNJFytzYjd9DpB99k0bpN1ekmZldeXnZ' +
-            'HPKXl5UUF+WXFOaXFRbIxCLORNcqpQaNSqtSqrQaiVyxP79416Gcv' +
-            'Tk5ZdWVotpqsVout5o40FbZzDq33eBz6bxOvc+j9bo0HofG6+KUgt' +
-            'brVrqdOpdd5+b+6rJGQga/1+DzWUIhUyBgC4UtwaA1EtF53EoN51b' +
-            'Ij5RVZGQXZhWXqLR8nN9k0rmdNr/HGQ0F/G47TyiyWvw+Tyjg4zbO' +
-            '+K+PhqPRcENDvV53+a23vvM1EOl9GgDcCOl+ic3/faz1nFq98b00X' +
-            'gELNt7HhdYocMRCi/fhMG7ClrhNf7oJfyQ1F9Ywtu/CbWF0ozvwWz' +
-            '9Iq1Z7F/SGT9AVM0VYfYTDUnUQH8I0eg/J7lQNxT3cHtOP3OU2GaJ' +
-            'S++UbZCc/o7+mEuLczqpQOEyKconm1BJtzJpaowNu4O11OmATk/0O' +
-            '8vVseYU/ILDdQNedRTRbm8GKjVMg5w/u3n2ZGv4MwIxPZXhnqe3DE' +
-            'CmFVGyHIfYQMfynyVPgCT9CIZv+qTAvbz2yhtJ09cU0BbQM0ibD/A' +
-            'VmyRPIT1OcZ57QnjWFuEYf8oEyVk2Gn5uJdBt8klTd6IefFSnDny2' +
-            'S3vLvIdJvzij9xor0yYEDEQ758/JyiosKivLzC3NzSooKVDKpTq3U' +
-            'qxV6jVKnU2t1ulqZ7K3swl2Hcw7mF9ZJJVK5WGHQKewWld2isJm0H' +
-            'qfGZecwn4d9l0Ptcui8boXbpvJ7lT4O6j0c4Ot8blM4qPN6bJGIM1' +
-            'Zv9PlMvAoI2+rrOV0gU6s4Oz+7QpRxtGB/YYmM0zgGtV6vNui1Xo+' +
-            'jPhpycw6AQe9y2AI+D2f2+93uoM8TCQUaopGG+nq/L7l/39OvgUgZ' +
-            'xWuB+PwvXIf3Y1r0mRsDvyAD4LuoQHwKr5ZlD2/RRVfIrtiiEbUNJ' +
-            '/cJQouruOGUcfIIdcdPAEcP6VTrdEwqIcWU4F3YJ5yn8y0YPB/Dw3' +
-            '0nLc39GHrt/TSu8h067VNovW1wG+4j/7XFASYB2iK9rqTd1Y5Uyay' +
-            '9KhR2k8SW6PU6PdcqqYMFemWG3C2Edh+QWNYhCsbi+zmB/xOy/Dex' +
-            '1O88oHsYMXYO9vu5V+rnNoCqXpb5nST25iAawV2DgzBLO9Npnehmy' +
-            'GUYopDRFE4yBneAhYb4qBHLEZPfMYOi4Fky4ycI6mdJGy4Q4E/RJ5' +
-            'wuGKC3s0TpGSPn4mGaSJmj8S6SUB8jb/gERBcWf2bxxuXfT6TfkFH' +
-            '6DRUpN0GyDqlyc47m5mYX5OcV5Ofm5eaUl5ZoVHKtUq5Ty1VysUot' +
-            '0+jUVeK6XUdzdx3JPlJcKlXKpAqJhEd+q8JqVtotakJ7vdfDvXJ2v' +
-            'ikYMAR9ao9dG/BofF5j0GsIek31UWM4YorW2xsStoYGSyRsDgXt9V' +
-            'FbrJ7/ok6rMxnzSit3Hy3Yk1NYp5BpjVqFSqlVK71uh9/tctktNrP' +
-            'JYbVwKsDrcvo8Lg72IyF/NBKOhILRUCg7++nXQKTv0OeztCbXC2t4' +
-            'GUz9SCD457Qe9PfSRtoT5IZSFShLuKsbdM+3ELS8ibeb+NMDVKvdh' +
-            'pv5AIHQm/jwFt6uo0KBJb+4OfVtcJIfQbuxANc20otPcZOpLBubNQ' +
-            '9TJkRqhuJUN7Fg7g0ssDWH4vcNobCftl6hcBSFNuv0LGzbpG09LSz' +
-            '5ECHZLfoRH9Fh7LpMpD/kZhaFfdi66rNpRvsUOrNx+N8LFTBAOyME' +
-            'sHMIAY1RqGcA9V8jQHXW3oet/8hHikgdsKJgFji6hmqv8Z1OcXx+e' +
-            'RQVBOx1hjB/lLYZGicPieE/TdsYGfwjpAXGoRruwvy4hWH2GL1ino' +
-            'Oel2IsMNEt02F30CXy9xHpN2GUfkNFmrF7JOdowdGjWbk5R/Lzc/k' +
-            'tL7emRqRVqzhrX15bU1dVoZDLtDp1UVU1Z/BzyJ9bUqZQysUyicRs' +
-            'VLrsMotJ6bCqvS5DwGcM+PV+jzUctEYCBg7zvU61x6n0OjktoA8Fj' +
-            'LGYJlxvSjRbEk2maNwQiegCflMkbIqETAG/0WbTW8zFtWJBdvHu7A' +
-            'KRVKo36dV6tU4jd9otPrfDbjWZ9DqLQeeyWznw93tdAa+b2yJBfyQ' +
-            'Y5MC/vHzzayDSLfr6LK3JlXgJ8rMFHP8obVGYd9PyQam45U06FfMl' +
-            'b2KgsvjhDbriTfxpg761iWjkXYSzNqDLbgNat9IG/G0wE9g0uYt+t' +
-            'o9wwBPMphS16UnaTT6A1nsC8T6GmcQG/z0ycVmj5mWswzhLoYwezs' +
-            '4XCi9z4E99TW+ncaRvI9p2G/kylkm/AytuHS2YWMLlXppIf0TFKat' +
-            'p6d1ZAC/rtMxB9FUC5Ku0P4qWzpP0CYvzDKQh+TAhOUsHj5OnMExa' +
-            'g5UGcG8512CUdqZIF4zRV1KXm8ACwdPA/BnarmNtmvuUpJghtB8jy' +
-            'YwA9qeI1XPnsyJ9gF/kY7SXfB8jfIlijHNwZr8okb72o/QbKtI9e0' +
-            '7mHD2cm3s0L4+3+YuL+DJeqVQql0ll4tq66kpprUitVam0qiNFxbs' +
-            'OZ+8+nFNcXq5QycQKmcxqUbnsKoeVj+f73RzIc7DPbWq3U+12qJ02' +
-            'ncfJgb/W79EFvLpwwBRP6uPN+nibtr5JGajX1zfoo1FNkAd/QzCg1' +
-            'hsMZlN5nURwNF+YnV8pFnOgL5FJOf1jNZuCfi/PELIYzXqtzWJ026' +
-            '0um9Xl4FMAoYAvHPCHgwGl8vLu3c9ftUhZHGmGMryNL0L+J6jH/C4' +
-            'pqR/QDd8FyTZFPL4NY2MLOSZ2D9dpQLIg8wo4Bkx/sddVMBBuwLth' +
-            '4Sz2uoXn2oSae4xo5F2M59ugKzxATu0RRu9jhEBvw6q5DcX6GDbYY' +
-            '/z1FhEame3KYj4LSFz202qM/YzNgiqbu7STUsezEMtT1FQ+gTq+AQ' +
-            'ncxucpkf4BLQe8yvqwgcw5hjg/B+99rDcC8q28FsjI6KMoUGq7lob' +
-            'tHOAPEuAPk1IYZDjPeKHwFCboK2z/WloimHkBrCxrhLg6HLYvwl5l' +
-            'ImXIP0LbNXKCRhi3hxMdGGgpkd6Gxfskraz1cZq5wiKQ25DnvS9Cp' +
-            'K/3KP0mipQzxvbvs2UfPZzPIX/OkbLSYom4lrPlZRz0SyXSulpJXY' +
-            '1MyiGwVq5W7sst3HUoO+NwTnmNSCKTiLVqpdOmdNkUTqvMapY7rUr' +
-            'OEI9FDEG/PujjzH5LyG8MeDiloHE7TaGAuT5sjSd00bip6Zgm1mJI' +
-            'tOniSU2kXhMOm2L1+lBQYzbpjYbiqirBkRzB4ZzCqiq5UqFUKTUqm' +
-            'dGg9XpdoZA/Eg7WcxDvdlmNepvZ5CaSJ8/w93gCfq/Nmnzrreevep' +
-            'Sygzk79uJLkP8+LIpPUHT8nMYkY//ewjoOt5A2ug8eKWs9ugw3k4U' +
-            'cZzE+b9KHS/R2jW7jOjpXPEQm+gZyUhtoK7cJZ2edthVMtGUkO9i0' +
-            'ug32MuNU34J3cx1S2oJA7kPV8jNOKFwi5J9hS+iSNTtAADhByD9AF' +
-            'BfGYJzED3ETqbRl+Nc3adYw3hSL1y0h17aNAo3fEukzQk5WeDuCBV' +
-            'yYqZ8Kzg8BrvsI0tkOt3XT21GWHcjI6KfgzxBhPqcjxijmM4NubwO' +
-            'UEWCnGiWtMYwg0hBtfYTkQwTp15AUThfpu6QWh2njkL8PWmCYHvO3' +
-            'RUpfZMD1FFHKdQQctpCQuo/fbgve6ObvLdLXdpR+A0XKDbDDWfkc5' +
-            'ufwsF+kUMpUKqW4jvunViSqrq6qqKupkErrFCpFrVSScTR319G8/Q' +
-            'UlYpVCpVHJzSYVb9vbNB6H2utU+tz6SNCejFtjUd6GD/st4YDB69Q' +
-            '4bLZwSOtzWxuilljMEk/YWzp0DS2W5k5dQ1IXi6tDYXUooOeOsVsN' +
-            'VnOVRLIru0BwtCC3okKmVKgNWqVCrNer7Q6L02nz+dyRkN/vdloMO' +
-            'rPJYOPrAqxel9PjcbtdTrfLv3//nVc9SlfJQ+Sm7RmBIPYi5F/Hck' +
-            '4sCcWcxNtQUreQeriFw1JhpS0EFZkdskjbMu5hlQbbIu0skYu6Sk/' +
-            '6LgoTmI5LTZ9lRC/X6f7n8MUNUBeug/N8Py3R9iEYbqm41s00cuYD' +
-            'RGXvM/+ICldnwVGcBF9xkoCxB0Yya1YzRtDKfTImEEyR05QKvj1AM' +
-            '4274GNvQ0GkAOHzIt0gss0Eq4dNmd+sYhdvWVRnCFGgHsoC9IPwz9' +
-            'LBvWTzc/h/hT6ZIqo/a+kzhtgRywgzf2EMaqKbXvvoVL0U4OoDMew' +
-            'zIiXkH0tD/mv0dox+kd8WKQxaxlF8gH122CLCEY/xrXUEuhe/CJG+' +
-            'nqP0GyjStzI6jh45lJNzOCf7SGlxgUwmlkrFlZWVVZWV1dx/FeWVF' +
-            'cWiWpFcpSitrhYeyd2VXXiwpEyuVWmNer3XpQv5NF6nMexT+z3qYM' +
-            'DYELM1Jq3xuD4cNEZD1vqQzuPQ+ZyWSEDrd5miQUss7GhstCabdbG' +
-            'EId6sCsfUkXpDQ1wfjRijYYPbabBaRApZRm6RILuIv5BGpTUbxeI6' +
-            'rUZhsegddovLYfe67E6bWadRGXjOp95uMTnsNpfL4XY5PG5XdvbUq' +
-            'x6lm6Q7BgSCDoGg/kXIv41RsQXH5D5KS7Zxn7ewv4199uFDGkWMBs' +
-            'OYkFOkaG4g17AIBgKzix4hvHkzzYW5A0fmFm5+A54vm03M5F5Dvuw' +
-            'eAqTv0DGsXv4RlGPquxsgQa2D88AojjPIaU4Q7A+T0KYoBLRC2Mjh' +
-            '5BVkXa/R/c/S1zcw7+4jSXcLnzMl+wC/7MtEepfoQxOwokdJBYwhD' +
-            'zuKNO4w3UAvbRxQX8rI6CE7f4TInL20ccjPG/ypZs4ZGSM41Ri0yS' +
-            'C0yRDiRSPwI3glQq7BAqnCCVrS8Trd5yYlQWZY0S5t/HmINbr2eZE' +
-            'iWLGNEfIA4LP0WX7CAmyeTfpk4QsS6Ws4Sr+BIuXmQmam7eCBQ1kH' +
-            'Mg8f2l9clF9dXVleVlpWWlpWXlpSXFRUmFdbV6s26AoqKncdLeC23' +
-            'MoqrYkzuI16n1cf9OoDHn3AK3HYtJGQOZmwJBOOpiZLvMEci5ojIb' +
-            '3frfW51B4Xd4w5GnYlE7ZEgzWR0EXrzYlGU6LRkmgyNsQ5rWGO15s' +
-            'DXqPVUqdSZuQX7zqS93ZhsVSt1JpNSiWnAeRGg4a/rEFnNRstRp1K' +
-            'JdNolAadxmI22G2cO2B3Ouwc/peXX3rVo3SdgGtIILggEMRfhPy3Y' +
-            'MDcouGxDluCvb2541+IfkzrW/0lNdv8a25foP01P2BE3+f70vPbrw' +
-            'Si7/FfF/1EaP0LOvJXtP2znSOz3mdLevF9+DP5ykQ61f9EF1qD3cI' +
-            'nGenzf7mzxIn1n/PPov1z/lvav+KfVPYntJbWXwiyPuSbiFr/Da3D' +
-            '9a/4q2S9j/u/h8DmFEyyLWJ1jlKr+UmEwpiUbuLxt8COW6HlSBZJ8' +
-            'kz4c3SqWfrrOmTLtqd058v0Q6d+x5eJlPfUKMR0lZCfkUiH0cCBhe' +
-            'gHgPmXaX8IH/J2e0bG5YyMPgryTBKlfwZ9fljMZxSwP8QIP3TYNKV' +
-            '9ufNfJiVyFQeMo8RgLLVeML/tdOyZJbN/jHVphkP6WyJNjeQHiD/c' +
-            'gxW6liaKW3BON0hQC1+oSNNG6W8Yj1tplTJ3YSwtkVV8AzYwC5bO0' +
-            'odLdKq7SIneTQvF34Jh9plRCjtthkbIChyBbZjQtyANvupNuLNO7j' +
-            'tphvrLRuk3VKS7M6aOVmiycvMPHTp4cH9mYW52UVEB/ZOXm3u0qDB' +
-            'XrpIr9ZrDRSW7svN35RaV1kn0ZiNnihsCPs6Y55Bf7XGqvC5jLGyK' +
-            'RQzRsC0RtzU2GmNRrd9LJV0uLU/jD9hiUUeiwd4Q415N9RFrPGGM1' +
-            'uvr6y3xhCEc4TVCOGAwm8QqRUZ+4a4j+XvyC2ValcluVSjlkrpqpU' +
-            'Ki08i1WoXRoLaadEqFVKlQaNQqI6cLLEab1eqwWe02q0jU+apFytC' +
-            'Gs2zPCgSBFyH/Bo3bmwghriKmtEwDaX7nHrS/5Ntsso6dbHEufmWT' +
-            'v6C3/6+w7T+zNsgC2Q8F2p8K2/5uZ90r/k9/L/T8DaH3b7rWC0Q/E' +
-            '2S+j8abD8FZpTIELO/Cn5PvtP9f+bsS/eHOh+F/v/MtDvlFP/vt9v' +
-            'uJv+UvlJkKbC7Qtg3Jcyb9ADO5SYwbcI4YY2qFHnYRxS/biKdN09s' +
-            'pksYGBLsBG5456Ruov76JNN8/INJZZp4R7A/D++CQNtVLgVnmVxDk' +
-            '4XYu7d59jt4O0P4Vwu2xtI2t8ztH6/yyBv7X6MP5jIzrVOo1RIGgb' +
-            'soUjKYlAiZxhom01b5YQGwWjdpGSWIrLxIpCzyy1NXS/59ImXH7ZY' +
-            'gUo3Qnz7WNyPlt4OdNuMk3UPrK3cMYyJDT9Mlamu10GwZzigx/+zO' +
-            'jlP/TGsB2E3e1Dvv5NubyPVj7T9KqBe/jQi8cpd9Qke7Zv5gvtedL' +
-            '9IVSbW5l3dH8gtzc7Lzso/l5ObnZWWWlxRy81ikV+wuKduUUZBSUV' +
-            'kikBpNRa7OYIkFzNKD2OJQumzESMMXClljY2ZhwNTc5W5o55DeEfJ' +
-            'b6kDkaNEa5I4O2WMTRELVFw1batzbEDKGwLdbAbYZwyBZvMPl8JrN' +
-            'JrdftKyrjkD8jt1CsVetsFrlSXlNdKRGL5FIxh/9ajUqvVckkYplU' +
-            'rFIpdVoNB/4Wk9FkcpaXn96/f+pVi/RdOnhAIDglEARfhPx3kVe6D' +
-            'lBap0swCtkE3QnLMt/nrX1aZoVdFJ32/4qPYO/s/5rZyTudkNv+js' +
-            '7GG9LCxH9k36XD/jpt6UbWePb5TqVb5n00T/6X5CD8C5LbvR0t85u' +
-            '+yk/5Pvmsf7LsV9zGWkALRD+inb+nh1pA9cocbRys9VA+tw8tTW5D' +
-            '/lv0pMzgX4MuZo78NFLk8/TXOWRhttAyZRtT+B7m0e8iUu6hmBpKj' +
-            '8+Mw4ZPEe9HCK6v0NZP6H2O5XbplaUDxvHdRVrtax7tiVZRxjUK+h' +
-            'BrznaNQj07WoZ22OLvCygiZlT/afJHWNJ5kO758yKdIxRiP/Hmqxb' +
-            'pSlrWbBsIvI3k6S1QmG5iGs7jhGOpUUp/XUnzxNPbL6eN0p2gzTZS' +
-            'tBs7o3Tnhu99tkr3CTK2j3GJLdz/G5HuiHT3W0O5dZZ8maFIZS5Um' +
-            'PLF2lyR9GhZdXZ5TVZxRWltrVytqlMp9uQV78rO25NXJJLJ9GaT3u' +
-            'M0RcNUq+XkDHtjOKANBazxeldTkrPebcmEqZ63+U0hn7U+aAz5XY0' +
-            'N3OZOxl2JmIc7oCFiCvnN4aC9ocESjdgaotZ4zBTw2RwOtUH/dnHp' +
-            'rqMFwpziGpVKa7VIlfLS4kJRdblUUiOtrZGLa9UKqbi2RlpXq5DJt' +
-            'HqdxelyRRsckZb9b89+DUR6j25gmLg9DS9C/ns42xauxZILLDw4m9' +
-            'bKAMtO8cj/kA8Ic8hMzedp/18A+ZcJ+X/1WeS/vrM2iudf78B15jM' +
-            'gP+sy9N4O8fU3Nv//Qdvf79DYOI2AdRsFWdTGkCF/+ub5d/xyYKLv' +
-            'CUo/JQFexxNN0tRgzc360uS/DUrVdXr7CF4wq5pZhaHL2viwX3MMt' +
-            'tMKsir3UJFxC9m0f1ikM3SeKeRb+9Jw/lpa5neYXhnsMxeA27+we/' +
-            'd5GPDcNoDQzQDr4UnWPqv/XSLYX0A8h/H/Wa82ljKeSGvUOYHqML6' +
-            '7RQZfbryI7m1sybCr9DifF+ks+3HTSGivRKSfGaXgy91loxRe8AaS' +
-            'aLP09WXcwCRNyXU8yA3EUW8gx7qNuH3aKP2Nr80edhlkyy0g/12Ec' +
-            '+/xdCm+2vc90DWf0ddvwIx/I1JepLszRgrklkKlNV9u4PA/X2bKFW' +
-            'uzaxRHa+RZleJKmZKD1hqZLCOvkLP59xWXKY16s9NuCPgN4aDO7zE' +
-            'GvBqPS+1164N+a0O9PR6z8jDeYInVW+rDrsa4tSFsiAS8rc3OZNyZ' +
-            'aHDGY45YxBIOcpsx4ONUgz0WtjfUW2MRk99rcdo1Bt3BktJd2YUc+' +
-            'JeLJQa7Ta7RFVZUlFeLasR1tdy/nLWvkEvlCo3ZbPJHHPE2R0ObO3' +
-            'nMXd96MGv+ayDSRzQkxinO/zJW5xptU2laaRqjgoUNGUdobgfeeeS' +
-            '/R3b+Xwt31ur6Eb++Ia1LSMi2KLT+Arb3DL/lPfjtRVsytxH5+SN+' +
-            '9XbRL1jw/zcaQfQDgeg7/Eb2ubDtv3xm1RXOU2DRnrb/Rotw/UJY+' +
-            'iv+66Xf5o/0/GtQL2bolSnfBere0Av/ayMtJ7KMNBwjXbyXpo5X4D' +
-            '7Tg/CnuoN8WeqYGzDbmGH2eZFyv/goWdFTxB3tZk0baGcoDXgnUrx' +
-            '9pJh7KbxziXg+5xDquYyth87DLP8BkEUnUQW8iOY8c5QIGKAqgB7a' +
-            'hpACvoZrTaHKbJF6TdDaMcINIqMOoh3o0udEeh3wsvqVi/SloxQFL' +
-            '9tA4NtpXPpVKN8Z2hlDoH4m7UMWA7mOwMtWWonWe2k8/Ft4fBauWU' +
-            'OEcAP4z3z5h2jewmdRqQfvwzQu6OdH6TdUpG/tGylQWvLl5jyZoUB' +
-            'uzpcZj1YpjlaJj1TWZVeKxXKVyWouqRYJj+QJj+YeKi5TGXR6h50P' +
-            '79SH1V6XOexXexzaoM8Wr7cnYo7GhD3R4Gpq5HY4F8AWj/FxnvqIp' +
-            '6nZ3hBzJROOWNQaCdvqw5ZI0BzyWUI+WzRkCgVNoYCWUx8Ws9ZkzC' +
-            '6r2nU0nwP/cpnc6nbpHK5iraPc6K4yeapN7hqjq9bsVnujxnCzPpg' +
-            '0hRLWUNIVb/M2Hjty9MrXQKR36RIjAsHJl7A6b2OMpULfK/A0N0jX' +
-            'LMJzWQXy/9cdimnWo8+uSPXfBVn32WrvQuufwuaf4YWg/SlbEkuQu' +
-            'cVH/nlg/8Pf1gUcgPPRng8/pyMeCD1/w/ILgtLv71j+nv+VTyX3sI' +
-            'VxHyIRtibIui20/oVA+0s44LNIiHO3MSkUXqRk9zS9XUYWjI+XCne' +
-            'qWrbRw3YbXVa2MYlS6pu5WqlajBXo8VQS/xZ9yOqhZjnAJ6P9Ksz4' +
-            'C4S9lwnDBwHXw/jrIFbgGoO130+vp2i7DPy/AI3QTbQfpgJY27exV' +
-            'Fd/9PlZoChQ6pMxMD+vUF/oCcoRTEP7LKSpjMk0PXWN+D9znxUpk+' +
-            'QkMlBfnkj/EaMUmbWbIEKvgQixDd95hY1SGgwzZBfRKN15nDk68wI' +
-            'M6RuYj3dRwPUIjTrvwEnfRsJ0HnSdh4i7Mtrke58ZpYJ5IPznR+k3' +
-            'VKR73h7Jk5nzpKY8KWfwG3Mlurw6bY5IkS2S5dbIFBqt3qjPKSnjO' +
-            '/YczjtSWqExGnUOuzlWb4yGND43B+Aaj9MQ5kM93Id2zrBvTHCwb0' +
-            'nUm+sjnBdgrg9ZomF3Y6OzIe5KJLyNSWcyZgoHTEEf38AtwNv8HPK' +
-            'bQ0GDz6OjOH92eSWP/DklxXUSs9NpsjvKdfYSvbPK7BdZfLVWv8wZ' +
-            '1gYT+lBSF2jgkN8ebXTGWt2JYwXFF78GImXVH1MU7XnhmlzXoYZWM' +
-            'FqWQFRYwkWXQShdFmSugULG4ksf8qtoZW7w204XqUlSUkuCzCXan9' +
-            '/pKJXJyhNICWaS68p/6y6nC/iVszLfQWeAh3yKll9X60N+KS5+2S/' +
-            'ugG1BZsqG2eBPlUk858xPQG+4g+xGel6bSWmZ7nwaXvAE9OYqQm3b' +
-            'aTURtz/bUJexfeaRXllCQm0R2ZZNeHBrRE67SS2OJ1LMSTKn+8l0Z' +
-            '2DbCwDvx+f9hNuDhPNjaevtMlbnAH1+gQC/l3YuIOx/lZC/DzvDKP' +
-            '4dRi8I1vx/nnK+rCP0zhqLRPW5ho3tX4KnsEKwnyo0YHEnpiy4mzl' +
-            'PPNhp2iZIpBNfpki30ZHgHzlKd4zwtFHKz6klECPTRim/kzZK+bvC' +
-            'KOXvhFXzbabFTDBKd7JsqZVTUlRPjFL+DLeQEf5HjdJvokj3vH0pX' +
-            '2HjbP4ChblAbsyVGnLEmuxq+dEaRVGdUqXR6HTa3IpKYV6JMLsor6' +
-            'rG6nSY3C5jfdQU5WP1lkjIEPQZOAM+FjFGI65mztpPWhIxczxqTca' +
-            'cjXFbImpvqHclkt6mJlc87m9tssci1vqwLRYyBjyWoN8SDnEnscdi' +
-            'Rr/fwNn8Bn1uZeWuI/m7juTlllcZbVaTzVZt8BbrHZVGD2f211p8d' +
-            'Xa/whVWe+p1/gZLpNEabrTXN3PgXyHipsnmqxYpIyGMULSn7UXIP4' +
-            'tI4wJsg1XcKsscpSoIZvHJLfCW3wNp+TZMiOtIZyyCCT9Leodt1xG' +
-            '/YjwEFhq9kRZ+ZCdJtTd5ACLrOspk1uER30bJDE9tFfJ5jZvQkkuQ' +
-            'Lbs6e7RpuuIC6iC2kCLfTJPVFlqXPwTt6hFOtUiPvATXfgUkjevIv' +
-            'PMN/wkk+8lIZkSaHiD/IGC/jzC2F9TNy/R6EbEd1pB/OtV7TSi8Cg' +
-            'XBzpYK9Vygb11MXYg69lwi+z9FAR1D5GeQPmRW/TQVefVyx0NrDCF' +
-            'xwP7KWsDNZvBpgmF4HOzOeVdFKLwEh+WiUDiE6PSNL0GkqzjbyptR' +
-            '+rqL9Na+I60lOm+hylakthUoOfw38TZ/rTK7Vlki4YBfq1apc8oqO' +
-            'Qt8V3ZhYa3E4nbpXS5bU5M9mTBHQrYYH7oxRsKcwW9JJrztbc7mRm' +
-            'dzs7Op0cnHfPiSXns85kwm/W1tnuamQFurMxHjwN/g9+p9HksoYI9' +
-            'FTaGQLRqxRkM6s1ln0OdXVnHILziSl88pGpdDo3dnF5wo1vsqjN4q' +
-            'q6/WFqhzBGTOkMob0/oaDMGErb7ZGuF8ijaJ5uTujM1XLdJNOv849' +
-            'edPvgj5l5FsugHGaaovxAoUzTyxg0aRnWTHsL6yj7FqzH1kHFahsG' +
-            'bpulNwXhagszYx4Neh8ubASWB8s3tg198Hw/k2nWedYSx4Jh+kRSw' +
-            'foLzlOkypBUyoWWjMcVhBGwiRraQVuWzRDPoIhtkd8PEW0upuVlPm' +
-            'PfpjsNjsBCt3IoztSYvtDKQqwhCK7yfQ7hYKObg+sXv3GVIEl4nhP' +
-            '8TINuiNP4OGaf2E/wOA/XNC4QUEgpgu6CGuJgfm3YDx1OeDaP45mY' +
-            'rnk8HPXICLCBD1UUXwKNZ8Gdkh9v/mzlnjuCsc7FNfO+71PG1nhcI' +
-            'r9DhD+Im/EJFuIPqdinm+GaWvuUj3Zp0oULvyFNY8hSVXytn8xpw6' +
-            'TU6NPLtGUSpRaNRqvU6fW1G3K7dUeLSoVKqwuT0Gt8fV1u5oSjiSD' +
-            'Y5EzNbAx3msybirrc3R2mptbOQ2czxmb0xYGqLWWMTVmPC3tQaOHf' +
-            'O2tnhbm5zxeks0bODjPBF7POrg9ALnFCTjjvooh/xGo6GwUiQ4nCf' +
-            'ILsirrLY4bCqtZ2/mSG5NpMzgEdlDYlek1h4Q2wIqX0wXjBvDSWMg' +
-            'bgkmHbFWjbVjd8baqxYpswE45/H8Syq5ZlAjMA8O8Aryy4xNOoccE' +
-            'DvhDYxJZoc8wZi8lUZmXkKschLfHaWzXUOEcwERsDnyR1hPmPtp5T' +
-            'CpunXWw5DREu4jkrmVlqK6DXLsLZz5Ho3q66hqnIfTNIX5yB6WUeA' +
-            '20wpnHsOOeogOWuuYO6mZMg/yxiYuvQIQ7kHW9TIMew4VhwnS+xHD' +
-            '58D2LIEnY+l0E3Oyn7imLPYyTJg/mOqWQ82FRpHqPU/xFvbds/TJa' +
-            'UR+ekD75N6ezcg4Q3c1haItVqs1jYUgJ6GSplgzByL5s4KCobRa4F' +
-            'GceZIy44sYctxPyd3YGQL/Hnoc1uz07BchUvZTLsOIZXHRN6P0NRd' +
-            'p5pELeSpnnsKWK7fkyix5cnNunS6nTpUj1ooUGoNWyyH/wZJKYU4R' +
-            't9WqdA6XxxIIuNvaOJvfwln74aAhEjRxBn9j0tnWYmtusTQ1mRuTt' +
-            'iZuS1hiUWs86m5Metta/R0dPs7gb0rY4zyTxxIN2RP1tjjvEXhbmt' +
-            '3JhC0SUhsMOr2uRCQSZOcLjubllFXoLAal1vnW3pFDhe0iV0Otu6H' +
-            'OFREZPXV2DvkbNP6YIRA3BDizv8VR32Lyte7Zs/KqRbqJ+HaPQND0' +
-            'EpufWSnXMTZugF08AUbxOrxFFj9cg6/KElhrsD1SHaXW4IywGOYkB' +
-            'ts0eKpzyHezhDW7yk0M4C2YIptIb63SyW/QqTaQmXoHafFNMB9mEL' +
-            'qcgaKcR9R0ElecRsxzHmSqDXjNa6iqvomnvgkb6QZmxyaoemtUjTs' +
-            'Ds/lSimlJzdAY5Z41/L8C+v1lwu0hqo0axIoAA9QbZ4A10iG0Z+uh' +
-            'jKEx/jV6y2395B0wm/8CtMwlwvAryMMOUOTnMqVux9EIKEXgGUBfo' +
-            'AEsATZAyugarQ7TT93+J9EOegx1xHzOgpLj82kiHadBtUCa6wL3jD' +
-            'Qsp38/ka5j/GzgR0xx2N6M0tdcpJmHr+RzyK+05Smt+QpLodpeoLT' +
-            'kyfT5Eh2H/DqdVq3VHigqE2YXCPPKpDqjxWY3+3yO5kZfW7O5nu+3' +
-            'Y4lFuLe25kZ7c7OjrU0fClli9Z6OY5ZE3MYnfOPuRu7gNm9bi6ul0' +
-            'RwJWepDBs7mj4TsyQZLPGZLJvjsQLzB3lBvtFpMRmNlnZgh/9GySq' +
-            '1BpzM6MzPH9h+9KHLHK60RkS1Uaw3IPfVKf1wTSupDSXOkiUf+eKs' +
-            '92rpv/8SrFiljEHGK4JxAEH0R8q8gKsgCtisgqjFn5BEqiGfTBuoi' +
-            'tNU2OGx3yU9hzLHttOPn06yLRSSspzA41+CkbKKKcB50ppW06NYiH' +
-            'vAySlRmST4fwdxixIYheswJZB5XcPVpdMNgKngOJtZ1eMTzcJAfoj' +
-            'XibeFOneZd/FjrIOyx4p0bQuEyFsMaQZkta4zDkPwKxUbOEyr2Es5' +
-            'zJvFFipOwRU/6af8ifc7tXIHlz5QCM/XnEe0ZTTv+MkWKLsGtYJni' +
-            'i0D4QQR8hrHayxUy6S+T9ulNc0xYpUA7ioW70b1/Lq2r8ynyKc6zC' +
-            'BUwKl2kLL49mTYC/4dFuoHk4y3UN83QiLoJZ/nNKH2dRbrnwDk+2q' +
-            'OyFyqtBQpzkZbbseRJtHlitUgq1+k0MrU6s6BEmFvyVlGlWK02W8y' +
-            'uSDh4vNPf0cbBvi3ZwOE2j+rtrc5jbdZEXKbT12i0lsZGYyLu5DRC' +
-            'POZIxH3H2r3H2jlFIDPq5SYzt2Pk3IFk3JJM8PqC8xcak454zGCzm' +
-            'kyG8tpaYVaO8EhuVkmpxqDTGh379w/s2TdWbg2J7PW1jmitPSz3NK' +
-            'iDSXUgqQ83WmIttlirPd5mCrTu3Tv8qkU6Td4BZ7B1CQShl3B7ZnH' +
-            'YHPLRzK1YQtnICgbnMp5iBsyiZdSGv5PGQGDzYh3ZZ5bPYnRiprm2' +
-            '4OZs4PMF5C/mkLZYQS3DEpTXFXqbanKyAeoUC5yO4OBlPNQM/F/m9' +
-            'YzQ6xi9ZdK+h2T6NioiU7Pm3bQpcx2UPNZNfVkovE7UxymUxPYRNr' +
-            'IAey8hP0PpMwTUrDHmeTLXe8iSH6YPu0kv9JD9PIFtChm3O2k1O/d' +
-            'IFFOI0E5QIVhvWuLgEig6I4jM9wHeL2VkXKF2PdcQC0o1fz6ze3cH' +
-            'nYEpkRTbZwgnOZOW3r1KrJ7xL0GkrPn8A3S4YubxMiHSOuiOb0bpa' +
-            'y7SjH1n89WeAg23OQoUlgKlOU+sPVwpyatRSFUavUEvVqn25Jfuyi' +
-            'vNyC+TqDQ2h90TT/iOddgbk/Zk3JGMW+Mxe0ujp7PD1tiosbtMHr/' +
-            'B41c6nJ5jxzxtre7mpKel0d3eYm9qVJrNcq1WpjdqPC5DQ9TelHQ0' +
-            'NdmSjW7usKZGazSis1pNZs7mrxMezhPm5B+tqNKbjUaL/VDW0O6MW' +
-            '0XyhhpHQ6XJL7L6xc6Iyt+oCbcYY+2m+hZrfYs91mrwtL311uSrFu' +
-            'k4jcZu6tIceRHyb4JsMIEc0BjMklW4pWs0ZmbgeizAXFlA+HEdBea' +
-            'pPuHXcdsb4BexSNQ0nXATSxKsIYu9Co02j/tPabcFuplrILJOwYdl' +
-            '1ssjRLQmkf5mOfFRWE0LyHEvoCZiE2UvD3DDjzF3NuB2PUSp422sp' +
-            'sq6r9wTCtcpE8qB/0LGTrOFcZYnpe73/eh+30MJ0Et06SFK64yAyr' +
-            'VCzzgOafwPiPQWejgwd2MQzPxJBHN2Ij/o0saqfVMJiB7SF6dYfpl' +
-            'eWWvoMVr8d5a1d0NMqRsMH+5xxr8EkbKKpw/IPH4q/I0RewMIeePN' +
-            'KH3tRbp7z4VCrb/EFC7RefOUNt7gF2uzq2VFMo1Sr9Xq9SKFPCO7Q' +
-            'JhdsLegXKHTG80WVzzubGt3NDdxYM7Z7bbGhKej3dt1wtnUojRaYs' +
-            'dOXJlfV5lthmAg0NHma2txtzT5Ozv0Hk+1RNLZM5A4da5Oo7Y2RPk' +
-            'ccWPS1drsbWuzN8ZN0ajV53W6XLUK5e68Ym47XF6lt5iMZtvho5xD' +
-            '98HRss4aV7zC6BPZg1LO5g+1aiOthkirJd5uS7Tb4+0qW1tGxvSrF' +
-            'ukkXfoq2fwv7Nh2H9TfWSTvfoutvcRKUDG8r8MuXQJJifmYKbtiC1' +
-            'yyR9i5hVgWM1xXEBRdQi0b01mLabVpyyA+Me7TXNrUWESjqpvIdl0' +
-            'HUWoR0WaWDVkG8XUek3EU6bZ1qNRUhSNzlh+gFG4T/Ng10DY2Md3u' +
-            'E/VxLq3TAuNejmIdwwmY9BdhVn3hIl1DqOcKhXrYMu6DxOe/khbwY' +
-            'R3+r1IP552gPbX6vAzyz0WqFOihZ2FfmaMuEAPwCxjp9BJ4pH2kv7' +
-            '5wkb4HyLqLz28g+PkYbLc3o/R1FunuPVdKzA3l1kix3leocRWqbbl' +
-            'ibU6NqkSiVGg0CrWyUiLhLfDc0v0l1VqjwWS1hzo6A11dzpY2R0uz' +
-            'rSnpbGlytLd7urpsDY21Km3rhb7Fp5+e7BuRaPT+tlZPextn0tsj0' +
-            'RqZwh4MzTz6+NLcjWqFXGmz2ZIxV3uzv/MYB/6OpkZbvMEdrXe4Xb' +
-            'VK5Z7cwozcwkMlFSoDv0RjfsEJTqSZh/qqLLEaR7TWGZH7kqpgizb' +
-            'YYo4fszS0cTa/LdGmtHZwk+hVi5RdcfgfRP41HDyCMrEh0lbjqARh' +
-            'dsg8hv00Rsscik1WkO1iOab1tAJGRoFbw6ieoWMW6FqjsHuX4TJv4' +
-            'NnZvEhNh0V0rliFEbWOnTVQKZjfNEhnThGoViHeYXqoqTTy2xpKp1' +
-            'lC5BaunnqEVdAztvEgd9lzUbRnDDTOayDtL6PXzQTlPTnLv5uMwC9' +
-            'DpJt06VQxLzPvz9LGinz7wS8dghfA4fYFgn2WAmaQfh5lvyPo4T9M' +
-            'qwAMo9zgMrkGZ1IVZLRW++IXLdK7n+1gyagsKxTHvgeYejNKX2eRZ' +
-            'uwdKTTUF+kCBVp3ocpRqLbny405Em25XKcxGuVqTYVEKswp2pVbfK' +
-            'C4XGcyGWy2AIf8J085W1ocLS3WxkZ/1/HAqdP+U2fN4QapwXJ5dm3' +
-            'p6XcXHn2rvuWYymbzd53QBQNipbpaIr00tbj43nfH775v8vmqpTJz' +
-            'NOTraPV2tLlamzj739XS6IvH7C5C/vxiDvkPlJQr9Tq92Vhc3ETT/' +
-            '0Z+bVLqb5F44wp/ozbcqq9vtyQ7zfUt5vpWZ/MJmfH47owvaeL/7i' +
-            'JlCQLO5m8XCHwvQv47KPi9AbrRJBzACTgjw4gpXU9LDM2AjbAAy2c' +
-            'GyalVEA+ewGi5STeWUkMTdLfj+NZ1JMWY2zuFGbGSRmRNXYvFw9do' +
-            'tDO2wySc6Al8dxlMqrm0kNcctOpGmpd0B7d3E3NwEfeWcsPnQZxjv' +
-            'I4VoXAe1n4PDO/LhPkjWLt8nDK5/fiVv3CR3iOIPsf4QkDmMyj1vU' +
-            'zhnSvI8DK/INXws5u+cjGtIvgC8hSjSA2zMrHUkVegRC4RE3XkCxc' +
-            'psI5RE1Ne8EMUQ70Zpa+5SDMPnSwx15fZ6ov0vmKDp9TgK1CYcsS6' +
-            'KqVepdWqdLoyiYxH/iP5h8sq9CaT2e0OdJ4InDjpaG5xtrX6jh+Pn' +
-            'jsTPHPOffy0zOa2BBsm7324/vyP1j/84cT6favHa/D5FEZjWVVNtL' +
-            '1r9tHzhcfP5558q+lCd6VYrHfaXU0JZ3OTozHpbk7621vsIb/VYZd' +
-            'oNZn5RRzyHyyt0JqNJqu5vDzIRPr24XNib5vE1yj1JjThNkN9hyna' +
-            'bqpvtcSPudpOi/Wnd2eMv2qRTqOAt/MlXZrfBVVgjb6+Ds4ep7M41' +
-            '76f7BO2M4oBxkZ4Lx3DEhPLqB9naYv7aW1p70FPLSCoOEpnGKJzzi' +
-            'JatQqXc4auPge2wyJ2xlHzMg+ndRk6bjqNpTBDzzuN2TeF6OsIopo' +
-            'ryKHfxJxit8fm7yq9DkH/jkM7sxrV5VT1JcHjWfTe6QYDZ5yQfx6L' +
-            '/F5Fb9UvXKS30PChD9z+i2ScH0fcng/+IAvAKYLzpAguoe6Agfk5w' +
-            'vZuauDDanj70REidSQL9Z+hr/Qwng891+AXLVIGdKMwjebBbWDR7D' +
-            'ej9LUV6e63ug/nJ8pN7VWBzjIzh/z+cnO4zOgvUJjzFeZalVGt02k' +
-            'NpiJRnTC7kG/dUC02Wa1mt8ffedzX2engELu5xXOs3dN13Nl10tzY' +
-            'Vqkxx05emHv63eVn31/gQP7+B42dXWWimmq5wujwjm0+XHj08ey9Z' +
-            '/OPP7kyv64wGRR6rT0a9nW0+dpbvS1NnpZGk9dtsdskWvXevKK38k' +
-            'vfLi7Tmow6o662NkAyHBUIZ4pk7fJgmyrcqg616iJt5oYOc/K4vem' +
-            'kq+W02NhNq7i+2lHK3I2ztBqj/0XIfzdtAdAV2gZocF6l047R168I' +
-            'slZp4a1f0/bnAu1PBJlLO2tmiT7lr679U75Rp+z7fCs2fu2tv6IFs' +
-            '/5nfqksvuUOJThk3xNafyEofUcgesbviD7izy/6hD+h6Nu8/tL+WG' +
-            'j9M77Pp/XXgizKiGn/mD8t3whuhV8dhv/8Pq35xW2/5PvCcd8tfQS' +
-            'jJeX1zMHDmvvs/iTq5jaQKbuOuTaPKTmKOTVGophGr6RFmGR8OFco' +
-            'ZF3UehFUYQumD1OQZ5wCPvw6hpjFLxIpv7+EE7LizUkgxiIiwOzXX' +
-            'BPuUDgepNZfoFKCPvRtPkc3c04oZAGfyzDmT3MfZmScY8ifkXEJrZ' +
-            '4vo+zrWloJ2FWC99N0wFk67ZW0CFI3vTIvg0WxvliRLmKOLCGQvoX' +
-            'Xzd91lP5+IkUajn2R5eXH05g2k2DvjOGic2jAOIU8HUPseRTXsBjO' +
-            'NfruyFc+Sv9piPRIfrhCFq7QxKt8XWXulhJLfYUtWmYOFvABH5NEo' +
-            '9fpDTq9saCyZld20a6cooKqGqPJaPd7Q11dHPJ72ts9be2+452BUy' +
-            'fdXaeMDY01WkvnwMT8u5+O3XpnbO3u5OaDrotXqqXySrGk/Vz31N1' +
-            'nM/ffn73/wfTD5zOPnvsSjZW1Emsg6Gtrdbc0+1qaXE1JezBgdzpl' +
-            'Os2+guI9BSX7i8s0JqPRapRIPdwcZyLdf/iCxHtMFebAv03fcNycO' +
-            'GFJnLA3n3Y0n5IYuRm09KpH6TDVcP0DyL8KL5IFDxfx9SG6w9EdPc' +
-            'XhM98t8/+hpbL+Tuj5Sx79OF3APgz/K7YCF9+NmfXzTG+2qf0zxmn' +
-            'hj+S763NKhBosW/+Uu9bOSay/EoapdX/Xf2PNPLmD+SPb/pbaeHLK' +
-            'ZYk1av58k0/+uixlljkJ94fNCOZfpybpPNzeNUyE60iOzEL5zuL4A' +
-            'VLEw/T2KvzxMXBouSMvYrVERpLsRY+dy2xBE1IBA2lJtM+JdMduHA' +
-            'WzbhTW4xy0eYq+u56W+rmDpN407PYzBM6dHGgLhSfRC+gyVvI6h5V' +
-            '8z5N2OIuWET2U7b2KJp+sCzSL8PTBL+C2k3T8eZyNxYXO0LN84SLt' +
-            'hUG7Aqt1Fd7r7zZKf1+RLsNuZ+DcR3d7DQ74LM4/hnDNGG5gBKi7B' +
-            'BRlAhnDTFyGgTdNt/qVjdJ/AiLdnxUsrvUW1wXKDE3VwZMi37EKZ7' +
-            'LEGChQ2ovUVrlWr+Wg32TOK6/mkf9wfklNncFo0NutvmPtgY52Pkr' +
-            'DbS3N/q4Tvq6TKrdfZrFfmFuffefbw+v3BhbW+hfWTnT3V0ukJZXV' +
-            'Hd2DMw8+nn34fP6d7yw8/XT5/T9oO3+lok5i9vm9bW2BzvZgR5u3u' +
-            'ckVDdvtNqlaeaCwdG9hyf6SCp3FzHkBcqXjrbfOMJFmHuqvcR+TB1' +
-            'oVwRZdw3FDrINDflvzKXf7eU9nb27RtYyMuVc6SodpeHBGWotA4Ho' +
-            'R8qcYwstpif7JtCDVKH8q0XdYH2ay/H8h0P6MhaGE4X+T1maZ8Jkh' +
-            'f/jfCmQ/FWh/gUW7bghkP6BGzf+OL/xnPZwT/zsP+NwraQFeofAn4' +
-            'Yz/GQD+R2jp/F2eRb+z/8nO5WQ/5J0IThPxnZwX8fUPEUYbgSgWwZ' +
-            'deQiaFZVVSBMsxMC7G4SVxQrtEwhyjH2sQvwVLx4+y2ScUzqItA1t' +
-            'C9wzROHtTy9cSV//lIt15OweImE0r4WEZ/xsAk3XM2Q3kffgUP9Kv' +
-            'LAN7EjEfFvm/TNb7WQR2WMTmFJg8fdh6UP/bDbbPBVYFAMv/BOz/i' +
-            '3QGplZ6gGZfrEjnYX9u4BkZvi3/rqP09xXpDURRhpBsHcWjTaQZ/F' +
-            'PIxw3D91kAW3IZAknFfBaA1YzjMQYL8KsZpf8ERHrw0LGSGmtepat' +
-            'EEqx2dYqCXRWu5lJzqMjoLdM5lRzy6w3cdqSYeiYfzi0XSzgnQOuw' +
-            'hk4eD53odCSTzpZmz7F2f1cXt4kNZnMgPLj5aO6dTwbW7p6bnO+eW' +
-            'TnZNyBRKkurazu6h+YePZ/cfm/+0beW3//B0vvfOz++UCtXWfwBb1' +
-            'tr4Djf0seZTJj8Xs6tkKgUbxcW7y3gkZ9f8NdmkavtezP7+Xz0W0P' +
-            'l2jPK+Bl5+Jgi3K6Ln9LHOp0dl/xdVyMXxusvTvtarkhUZ3Lyel7d' +
-            'KB3HglyNL0H+5TSCAbMHbqISfAwqaZiPz+zY/H9LNv9f7bicoo9Sy' +
-            '+bS1ed3bPh0m1/2Y/5zMukF2h8T8v8ZzPu/FXb9X4T8fwbofp+7rr' +
-            'DtP+2A/I6d/x2y+f9zOvKnLdTyt/zjl94SiJ4IMmehT9nrNZAoxiH' +
-            '5eUw0xrJjmXH2WwzQ8T2kRtlP1k/e2Qj9aQjOOJut14XC8bQ4ySiB' +
-            'KmNUMkrnZTC1XiJSfqpOIQ4wCWU9CnCYASVsHrzBZQyJ+R21y3cEY' +
-            'tGY07D8L5MK6KI2EadhxrOdLjqmG8W8V9ALiDH2L0J9nKHjT5KaaN' +
-            '+9+xgSx2fxeorWNftSRAqUY+0FbgFUN37XUfr7inQezXPGYEiPgoo' +
-            'zkJZKmwTeDuDOV3CSJWQBmH0+Agv/Gu0MUYXvFZznqxilX3+R7t9/' +
-            '2Wjz5lVZ8kWecnV9ha+z3NNcaotw4F+uccg1WpVGo9SosvhVcXN55' +
-            'K+tU2lVOpcjePKEq7XZEm9wtTTxbRw6OzytbVUypTPROHb33elHH/' +
-            'Usb54ZneaQv7O7T2kwlIulbRd7pu+9P3rz4fitd6bvfTj94KOrK7e' +
-            'MLo/Ganc2Noa7jjviMV9rkz0aMlvNUqXqYFHZ3qKy/cVlCr3OYLMq' +
-            'tOZ9+/uEu6fKJO2KQLcicUEVOynjkL/htK2923dmOHRhKnJxxt/c6' +
-            'w6f9tSfMjhPvLpROkYG/1mBICEQuF+E/ENQNIxUvIkqv5RXS+cXfb' +
-            'CDsRwyi74lKH3AXyLr1s4aizuLIf4vPByxdRjDf8NBNG+B5z1lNf4' +
-            '7S7RncfuTO8jPR3su8uF6fv+XO0Ee6y+58/NKgUz9naW4rL/m93c+' +
-            'hM3PKR3yFwTaP+LXtPX8ir89/sZSU+AqVOEi7KurUL4DaRqT5dquk' +
-            'ms8gNzlMJzlfpzqGjT1OFJpS+h7xpbTvQYWzUkqzu1Gb+2XiJTfpu' +
-            'm01xAEYMbhLIbENBzzFD2MufkraJswDWbmBcRkuNdWxsBJ4/MwQj4' +
-            'j8/QR7b8Hlj+z57sB7OxUp6EFjkELnCXFcZJcgIuglHwZIl3F612U' +
-            'qbKR+buN0i9ApAswzidhNjPDaTotn5uK26RYnatA0SWsAZEKyKQ0R' +
-            'cr7HoZAvppR+nUXKTeJtMaA3uo7WmkrrvNXGJMVjmSpIVys8FTIbE' +
-            'oNZ+/rlRr120VFu47mCrNzq6QStV5j8nmcbe3WRNzRnLTF6/UeT7D' +
-            'ruKeltUapDja3zTz6eObx8wvTi1fmrvcvrp0auKa12YqqRW3nLoze' +
-            'fDCy/nBs68nk7Xen738w++jD5MmzUq3RmUhwToTB4/I0JfjuzRaTU' +
-            'qvNrqjaW1iyr6BYqtHoLCa13pB1pH93xmKZ9ESdpUuR6Na2XtY0nN' +
-            'Q3XXCeHPaenwqcGvM19bjDZ13hLqunpVZ66tWN0mkaJxdfzuocSzs' +
-            'Psy5SBX1z0C+TPBr/lpmduWOE8wtv4a/82ls7SP4L5L9W+K9rf7aj' +
-            'DsghxTE/5xF7J87/S4Hs+ywRsLMl/j1/ddmPPqNc+FW9lrFW17Qgb' +
-            '2MnI5C5KND+iL9o1iJNBJZA70cvazbOBzErh5FnH4bh1EuvI8iUrd' +
-            'DrAJlS/VCsKa9qOVX/SMvUXqMemKxJDqO+nGGdGdA37yUi3cGNEdp' +
-            'Ygn4SA4Bd6IZwh/U3DdZfmkh3GGK9IPCwvO1xguheROmZRuhH3P5s' +
-            'mqnfi1afl7HDfIcTCApdgLNwgpIIx7FdQKTiyxDpCijrD1GTOIkp8' +
-            'zuM0i9ApCM0HxdAmZ6lux0ALE/Dkl/BJylu9jRehxHbuQZ7/iqCQh' +
-            'NwFq5+haP06y5S4e7hokq7PxpXGT051Y4Ssa9Y7Cuq8RSL3JUSq0L' +
-            'Nr8ArUcj3FxTtyinIyMmrU8p1Rr3J57U2E/2+rVnjdEj1Bg75vS3N' +
-            'Mp0+2NgycffZzMMPB65vDa/f6VtYuzQxZwuECmvE4bZjPQtro1uP5' +
-            'h9+PP/kW4tPP139+Mf9S7d0dpfW6XI3J/V2mysRcyfqbS6HxWHNF9' +
-            'VmFpZlFpZLtDqTzWq02fILTnKPll95XGo7o470GFsH9S29pmO9nvN' +
-            'T7pOTtuh5R/CU1d9p9bU2xI+pFGde3Sgdol+2h5Df8yLkZzczjNdx' +
-            '0MNWsdDb0k7igENafpuixbYorczhbeaNndzEzrJcw/xdZS7QnaQyz' +
-            'oP8yTPZ867skBMymbIjgWQu/aYXCr/81gr9dQzhxwFcd3nHzeH3p3' +
-            'YS5Zlj/LZTp3wV9s8UJk5KMw7SXwcxUwZQYXGVDusDBYKFWJfS2qe' +
-            'k/joIg2oNeXk+4YJeNxcQ5DmP7RScu5eLdEfvD6Vl6icQ8ZvDYcNw' +
-            '3z4nUrIkKbNwntoEsThPdxpFvxsBqEtI77JmPl2E6qfS4vmnsHUA4' +
-            'c/QYV34hCmC47AzvzyR3kQp4iS+PvmPGKVfgEjTRunOTc7Bzk/v2D' +
-            'MDGMco3bnuNJzxIWxXgPCvapR+rUUqFE5kHjZINI5ANCqS27IrrIW' +
-            '1rqJaR16VpayGs/ZVGq1WJJVk5hfuOpqz+0hujbROrlLqvR57a4u7' +
-            'vcXcEKtTa2sUCnOswdGYrFOpXbHE6N1nc0++NXn3vYG1u5dnrp8fm' +
-            'XWE6wur6kLtxzibf+b+uzP3nk3ffTb/zqfrH/1o+emn0fZTaovDEg' +
-            'zqHHZTKOBIxqwul8VuLarmkL88s6CsWiazOmwmh72kvIUTaXZhZ43' +
-            '5tNJ5XuU6q/FdMNZftjX3W6MXLZ7jBm+7yZVIJlpPHD8pl3W/ulHK' +
-            'tAaL878M+UfhOQ6B9MsKSR7DbLgOHtEkUkhz6El1AzewALLxFAYSO' +
-            'zPzQ/vSJkU/yE4zCFJNQv1N43ITYLIN0TRJ1aowQV2F0IbgHQ/BIu' +
-            'oF0+kiJhezcK6m+d39tNNHCbJu2kaRpBsGO+4aWLIjePABPGaqzu4' +
-            'usSunALAsYXqWcPgMIf/gly9SJrrLQuEJ6gjHt4lLi/xcRD1vP33C' +
-            '2u+cJBv+CtK7F2HYn0Izn7N420mw30Fk0ZMURzoOOsqXJ1LWZ2AOp' +
-            'OUUQ+bNKH1NRSoczzzgyS7XmxwBXyhaVKU7UCA/XCQ9nC8qLhdJ5F' +
-            'KpUlZdV7snu2BXVk7GYQ75JUqt2hQJOjs63B1tGo9bJFeqzFZdwO9' +
-            'obapTa+zR5MjdZ4vvfjr38PnIxqP+xc1Lk0uh5rbCKnH9ia6RrYcT' +
-            't58Orz+Y2n6Hw/yVZ9/nLP/EybMKk01tdcgNJrXb42hM2Dwum8NWL' +
-            'pXsK67ILCgpr6uzuewGi6W0IsaJNLfgXK2xpcbYqrB0aT3ndc7TOm' +
-            'en1t6qNMYs7nhTc/O5s6fi8c68vN5XN0onaOMOaH1Jl2aWLRpEuGk' +
-            'CFPRUE4kbGN4TqERbwiBPdfybAP2YKZ1xZByGP2vhMOulDwquH6qK' +
-            'OcWLSDYxL+YO3cA4ipSv0TOyZNkE6l+u0cmHUCvRTcfMYkgziyhVR' +
-            'jEONTqB6Oggfd6LYNogTj4N0Ga5tmvIxM1iks5BNfN/xepXF7Hwyk' +
-            'mh8BgHxXTyr0akjNo3LhR2CoVd1CD0DLkAPWjFzyJC43Sf57CawCm' +
-            'kdE+xNV+QDu6E/d9JSd4uWoHxDJGX+vBjfakiZfHndfitY29G6est' +
-            '0rf2dh4uURVUaj2BqNPtlfGGPmfpqxVKmVjGIb+8XCTKOJyz61B2Z' +
-            'm4hvyavQe9uTLhPnLAmE2Kdtk6pTp46Z/C4Xc2NfBO2YGT64fMbH/' +
-            '5gbOvJ4Pr9q8tbFycXo8eOF1SJfS1tvStbU9tPp++9v/j44+V3P13' +
-            '96Iez99/3xpJSvVFltqtMNo3La0sm+aZtHmeNWs0h/76issLaWqvT' +
-            'preaqsV+Tg5Hsi+WSTwlEp9IUy82JiX6mMrcpDDHba5oR0fHqa7OR' +
-            'LJFpQ9lHb7y6kYpKx7kbuDYS1ZjHEyLPTKHlCX9ryM3dAtNJBZxqw' +
-            'vYZsFEYh7NBIbxMPJZA2SxMAunD8mpKXjH3UiBDaax4MahEKfQ4nI' +
-            'e5s0M4qipnPgUYmijcHjZ7OjBBBwEKg4jL5ZKmfXhyDFUPQxgZs3S' +
-            'XwcQT0vN5TH4UAuIp/FnJjjtRZ/8c4S9HPifwc/0lYn0KtmQg0Qu7' +
-            'cKCud1pPPyLYP5cQfwnFeQ/g+jQRdRtnaEgTydpBJbt7cIA+7JFOo' +
-            'YVK64jpv1mlL7OIhXuvphTJM0qlFeJTWaLXW8wyFVqqUIpkcnkKqV' +
-            'CrSqvrdl9OHfX4RwOhDnYN1ktnqYmz4kTllikTqU0Ol3nxxc0Nps1' +
-            'FpWoVbZgeP7h841v/XTi9rsj6/evrd+/Mrcabj+eV15lq0/039iev' +
-            'Pve/MOPFx49n3/87c1v//HgjW2T0y3Tm2z+0LFLA9ZQzNva7oiGvS' +
-            'GfTK97u6hsX2FpXpXI4rSZnHaxPCjcPZG576LVHnf56g3WkMoYrJP' +
-            'b69Ref6jxWFvbiROdgWCD2uiVa3yE/K9qlE7TYecFgraXVHJN4/xX' +
-            'aFzNgj60jLV+WFOgLfQRSlUHz4KEvEr5iOU0Slt62cIVvB3BMGN2T' +
-            'jfts0oHpv5GMWtmcDyLX41Cu7FBzjgJMziM0Z8YsWGMDriISClTkY' +
-            'woNYlo6ihirVfBuGBJcBZuZbc6Rey7UQgn5XONpz3LEE41TexK3sB' +
-            'mC2ahM/8pOslviXQTYvxSRcrrfUo6nKabYTGfMzDvTyKe0wmq50nE' +
-            'hS6llQCcBJmf0wstdOQJkudXIVIYtIswm9+M0tdZpELhwKGjquwie' +
-            'U6ZJrtYdrhAdCC7cn9udWFZdZ1ULFXIiyurhEfzd2UXvV1codFoDE' +
-            'ajp6nZ09GhsllLq0WxYydGNh5afX6twyHTGZyhyOzDD+98/89Xn31' +
-            'vevvJtY0H3XNr4bbO4mqxPhjpvX5r/O6zqXvP5h59vPDuH2x8+2fd' +
-            '0ytGu1Oq0XecvzJz95kz2miJxl2xBl8oxGmTA2Wi/cWV2SKxzeN2B' +
-            'nwyrfetPdwj9FstbadOnujs5Gz89kQinmiIn+rq4t46PVGF3qs2cM' +
-            'jvP3Cw+9WNUpY24oZZ80tYnf2oAmPdJJYxMqcQg2JEhRuIPqX01Dq' +
-            'rARQKtoU7rxtpVYR90FPD4CqwVNdVmEBTONU4xmEqiDqM7Sq80R7a' +
-            'v4xZMAoSbMqkuUyPf4W2C1B/zIOehJE2BVd6HGbPMJ6dsaPHcaGr4' +
-            'EVPYIpdSyvGmQSnIjU9ewhRWcz8DIVcOgj5ez8r0knk/iag3L9Ukf' +
-            'K0QKwLdorbQN05SVsH7bdj4a0zsP8vIubTJhRyWzttzbTG7uBXKNK' +
-            'rCD6zgfFmlL7eIh3du892pKAuu0SRlSc6kFOZlVd1MKeisKyyTi6V' +
-            'KeWFFRV8GdeR7IOFRRqtxmAy+FpabMmkRK2urpOcHRqfvPPM39Ao0' +
-            'xu4zeILTNz/aO35T2affDJ5/4O+la2LM9fjx09XSVVSm/vy8tbYnf' +
-            'dHt55M3ftg8b3vrX/y03ODExK1xmB3jm8+vP7ed/1Nx7SegKsh7gm' +
-            'FjE7noXLRgZLqrMo6k9Np9/k0lvD+tzk4vXo0O+FwxULRxvoYt8US' +
-            'DbHGxiars16sdqtNPo3RWyMN783se3UiZfb/KcrwvhD5+8A9YDA1j' +
-            'p3pNDNgEcGoJfgps8hHzKKmbAZWxxjYAvNpTiUbYD0AvYG0IOcgOD' +
-            'D9+JyFMQcR3eqlpSRZgHQEZTLTuNurqGS5TK4NC6IuoMytH47zFG6' +
-            'PTclu5Nr60k4yiInJTtIDSjazi2ZxxUXMsilImDP7RwgwOcO4k5Cf' +
-            'Q8tO6OiUSEex8GI3IrHzX75Id/pEkT/SBVYPZ+03IYx/GvVczFU5K' +
-            'xQexyO0CoVNhP8n6J4nvkKRzqRxknvfjNLXXqRv7ak/lFt1KK86K7' +
-            'fiYHbZgezS/UeKi8orxQqpVC4rrKradTh316HsI8UlGq1aq9MFWlp' +
-            '0bk91bZ1Kb+qZ35h5+HGsrbNKKhMr1Qand2j9/uK7n1Jnnm/1X9++' +
-            'urJ17GKPSKaU2t3nF9Yn7/HIP//Opzc++uGNj/+o5eyl4srqjgvdN' +
-            '97/3tpHP2g716t1+bzJJncwaHC5D1eJ95eJDlTUaiwWu8+vsfhofZ' +
-            'YRbiLnlHuLxa4SkalCrK9VGOuUtjq1R2nwqY0ehdZZWtFAHa5elUg' +
-            'ZE/gkZXidL0L+q6gB70mrK59BDmKEPmF5og1yRlZgq6yjS8lSWngz' +
-            'FdmeSCtvn4Cf24fQ5SXwHPpgtwyjAG0Jtsp5UBrYgmIstDWFNkeM4' +
-            'zSAAdxNc2oAqTHWAaMPU2YSTCpmnl2i0rbLtPWlecS9dJ5L8J6uwn' +
-            'IeBptuAhubp7MI5/JrpiN+coqQs4WDWcTlmEhHCXvPUQTmNCVhe1g' +
-            'A8CsR6Rj96RTBeBsH+EJhkpRUB3kEl8FHOkMg30Gw30bIf5z8hXN0' +
-            'nrGvUqTguvThKm9G6ess0t0Z5w9mV2blc+Bf8XZ26b7DBZlZeaVV1' +
-            'TKVQqlWF1bX7DqSs+twTl5Vtd6gM9utnsZGqc5QUVMTbEiObz1ZeP' +
-            'JJ+4WeWplcptVLNNrTQ5OLz74//ehbMw8/Gli9M7718ETvYGVdndh' +
-            'k7hqbm37w0fzDD+effGv14x+vfPQTX0OjVKsf33iw8fEfrT//UffU' +
-            'ksbldTc0uL1+mz+YJ1HtLxcfrJRobHaX329xeo8cPcNEeiS/vlzqK' +
-            'BPbysXmsjpTlcQs03lURq9C75RpHLn5x2gNu1clUmYPsBpe04uQ/x' +
-            'KN2H6MpR46/wgICb0YcmNoBDSHO2HcMNY4bl64Y04MwUu9lpalGoA' +
-            'L3IcMxSRmRIqxPIaimCWQXS9jQvXR/bOzMTEuwhFm9tJlTIfutCK4' +
-            'MZhSY7DT+vGwnfCVWHx1AA/LZHgJTVOZsu6HEMbSHOc+WHpDmLlXd' +
-            'u9uJbTsIMBMktncQvvtRLM5Dc7PMUq/nqHzTHzlIuUc1fN0k0m6jV' +
-            'OUCDiHRYHPksK6TObrJTr4EkgjU1+5SBnpsRvD+80ofZ1FytlOmYd' +
-            'qD+SWvZ1dwsP+4fx9B/Oq62rlaqVEKcsvq+AM/l1ZOYXVIrVWbbBa' +
-            'LJGoXG+oqhG3nb40s/1s+u67ZwbG5WqdymSulspaz13a+M7Pbjz/8' +
-            'cLTT0fvPB1Yve1rSFTW1NXpDF3Dk9OPnk89+Hjm0fPl9//weO9IrV' +
-            'zRcf7yyrPvLj7+ZPHpdwZWtrQOty0YdvoCTl+wsE55gEP+8jqF0ew' +
-            'OBb3haF5+BxPp3szjlXJPtcxZJbFUSy01UpNYaZNrXXKNQ6l1HDh0' +
-            '/JWKlI2ukxTtsbwI+S9C41/DkLgGI6E3reJgGGOYkRlmQRxiFd+Lw' +
-            'p1xfi0ttzWLrwwihDiEx5zCRSdhTM7S2VKJp2s0IM/T7Z0lIBrHRW' +
-            '9gLYmUHC5hRnTju1fxCOyiQ9CtvTSbLmIuXMED9sMeG8WvM4HbHoZ' +
-            'whtNoFX1pJfPM9T5DkRNm7beQqXyaoLWVoP4ki7RjvwdyflUiPU0B' +
-            'QGZCzKI3yBgSjl8TkV6ir/fTyd+M0tdcpMLdffsOyg9w1v6hvMyDO' +
-            'XsPHMk8cLiyukoslUikkpyy8l1ZHPJnF4mqFWo13z8tEKhTqarrJO' +
-            'eHZ+YffDS28eDixLzZzhnbuhqZItTYvPzOd1af/3jlvT+Yvvcs1t6' +
-            'p0BtsobBEq0+evTh+5z1OI0w/+Dhx4my1RKI2WYZv3Fl69r25+x+s' +
-            'f/j9iZsPLf6QPRD0BsMuj69Upn67TPx2eZ1Yo/cEgp5IpKg0CZF25' +
-            'xTby8XG8lpdVZ1BJDeJ1XaF0cfZ/FKlfc/e869UpCw6dPblyN9DJ2' +
-            'EslMu4zyEM5qtpseJhhA1nUL2+hDTEJJ5rNM0oGodX24uMUg9GGoO' +
-            '+GRwzhUqTGZBdh+jqF2EspczOVLhsHFTns5QsuwSyBHN2UnS7fsys' +
-            'q/RLXcQ87cXb/jRKxhCMrkHEQofwIdvvgfd9BS78EH5TFjzn7PxGM' +
-            'vK7YO23AvO7SCNwfz2O+fhGpP+wSC/AUjr7ZpS+9iLdnTFxMNdyML' +
-            'dy38HsvW8f3rv/8P4D2RVVlbWS2lqJ+HBhMd+uLSu7sKqK8wKUBr3' +
-            'O660USzRm6/jG/aWnn87e+3Bq+72G1o46uVqmNWjN1r759c1Pfr76' +
-            'wQ9azlyqU6rssYZAx3GRXB5oap26897knWfh5mNSlaZaIo22dq588' +
-            'IONT36y9uEP1j/6wbXrt/Uut8Xr8QYCHr+/Vmd6u1JyoFJcJVfaPW' +
-            '53pL6yOpkSaea+REWNoUykrqzViKQGqdal1LnlGlt1nVcoHHqlImW' +
-            'KgLNGuLs1vgj5z8CuuATVfxXZgV6MvQsC7Q+F1p/T9sdC65/wq6WI' +
-            'PuG78fDLptyilvu0SEreNt3MNP3pF/wCLlnX+W78/F9/yu1Qr85zv' +
-            'ChEH9B5fk6vfy7Q/pTv4ZB1R2j9Z6yfpyBrhm/ppv2uIGuOlmv5uS' +
-            'DvLi3L8pcC7Z/QFbnv/lSQt0RH/piOXKSv/IQPvPNX/IVA9l1OIHS' +
-            'JH9GwvyKQfUCP8BP+K3mreN6UazyEwNowbCpmVl2AJXaBBHKezOYL' +
-            '8LIHyObvoPh5MwVSWKi8BfGf4/TKQj3tOyLdidcx0BiEZp/FzijuZ' +
-            'GxHpPyvOZZG9hii++mlD0mk/OeDGFoTqNlZBMuLZQCHACmjCDetYH' +
-            'U/xhPr2REU/3oRjIIJGJbjuIcBSIAdyWzaC4g3fiEiPU83w2T1u43' +
-            'SNyL9JytSoXB83yHb4XzR/qyCvW8f2bP/yIGjBdW11XUyca1UcjC/' +
-            'iI/zZ2UXV1ep9RoO+TVud2WtONzYNnn76cjm47Hb703c//DYlcEqm' +
-            'Vyi09epNQqzNXH2UmffNbnBpLLafR3HPG0t1VKZJxbvW7xp94e5r0' +
-            's0OrnO0D27svLBj5Y/+MPVj3648Ojj7ukVnc1udrtcXo/L45Zo9G+' +
-            'XVh0ory2XKJ1erycUqaz2U6PyXuLOnckvNpWLVNW1uhq5WaK2ydQW' +
-            'qcZSWBx+1SKdJUVwhmx+60uQvxeqfwTGAxsJFxDp7RF6/kLY9h93O' +
-            'qp1/Xdh23/hm7PtNMx/vtPJk++o9r/xd1X6CI3d/o77KzVV+7+Fbf' +
-            '+BP4Pnz2n4oUX/ZxZw+VO+IedO1+UBgegh7f8Hgeid37RrE/0BWoZ' +
-            '+iA//rUB0H0eyr/wnQeb8bxZtyVpDh7dZoefXdP//J38z7EMO/DNH' +
-            'BZnj9Lz9SKlMgmgxCjmfBsvifNpkuYa0XTfF+TuJCdNIyH8McR4W8' +
-            'zkBFcDphWaS+SX6mS4zmpaQXxp7FazvefAxhoAqV+h+pqHHWWTvEv' +
-            'DhPBMp7BBmA7BI8hKiE+xnZcefTaMFzhJMjcLGuEKnYiHrUxgAPSS' +
-            'WMQy/acBUL9xYhmwX6LupG7j6e4uUnec83czvNEoReH8j0n+SIt39' +
-            'VuPRItmh7PJ9WXn7DuQeOlJYXSuqk9TVySQH8gv5aM+h7IoakdZk1' +
-            'FotOperWi5vPtc98+jj8VvvjN18NHHn/2vvu5/byPL8BHAlcUYjUY' +
-            'kUFUiCIDLAhJxzJHIkApFIAATATIpJVE5UGCpQYaSRZjSamrRnj3d' +
-            'v97x3W7feq7Jd5/CD62yXXeU7n8MPV/7R9n/g1/3wbfWspbqbHVVJ' +
-            'mgWqC9Vsdr9+/cH3fb+fb3ivP62duSqSSoVDQ2KFkj8s6xGK+gYGk' +
-            'AkQK9TDRgNyE0TDcpXRJNUZOUKJRKoQDEtHoqkrn//x1ec/P/fRF2' +
-            'cffnHh8ZdTZ64qdHqNyWS0mJDm71co9xKan9vJFZhsNqvbIx7079p' +
-            'VbkDKrB3qMHX1iljcAa5YKRrSi4d0ogHV/gOpNw3pefLu2VdneMsg' +
-            'S4tQJFaHbBRuvwwu5xReQp/g+eSMRdD8nzVW728o8F8jFf27mh8pW' +
-            '4Lz/ylD+i3mPARjJ1bv/LcM8deEQ0E0+y8YnG8aVyEh53wM+vzxCw' +
-            'Ph/o/Q7DPawX/ZUPicT2Ad0Yu0//470PxreNl/gu0zSkzLb5AlYnA' +
-            '+fbHyJ/HIJ6Eadh4GFPXbLULgFLOpWbDduKKvzmROkBNdE6R6T8NC' +
-            'Ckjno4NJUvMnyX8l4DtGoroERYDnaYG7JQgC4O/zwAc2IKBXB21DV' +
-            'fedJDtD/bkI4b5zUFs4B3N2cDnKIkz3vgyOJA5dzsKM7xoIxgaQkA' +
-            '2IdazQItU4clUGhlmD2pVVSGz9/pDSpPF7SClo1Cak7xikO98rHer' +
-            'T7T3Mem/P4d3vH9h3uIPN5fD4XA6f13r4yI79h5gH2zli4aBcOqRR' +
-            'y0yWXr4wMFY4de/52Yefr9xCtP/J8ocPtXZ7D48vGBoWDksH1Bq+T' +
-            'MaTSpEjwB8c4ooHxMMygWSgVyASyxT9Url4SFY9vbn17V9sPv/5hc' +
-            'dfnbr75OyjLyrrFwYVCqXeoDMZzWbjsEq5r4fT1stv54tNdofD6xt' +
-            'WeFrfK2NImcza4U5jD6efxUOaXyEY1AkHVGhr2z/2piHFE/eQfQ+8' +
-            'gvPXoIpsGbw/LDy4umOOVoS8Cpr/t7hCFV6V8rzB+cn18xt+Af4mV' +
-            'Otz4Pz/ndgsf4FNFVK//98LXP6IQb0FAGGFdTKhz0nOn/1f31kjun' +
-            'HHlx0kOD9oftylhm6fJ5wOov+/JPog/TkRQWq7hIwI8QgEaHVwsub' +
-            'In2ABIrdz4GdRdXRLMOJmwPISC2aC5k+Q4Z0xkvCnyYM57BGQi56N' +
-            'wWkRsooSr+q5BEW/Z8DuLwOvm4PpeMvgIZ6E8PIyTNMrwYYDvHO0T' +
-            'BCV+5uG+PA0LYCAb0TVdeCQb4EUmEUISK5CEOMSuKVUULpCnl8ktx' +
-            'Kt4HwBUo0/CFJQVtXvJaWwaNV6E9J3C9Jde8tHBuxHBMr393XsOXy' +
-            'kgyPuZbMFAh7S/7sPdexoO8g8cAhp/oHhQYXRaAxHeAODKrNt/sqt' +
-            'c4++WLn5YP7q3bU7T0LZYjeHyxVLhjS63PLp7NJGZKJqD8d0DqdoS' +
-            'M6TSHq5wp4+Hk88IBoatvnCl579DHH+8x9/ff7x16u3Pl6/8ySQGu' +
-            'uXyTR2m1qvNxr1MqVyfze77QTrIIujMRptLrdc7dy7t0hB2n7U3ie' +
-            'QsXiDHJFcMKARDWrFw/oDh5JvGtIFqOf3MRiGl2n+BRCeKojrNHl+' +
-            'GizLBLkhOTkFnPm3eMYxvEXrkwYDR39CDIch/Sff5eFo5ymD8xGj6' +
-            '0PMkRqa3/1vCA1M6nBi4WXQ5wTPx+/qJfR5g8kT4fqGkqea/a8vLM' +
-            'gLzf8/ma0fgjX5GU3zn8IveSRuihwK8l1gxCXooQhbMwVs6iS5PwW' +
-            'Dbg4G7wTgMwf/naIF8YjcHBnqp6h+DpkA8PQRekSohzwhSc6iipC1' +
-            'QCXyTGJ5T5jEvQ6jeIFWtrEGmbs68LQy1OlVIHhbgp+pSosuLoIzO' +
-            'Aec8CRomGkge/NwySz81hNQAbIEgGwwGZeZxNIT56C0+CREF6mUYh' +
-            '3Wn8FcdOF1QDoPR76HlJJXrcFEuSak7wyku/bkjg87u1UjRyTKDpH' +
-            'quFjJ7mXx+VwWm72LSO8e/snBDp5QNDDQrzSZ7On0kNbAkQxm51bP' +
-            'PyFetj5//d7Zx1+WV871icTH+9jhQuXqV7+6/tWfnHvyzdnH36zcf' +
-            'jq/uV06eTqULVl8QR7B/+WllXM3vv71lU++PXP/MzLt+yk6oX9ISl' +
-            'gWn0dvNRoNOqlC1t4naGPxDvIkerMVaX6j2d52oIAh/cnO+tEucy9' +
-            'vuJc3xBHKidoeuXlAbuk4FnrTkOJgcobBGGEw9K/g/JPgIWKRwOZs' +
-            'Eu6FmyWySA3Nqf0Nzi7B23IfUyqX0XqGYPuWf05T+E8o3dvwAkivh' +
-            '0izEk39GboRUsVM6kUtwf/04uTS/2WIv2xEe4gYzga4Ev8NQvp/y2' +
-            'hdIByK79iI/0F0o6HtN5nB/wz7qwzxN42TKXOAukfkf/8Z1EsvQME' +
-            'DLqWjytrLYFhnAfkZ8OOqMAbxkgg4sBOHwuk6DdIyuYROpqUlitU+' +
-            'qfmz8Fuvw4jGxXtYn5wGb24WBjhO62OHcYL2o5fB3ZuG4r06jPQ56' +
-            'OEieP01Wq5wHhqvwPNSl58E6ojlEK9Cc448chFWCFwEhTNLizfOQ+' +
-            'D6B0I6QXNs/6FSCsUzy01I3y1Id72fOC5z9mh83SrX0WHLcaGU1dM' +
-            'j4HN7+/p2HiTew7jr8FG+WDgkk2psVnsmq3C6WDyxyRs68/CLjQef' +
-            'b9z/7MLTny7dfCDXGxDnr1+6jf7cuP8MHb/2xS8ufvazi8++vfDx1' +
-            '+c++nJ9+5nW5uAK+1O12c3Pf3EWXX7v+crWo6Vrd82eEYlUbvC5dS' +
-            'NurdmoUioUakUnV9DWw93PFsg1ervL7XA6jxxL7jmQPcpL8lRxjkj' +
-            'TJ1Twh/S8Qa1IZh5QWAeUlsNHom8aUpxcQK6H9xXv4Z2CaR01EJJ5' +
-            'EBiq9LcK5cp1Mhm6SHqRJFFpXW5EIFuXsHJ74doQL0whpyLil6q0n' +
-            'iXfwLIID7sKL2ch5yq2LoNAThH7rQuM1ipkqZKMVmzjckRPWmtkZ9' +
-            'AlU+QOmfNqXWlkzVqXG/5s6zTZATIJjvrcugFT1E+RnVljdFxmSH/' +
-            'K6NqCyZJ4q4PnW4GMzDzAvkZuFXiEMpyZITuGdrIkkyfi+TCsXgpp' +
-            'nZzYlUAnkys5l2GAA6SNjNsqhGppkDYcfzyX5zRkc2iQNtQCfqLpF' +
-            '5AS2yT0k4S0URVAQkpkHsch6weQNsgDFcrAAcZZqCuYgz6vwaSkOa' +
-            'heq7w+SMdhHuv3lNIX3WtC+s5AuvP9yHGFq1sbOC63Hx22HhfJuLw' +
-            '+gYDfw2a37D+MNP97HUcFIqFUJlNbLJZk2hRPDGgNLIE4WZk+df+z' +
-            'Mw+eIz2/sLkt1+k9seTFpz+9+PjL9TtE8ndt+9OV209Wbj3auPP01' +
-            'J1Pzn70Vbo6y+YLNSbr6o2HZ+49W7v79NStR5FMQTAwqHHaLSE/4v' +
-            'w6qxkpfoPJeEIg2dvN2d/DH1SobS6P2WrROCOyYEWbntWl58VaF4s' +
-            '7zEOav18tlBoQ5xcMmnfvzr9pSPFMPSSWbgZD/jLNPwue4BQwhxqk' +
-            'JLBlKdIKEjDJWYUQ4go4jDM0ClGHy8ehJ/j8ebK3FyGwuQEucx3IU' +
-            'h1GAfW9AJyHYkF4ZGEHahyMaQWEBw+KOsyawQNtASY2zkBvl+CSSZ' +
-            'D5SSiiw09RAB+qCi0vgQNVh2eZoqXSGsMTL2tMrthT+fsgpS/m2YT' +
-            '0VZBOg8JsSumPH9LWtliPxss2x1haf5d6pLtfweWy+QJeN7uPSU7j' +
-            'er+9UyARDwwPqUwmcyJhSiT0oZBAJucN9OcW19bvPzt563G8VJPIF' +
-            'fWzV08/+Hzt9pPlmw/Xbj1evf3x2tbjjbtP17YeIkNw5v7zpSu3pS' +
-            'oNV9zvjac3tj9duPyhIxjm8EXDer0p5NcjtT/iVlvMKpXSajWz+OI' +
-            '2Fg9xfgmh+d0mq9noDapSM5rssr6wrsvMi3RWrkjFH9AKBjVI8/MH' +
-            'nT/ZWX7TkE6REpJ+dbRnijYDsQQ3xQdnINNUBOpSJE8r04KW0zDrp' +
-            'EjeCJOQLMkxCpBIWgR/5BS5Us0SlJvOQ/Eq9p3nmQ1/dh5mr8yCEz' +
-            'QPNWlFYC94Fuok3BHzKCo7VgEPl/KDpiCGhsOzBZqHXoeHrcCF40C' +
-            'EalCBOUtVb0LEdQEGURV+0Ekyhh9H32T7TUh/OKTT0FRTSn/8kO45' +
-            'nOpWe3oNoW71yDGFq6dfzuH08vjco11dO/YdRJx/b+dRyeCAZGBAZ' +
-            'TGbEnFTLGJLpxQuJ1sk7lcoRtJ5RzSOXAJ7OLp869EyofCfLG89Or' +
-            'X9KdpZv/vJ2QefL25uz1/eWtrcXr391OYPsri8YY12ZDSl0BtZHK7' +
-            'UqDcGfaaAz+j3qT1urdNmNButFhNHImnr4e5jcbmDMrOdOKizO9Xx' +
-            'mqGwZiis22oXjcW1IXuIP6gS9KslUtOAPrirdfxNQ7pMXj5Gcv6Xa' +
-            'v4KFI9NkLKaIWUVU4s6ed8CzPsogCRPgHe5BKHFRSghLkLdMnZn1s' +
-            'DfwcUGqzBD7RQsVDIDsodpTw1Y0CwMgSW4EW4Bd6MORa0zNCqFH3k' +
-            'cEh9TACwVkq1CvnUKCiGWoQADn1OGnkxChLZAAlKF8Gmd1tosDMkq' +
-            '/DlLTuMNkQv4RACEJqQ/BFIcQi80pfQPAdL3DyPO7+tRj3SpXCfU7' +
-            'i7xUE9vdy+H3XHs2I59bTv2tH3Q3skV8MX9YqXFZI4n9OGgIRy2JO' +
-            'Maj7tPJDnBE3TzRSKZIjN78szD56u3H81v3l2++WBl61H13JWZS7e' +
-            'Wb9yf39yevrxVP39z+fbHmZlFtlDA65d0cTk8mVQT8JpiYV3Ap/d7' +
-            'jIER9K1zOeQKuUKlQOfs7WLvY/F6JAM2l8tiMRnNNnN6xlJc12dX9' +
-            'bk1fW5dm1lU+NNitaFfaZI7Ezt3pd80pNispxgM/ytqe7BlKYBElS' +
-            'CDXAIDVIZ+UhuWySpciL1XfH4apDpP2p1TEMuaAxKCn3GN2VhugnB' +
-            'jmY1qtCr5vURLSy2C2K9AgWsZ7ktFOOsAxRyY11naI1TIEwqA4Tic' +
-            'Ngt2dh54EcWy6oBDAb6nwHZXwfIugWNOr6yokITf19ISI2v1c01If' +
-            'zCkmCFnmlL6hwDprj2BDrGlc1DfOWxE21GOoJfDYvPYh44d3bHvwI' +
-            '4P2g50HhOIBEKJSGbUa8JhTSioCQWMsagllRzQG/hSKUcyoDSZZy7' +
-            'c3Lj/DOn5pevbs5e25q7cql+4PnfldvX0pZmLN5dvPpy++OH89bvV' +
-            'M5eHVOo+sXhAr0NNGeIRfTik8XnUIy61x6H2ONVOm1yl1OrV4uEhI' +
-            'sPbKzgh6DfbrHarxWKxWZNTxtyaMbtqLGxYSqcNuZOGzLwyOCZ3x4' +
-            'ftiZ07M28aUpzER5rfw2DoXqb5p2nkIQ+OSQ0ik/i+edgv0bzFMsh' +
-            'MFvZzNK8E16wugEM6DoNlFuqXlkAmqSKlGnSmBu1XwMwtwKipQ6S0' +
-            'QvZqDFZEqUKvihAcw4+TJc/Jwz52wXDLczA0liBmOw4UqACjdRZGb' +
-            'hG8M0zVTkL/F2jzpifIEv0oXq4T7G8T0h8CaRVSXU0p/QOAlDm+a8' +
-            '/o7rbA+4csezp1HSeEfRw2m8s+SHD+/Ujzt3d18cUCpPwVVqsmGtV' +
-            'FIvpIGGl+Qzymj0eFMhmLzzd5vEi3r2x9tHT93vqdJ4vXtxcR1b92' +
-            'r3bhWvXc5sz5zfkrt2av3F7eejhzeUtpNPVwOSqPy5JO6sJB5ERo/' +
-            'B5DwKt02tUel8ppl6sUcqW8f2hofxerrYvd2cfTG412m8ViNurCE0' +
-            'jz68dWdflTptJZY35VFa8qQyV1eELmTu/alXzTkNbIRhJktOelc3h' +
-            'r4FxQZWnYZBSgk5OQtKLkpAzhR0oI6/Bck9BgDWrbapChpoz7DDjC' +
-            'dXCBy9ByCS7PkX/OQX9mIHWF26RMYRFGWQ2CWriGqgRzZ8ZhAKagn' +
-            '/NAwHBTy1CejesxKDs7BUwM9zAPIFShHIsq6l6mMMcvZCGrOiNQbd' +
-            'WE9IdASqX/mlL6hwUps6X2wT4TTyjgifgHjh3f0Ua8fr2ju5tYxkc' +
-            'okNtsukRcHQohrq5FzD8cQrSfNzzMFgkj+dKZ+58t3Xi4eO3ewubd' +
-            '+Su3569tz1+/j5j/3NVbJ69vI82P+P/SjXtzl2+rLbYuDkdqs6J2l' +
-            'H6vPhjQ+Uf0/hGF3Yo0v87jUmgUcoVsUDZ88ETvgS72Ea5QazA6nQ' +
-            '6DTqMP523l84bCKUv5nHHinHF8Q5Oa141O65N1dWiCXKjzzUKKY0p' +
-            'IEVlfsWJbnlb6VYZ2qtC9GjCTOfA0q7R44ziYKhy8ytEkeQ4KHsrQ' +
-            'CJVpKtNikiXo5ATYuAoUwdbhjrh9ilBNwlaDrQyQ5sgTpuFgmZYWz' +
-            '4PDNUkT+FmYZFcB5PE4rULLs2Bk87TnnYUhiU0tlVgpkdGeaEtLkM' +
-            'nMQaLtbYW04xKsmPdrhvhzomNtG+Radnj7k8aidiSk5Jp7vyLXuLt' +
-            'E3IvzgPzvL+C0f8qQ/hExOU77K2JaH+ok5ylxkPOA6ID0a6b2l8S/' +
-            'pN8y2k5/T0hr8Hs1pfR1Sek7A+nevdo+Hq+Py93X3rljL9L8B4/2s' +
-            'EUSEV/IV9ht2mgUqWt10K+LRnSxqC2TEisVHJEoki+ub3+ysLm9cv' +
-            'PB4uat+oUbc1fvzG/eRcx/8cYD5AvMXt6qnt1cvLa9eHVba3d09bH' +
-            'ldpshFjXHo9qAV+PzaD0ujduh8bpUbqdMo5IqZDKl4kgPez+L284R' +
-            'ylVqs9Wi1eg7j8cUoXnD+IaxdFZXPIOUvyG/oklMGUZrqlB+d+vYm' +
-            '4a0THoQIQbD+YrVG3JQGEBt4/Bdgh8CC0YV3NVpkOEi0JhJsp0s5B' +
-            'fqYO8K8KQzYJiKtNuNQ29zIPNVGlYlKEjIkQfnaP71FNg4LMPj5Gk' +
-            'UXxqH9ss0cpUFc5mDXlWhEmMcavDGaTMvstDIBDRYhTjqMqy5sQRk' +
-            'DNdsZFtaQuRSnGnwxN9WSDvOUBPriCWVyDnXjK47xJ94gQviX3/DT' +
-            'Pw10RQ6Ts19I5c8Ykj/MTF7Ovt3sC7H3xCLIOHJ1EjDM6YIVU/s/z' +
-            'HT/a9giby/xSc3HrN1+h8GaREEoCmlr0tK3xVIC/v3Szlcbh+Xt+f' +
-            'IMVLzHzrWy+KL+ITmt1m1kYg2EjbEI5bUqDE5as2kVC5HL48nlkrz' +
-            'C6untj9d3/po+cb9mctbc4j5X9uevfzh/NVbyzcfTl24gbala9snb' +
-            'zyw+4MnenuHzGYiWRCN6AMBUzhI1HO6nUq3Q+V2qYwGpUqh0qmP8U' +
-            'X7WZz2Pt6wXG61WyxW8wd7cu0nUvrsijqzrM2fMhbXdekZVbioi5e' +
-            'kruju97JvGtIyvIrxVdGePHkCxUmodE8RBGwOfpdpqBA4CbUH85Aw' +
-            'moAOTEE0kooiTkFXsawWQEorkJxCdx+F/SrIPx5HRQh8TYL5ozMi6' +
-            'mAOLinRhgxVPZWlJdkr3w3CVGmNjMNYyEFTVNKtAkF7/IA18lq8xN' +
-            'YG8Deilo/JDJHtv/WQ4hnQSGlrf0nQdek/Iua14dY492HK82QDB0T' +
-            'a8UIZpDmgICU4P15Sj4S0sdoGofknQfP/kjAKxHIZf0k0Yvkt8gtQ' +
-            'r3BTpEfw90JaokXL325I3xkpfVcgHWtvV3F5PDanb0/7USLa09bex' +
-            'e7lCfgcHlduteiRoo7FNOGQIZEwpVKWsYw+FhEr5Sf62CqTdXFz++' +
-            'z952t3nq7fe7b44UfLWw/rF67XTl9a2rwzc+HmScT/r9+bOn/d4vH' +
-            '2cHm6EY8zk0Ka3xgIaDxutcuBaL/e59aPuHVmk1aj0uk0LJ7wIOL8' +
-            'XMGQUmmxmU02c2fnKJNZFxoy6tScPntSm5qR+fODjgR7KL73APpX+' +
-            'U1DWiYlykdGe176ZpYxCAziy8doIlqGOxYgfERNPKlDvVmdVt5WoT' +
-            'kjdXiKCZoPMg69xWQmAy4qlfXAAp8H4U/DJVl4nAr4UNijyZFHMmS' +
-            '3yzAuCnDJGDmFLUHuZOHgBPRzEhxtakzh0zB0NZDAGvxwi2CUZ8Bx' +
-            'xj7XJAy6KgyrdwFS6VfM4L+nVqsmV9IjIeVs0zQ/ASkz+FfkCb+B4' +
-            'xMYUoLSN2wBASksx4GcgjKl+Rkdp5mWP2cm/ktj0QzE+duWkROB7A' +
-            's5BfvHBWlTSl8npMWOjmEOl4M0P7FQ575DzH0Hu9gsRPgFAoHCbjP' +
-            'G44ZIRB+PmlNJQ3LUMJowpkZVI65ePh9tKovdly4m60vVs9emLt+e' +
-            'v35v+cOHSzfur2w9Wri2XVw+4wjHhtSaQa1G4xsxRaPmeMwYCiDNr' +
-            '/eN6H0eo89jJqr6R8zIBBj1RrORKx44xBMd4YkGFIjzW21uR1e3F3' +
-            'V174GIFCl8T5GrGG3vCre+n39rIMUnBF7N+XE7WJyS5E4R7A5ufxp' +
-            'kqQZrRtWgTqwG0expYBTT0GFMhIogbHnoYQU8lCJIeBZ6WwMfGdtH' +
-            'PCJwtUMJ+EwZhkwemFKa9GhwqHAM+o93RsktB5YXk6UK9KEAd8fDM' +
-            'A1jYQqmN07CTfF8/HkoupiFXB5VyDEGvSrC99sNKecuDsIQEXvLb0' +
-            'GBk5DifxEaHvukY42ozouVjrYwpI3wDnFhhdT8pLZ3/2uiBfdfkpr' +
-            '/Z8zEX5M7f0osqUQq/8Yd0VVdt39UkDal9DVDmu3oEPB5XBabtfvg' +
-            '4R179jE/aOvu7RWI+AKxQO12Is2v8vsMsYhpNKaLxZHmt2VT1vRov' +
-            '1bNHxziDQ73CPv7JENCmUJtdTiio5FCJb+wkqrPG9wejkTEEgoGzX' +
-            'ojMhyjCULtRyM6n88QCOiIFXtceo/b7PeaA36Tw2Ew6EwWs0QqO8w' +
-            'VdnCFQpnMbLc4PG6+INjSkmYw8/s7ou/tzbx9kI6Tx3GcX/YyzV8A' +
-            'ApAhtywEHgu0LFIRgk6UAaJsEzXpeA6sDE46ZEHAxuHXrNFCoHVaL' +
-            'iMPd6H+hYlQmgyK4l5R8asCrc0SoJGBW8cB8DTZSALGWglOKwNxGg' +
-            'fcxgC3cYg0TpD3TcPAxEOPmqeJ023r5CPXQVxTMMwLAN3bDikz+B9' +
-            'oK+P9H4b4WQPSF9Eecr5Pxwp5wv9mtJYbJJ94uxkBaUPVE9EeEs+2' +
-            'FZwygPWx/w4dYYg//84SecG/Iroh/YZwDdou/MggbUrpa4SUyUyeO' +
-            'CEUCvgsVs/OtoNI87fsO9Dbx+bxeUjzy10ObShkCIcs8RgR9onHLK' +
-            'kU4vzmdNIYj+kCfoXbLXe4pCbrgEYvkKp6+MJuHr9PJO7mcXqFfKn' +
-            'VqAn6NOGgMRHXRSOmRMwQIeZw6fxeYqE2l9PgcduCfls4YHY7TWaj' +
-            '1WqWqtUdgoFOQT9fprB5PU6/V9jv+cnO0bcYUtyCj8GwMBjDr4jz4' +
-            'xgjzj1loAK5AMSDyjjXwNDUIABFOSlTEFbKQ8a5QJPJLLCUCuQ4pm' +
-            'hdnaB5tTWwVhO0hy3A8xZo9m4SKhzGwJkaIx+BGnr4XxPAu6iaauo' +
-            '7DxwjD7YyCz9ZAuqrC+BKT0OCbI62mtYM5FmooVqDlt8FSFsnCWLf' +
-            'WvtdSInj1ReQtlZfQNE6+R1IW6d/F9LWKUbrLNkmDdLWCqMVX/tjh' +
-            '7Qppa8J0paWXHeXkM/p6+rqZu4lpnHtOnCIze3j8XjEPF27QxcOm2' +
-            'NRayxqikUc6bRldNQ0mhgZL1hzWbQ5CuPu8ZJ1LGdMJA3hiNLjltq' +
-            'tErVKYbcYwkF9PKoJBgzRsCEeM8QjukhIHfDrfF6t1631uAxet8nn' +
-            'MftGzH6fxeMymQxOh11nNHUKB48JBgUKrcPvdwYCUpV39+7xtxhSH' +
-            'FlCnN/BYCheneEtgYzlgKUUoMOTkIzA6SHKK8GBRJyknoFoZIVWj5' +
-            'qHdDPFfCrQyCQEP/OQsJiARE+NBmCSJAAUF8oCsyoA4Hnwdwq01S0' +
-            'm4XZp6EmOxG0SWBNOwuJpjDlYYoUaoWlyTKXg7kVIuNRgXsYiZGqK' +
-            '8Mgl8kx8TrYJaRPSJqQ/ENKWllh3N7eP3Xu8q4uxZ9+OPW2tBw+z+' +
-            'voQ55cMDuqDIevoqDkWQ5of6X9LIm6OJezptDOf18cTxmTaNpa3Zf' +
-            'OOfNGeLziyOdtYRhdDSj5uHo0b41FtOKgLBfSRkCrgVwcDSr9P4/f' +
-            'r/T5DwGsKeg0jLqPbZQsFnJGQ3eu12WyeEbfRYjkhHjrRL+VJ1WaX' +
-            'xxUI6S0hckHOtxbSMsT5EeeXvkzzT0LjlNNaAMtbA6NTg9MKMB+tA' +
-            'vGoGtkBHMWa+q75zgGNSYEAl8AelcD5zcG9ygBLGQhSmtzysI8Pps' +
-            'CnLoNXVaQ5wjXwp/IQcKtAIqwGgNTAg8b7uKKgDrfOUWFGGhQVSNv' +
-            'hR16EJx2DH6sIQ2+WhlUT0iakTUh/T0hbWqIsVi+Px+08fnwHqfnf' +
-            'O9jOFfIkEvEAscaOT+UjNl2QUODmeNyaTLpyOc/4uG1sDFF9Zx5x/' +
-            'rIjXzCl0pZU2hCLacNR5BSYEMmPhoyRkB5p/nAQUX2k/LXBgNbvM4' +
-            'WDRsT8PS69x2X2j1gCAbPfb/X7rA670+U0O+w9A9LuQTlHprGMeEO' +
-            'jSacv2tqaeYshxXh6ydqel0Z7MiBIGVrL2NfAVUZVMC4lyBoUwejk' +
-            'QT6zYLjHyZvWab3KgQBXoEtFePZxCIFWYJuAq4qAQBEuL9EGSwKS5' +
-            'tie4n2c40jTTO0YXDIJFrkEN6pBU7iH9e8+YAboVh5AniBt8TIseF' +
-            'WHwN00NIWr7KbgwiakTUibkP7+kO7cGWaxWIjzE5p/736k+fe0t3O' +
-            'IWA+PL5HIR0YUXq/K79dFwkSWNpFwZsacuawjl7VmMojtj5QqvkrV' +
-            'ns0jQ2BOpZDmt6RGTaNxUzxqTSb0oaAOKXxE+P1+lc9vjEa0yIj4v' +
-            'NoRNyL8Jr/H5PWYfCPWUMAW9FudTqT8LU4bR6roGZJzpWqL1x8eTX' +
-            'r8oQ/2Jt9iSHGMKMJg2F86h7f5aX6an+bnbfvs3r2b1dvTy2IdaXD' +
-            '+ffvaj3AFPL5IIBiUKL1eJaH5fYi0E5w/mXCMjdmRzie2rDmVceWL' +
-            'znzBkskgnW8cjaMTzKmkLhqxppLW0VGk8w1Bv94fMEUiyAoQ336/O' +
-            'Rgw+L0Gj9vgdiHNbwn47NGQJx5xet12l8M14hGpNL3DSp5CZ/EHgo' +
-            'lEIBo5dOjQm8ap+Wl+mp/m58fz2d26m81hczh9R0507figDW2HTnS' +
-            'J+vuFErFYNoR0vsrr1QQD2lDQHI/ZUknHWMaaSlnSaWt6DG1I89uz' +
-            'OcT2tZGoOTWKCL8hETMSJUBJeyptjcWs0ag5HDYEgxqfXxcIEiWdP' +
-            'q/J7zWOuKxBn8Xvs/i8rnjYFQvbXU6bw+4NBoZ1Bvawkos0v8cbSy' +
-            'bj6dShw03N3/w0P81P8/PaPojzc/l8pPwPHTu244MDO/a0dXT3iiQ' +
-            'Scb9kQCnXIZ0fCOhCQcTYzbGoI5O2pdPm0aQjm/MUxt2I8OfyaN8Q' +
-            'J6i+bQyZg6Q+FtNHo4j2IzOBGL6WrN7Xo0b8AT3S/8iOeDzaEbfe4' +
-            '7SEAmbfiDXod8cjSPM7RzwOtwtxfrnBwBmS85Vavd0RG43H4rHOzi' +
-            'NvGqfv/fl/xYjGKw==');
 End;
 
 Procedure Fr33DTM;
 Begin
-  FreeDTM(RSpotDTM);
-  FreeDTM(GSpotDTM);
-  FreeDTM(SalDTM);
+  Case LowerCase(CatchType) Of
+    'red':
+    Begin
+      FreeDTM(RSpotDTM);
+      FreeDTM(SalDTM);
+      FreeDTM(SWDTM);
+      FreeDTM(NWDTM);
+      FreeDTM(CheckDTM);
+    End;
+    'green':
+    Begin
+      FreeDTM(GSpotDTM);
+      FreeDTM(GSalDTM);
+      FreeDTM(GCheckDTM);
+      FreeDTM(Position);
+      FreeDTM(FireDTM);
+    End;
+  End;
   FreeDTM(RopeDTM);
-  FreeDTM(CheckDTM);
-  FreeDTM(SWDTM);
-  FreeDTM(NWDTM);
-  FreeDTM(GSalDTM);
-  FreeDTM(GCheckDTM);
-  FreeDTM(Position);
-  FreeDTM(FireDTM);
-  If OnscreenProggy Then
-    FreeBitmap(Proggy);
 End;
 
 {*******************************************************************************
@@ -1573,18 +201,7 @@ Begin
       Exit;
     End;
 
-    MMouse(708, 144, 5, 5);
-
-    Repeat
-      GetMousePos(X,Y);
-      Wait(Random(300));
-    Until(PointInBox(Point(X,Y),IntToBox(691,131,720,159)));
-
-
-    Result:= True;
-
-    If (WaitUptextMulti(['elect', 'lect'], RandomRange(300,500))) Then
-      Result:= False;
+    Result := CountColorTolerance(12501952,135,90,380,329,100)>1000;
   End;
 End;
 
@@ -1595,21 +212,42 @@ Begin
   Result:= GetMMLevels('summon', ColourString);
 End;
 
+Function CheckStuff: Boolean;
+Begin
+  Result:=False;
+
+  If Not LoggedIn Then
+    LoginPlayer;
+
+  If FindNormalRandoms Then
+  Begin
+    If Not LoggedIn Then
+      TerminateScript;
+    If LowerCase(CatchType) = 'red' Then
+      MakeCompass('N') Else
+      MakeCompass('S');
+
+    SetAngle(SRL_ANGLE_HIGH);
+    Result:=True;
+  End;
+
+  If Not LoggedIn Then
+    TerminateScript;
+End;
+
 Function SummoningRenew(PouchToSummon: Integer): Boolean;
 Var
   Pouch, X, Y, Tries, Summoning, Empty: Integer;
 Begin
-  LProc:= 'SummoningRenew';
-
   If PouchToSummon = 0 Then
+    Exit;
+
+  If Not LoggedIn Then
     Exit;
 
   If UsingFamiliar Then
   Begin
-    If Debug Then
-      Writeln('ALREADY USING A FAMILIAR');
     Result:= True;
-    MarkTime(TS);
     Exit;
   End;
 
@@ -1624,11 +262,10 @@ Begin
   If ((SummonPoints < 10) and (Not FindDTM(Summoning, X, Y, MIX1, MIY1, MIX2, MIY2))) Then
   Begin
     If Debug Then
-      Writeln('DID NOT FIND SUMMONING POTION AND LOW ON POINTS');
+      Writeln('Did not find summoning potion and low on points');
     FreeDTM(Pouch);
     FreeDTM(Summoning);
     FreeDTM(Empty);
-    MarkTime(TS);
     PTS:=0;
     Exit;
   End;
@@ -1641,7 +278,7 @@ Begin
     If (Not FindDTM(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2)) Then
     Begin
       If Debug Then
-        Writeln('NO MORE POUCHES');
+        Writeln('No more pouches');
       FreeDTM(Pouch);
       FreeDTM(Summoning);
       FreeDTM(Empty);
@@ -1649,35 +286,30 @@ Begin
       Exit;
     End;
 
-    If(FindDTM(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2) And FindDTM(Summoning, x, y, MIX1, MIY1, MIX2, MIY2)) Then
+    If (FindDTM(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2) And FindDTM(Summoning, x, y, MIX1, MIY1, MIX2, MIY2)) Then
       If(SummonPoints < 10) Then
       Begin
-        Writeln('Need to Refill Summoning Points.');
+        If Debug Then
+          Writeln('Need to Refill Summoning Points.');
 
         If(FindDTM(Summoning, X, Y, MIX1, MIY1, MIX2, MIY2)) Then
         Begin
-          MMouse(X, Y + 5, 0, 0);
-
+          MMouse(X,Y,4,4);
           If WaitUptextMulti(['ummoning', 'potion'], 500) Then
           Begin
             ClickMouse2(False);
-
             WaitOptionMulti(['rink', 'Drink', 'rink Summoning', 'Drink Summoning'],RandomRange(400,500));
-
-            Wait(2000);
+            Wait(RandomRange(1888,2000));
           End;
 
           If FindDTM(Empty, X, Y, MIX1, MIY1, MIX2, MIY2) Then
           Begin
-            MMouse(X, Y + 5, 0, 0);
-
+            MMouse(X,Y,4,4);
             If WaitUptextMulti(['ial', 'Vial'], 500) Then
             Begin
               ClickMouse2(False);
-
               WaitOptionMulti(['Drop', 'rop', 'p Vial', 'Drop Vial'],RandomRange(400,500));
-
-              Wait(2000);
+              Wait(RandomRange(1880,2000));
             End;
           End;
         End;
@@ -1694,73 +326,33 @@ Begin
     Tries := 0;
 
     If(FindDtm(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2) And (SummonPoints >= 10)) Then
-    Repeat
-      If (Not Loggedin) Then
-        LoginPlayer;
-
-      If UsingFamiliar Then
-        Break;
-
-      If FindNormalRandoms Then
-      Begin
-        If CatchType = 'Red' Then
-          MakeCompass('N') Else
-          MakeCompass('S');
-
-        SetAngle(SRL_ANGLE_HIGH);
-      End;
-
+    Begin
       MMouse(X, Y, 5, 5);
-
       ClickMouse2(false);
-
       WaitOption('Summon',500);
-
-      If(FindBlackChatMessage('follower')) Then
-        Break;
-
-      Tries:= Tries + 1;
-
       Wait(RandomRange(1000,1200));
-
-      If (Tries > 2) Then
+      If FindBlackChatMessage('area') Then
       Begin
-        FreeDTM(Pouch);
-        FreeDTM(Summoning);
-        FreeDTM(Empty);
-        Exit;
+        MMouse(209,174,4,4);
+        If WaitUpText('alk',900) Then
+          ClickMouse2(True) Else
+          Begin
+            ClickMouse2(False);
+            WaitOption('alk',900);
+          End;
+        ExamineInv;
+        SummoningRenew(PTS);
       End;
-    Until(UsingFamiliar = True);
+    End;
   End;
-
-  Result:= UsingFamiliar;
-
   FreeDTM(Pouch);
   FreeDTM(Summoning);
   FreeDTM(Empty);
-
-  MarkTime(TS);
-End;
-
-Function OnScreen: Boolean;
-Begin
-  If OnScreenProggy Then
-  Begin
-    SMART_DrawBitmap(True, proggy,Point(6,344));
-    SMART_DrawText(307,356,SmallChars,'v'+ScriptVersion,clWhite);
-    SMART_DrawText(137,380,StatChars,IntToStr(SalamanderCount),clWhite);
-    SMART_DrawText(137,396,StatChars,ToStr(SalamandersPH),clWhite);
-    SMART_DrawText(83,415,StatChars,IntToStr(XP),clWhite);
-    SMART_DrawText(83,432,StatChars,ToStr(XPH),clWhite);
-    SMART_DrawText(100,449,StatChars,TimeRunning,clWhite);
-    Result := True;
-  End Else
-    Result := False;
 End;
 
  {*******************************************************************************
 
-All of these mouse movements are credited to bandland100 and flight
+All of these mouse movements are credited to benland100 and flight
 
 *******************************************************************************}
 
@@ -1863,45 +455,51 @@ Begin
     Exit;
 
   MouseSpeed := RandomRange(18, 23);
-
-  If FindNormalRandoms Then
-  Begin
-    If CatchType = 'Red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-
-    SetAngle(SRL_ANGLE_HIGH);
-  End;
+  CheckStuff;
+  QuickClick:=False;
 
   For I:=0 To 1 Do
   Begin
     If FindDTM(Sal,X,Y,MIX1,MIY1,MIX2,MIY2) Then
     Begin
-      If OnScreen Then
-        SMART_DrawText(225,462,StatChars,'Releasing Salamanders',clWhite) ;
-
       If Debug Then
         Writeln('Releasing Salamanders');
 
-      HumanMMouse(X,Y,3,3);
+      HumanMMouse(X,Y,5,5);
       ClickMouse2(False);
 
       If I=0 Then
-        Wait(RandomRange(800,850));
-
-      If I=0 Then
-        ChooseOption('ease') Else
+      Begin
+        If (XT<269) And (YT<156) Then
+          Wait(RandomRange(1280,1350)) Else
+          Wait(RandomRange(790,850));
+        ChooseOption('ease')
+      End Else
         If WaitOption('ease',800) Then
+        Begin
+          QuickClick:=False;
           Exit;
+        End;
 
       InvCnt:=CountItems('DTM',Sal,[]);
       MarkTime(T1);
       If I=0 Then
       Begin
         Repeat
-          Wait(100);
           If TimeFromMark(T1)>2000 Then
             Break;
+          If Not QuickClick Then
+            If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+            Begin
+              If Debug Then
+                Writeln('Found check net dtm in release');
+              HumanMMouse(X,Y,3,3);
+              If WaitUpTextMulti(['Chec','heck'],RandomRange(300,320)) Then
+              Begin
+                ClickMouse2(False);
+                QuickClick:=True;
+              End;
+          End;
         Until (CountItems('DTM',Sal,[]) < InvCnt);
       End;
     End Else
@@ -1911,39 +509,69 @@ Begin
       If I=0 Then
       Begin
         Repeat
-          Wait(100);
+          If Not QuickClick Then
+            If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+            Begin
+              If Debug Then
+                Writeln('Found check net dtm in release');
+              HumanMMouse(X,Y,3,3);
+              If WaitUpTextMulti(['Chec','heck'],RandomRange(300,320)) Then
+              Begin
+                ClickMouse2(False);
+                QuickClick:=True;
+              End;
+            End;
           If TimeFromMark(T1)>3500 Then
             Break;
         Until (InvCount < InvCnt);
-
-        Wait(RandomRange(1100,1200));
-        Exit;
+        If Not QuickClick Then
+          Wait(RandomRange(1100,1200)) Else
+          Begin
+            Wait(RandomRange(450,550))
+            Exit;
+          End;
       End;
     End;
   End;
 End;
 
+Procedure AvoidDeadTree;
+Var
+  CTS: Integer;
+  TPA: TPointArray;
+  ATPA: T2DPointArray;
+Begin
+  CTS := GetColorToleranceSpeed;
+  ColorToleranceSpeed(2);
+  SetColorSpeed2Modifiers(0.04,0.46);
+  FindColorsSpiralTolerance(MSCX,MSCY,TPA,4345948,A,B,C,D,8);
+  ColorToleranceSpeed(CTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+
+  ATPA := SplitTPAEx(TPA,30,30);
+  SortATPASize(ATPA,True);
+  DeadTreeBox:=GetATPABounds(ATPA);
+End;
+
+
 Procedure FindEmptyTree;
 Var
   X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY: Integer;
   E,F,G,H1: Integer;
-  pArray: TPointArray;
-  aPArray: T2DPointArray;
+  TPA: TPointArray;
+  ATPA: T2DPointArray;
 Begin
   If (Not(LoggedIn)) Then
     Exit;
 
-  If FindNormalRandoms Then
-  Begin
-    If CatchType = 'Red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-
-    SetAngle(SRL_ANGLE_HIGH);
-  End;
+  CheckStuff;
 
   If ((CountItems('DTM',RopeDTM,[])=(NumberofTraps-Level)) Or (CountItems('DTM',RopeDTM,[])=0)) And (SetTrap=0)  Then
+  Begin
+    If Debug Then
+      Writeln('No more traps to setup');
     Exit;
+  End;
 
   If (CountItems('DTM',RopeDTM,[])=0) Then
   Begin
@@ -1952,11 +580,6 @@ Begin
     Exit;
   End;
 
-  If (OnScreen) And (SetTrap<>1) Then
-    SMART_DrawText(225,462,StatChars,'Finding Empty Trap Spot',clWhite) Else
-    If OnScreen Then
-      SMART_DrawText(225,462,StatChars,'Looking for Laid Traps',clWhite);
-
   If (SetTrap<>1) And (Debug=True) Then
     Writeln('Finding Empty Trap Spot') Else
     If Debug Then
@@ -1964,31 +587,21 @@ Begin
 
   MouseSpeed := RandomRange(18, 23);
 
-  If CatchType = 'Red' Then
-  Begin
-    E := A;
-    F := B;
-    G := C;
-    H1 := D;
-  End Else
-  Begin
+  E:=A;
+  F:=B;
+  G:=C;
+  H1:=D;
+
+  If LowerCase(CatchType)='green' Then
     If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
     Begin
       If Debug Then
-        Writeln('FOUND FIRE STAYING AWAY');
-
-      E := 139;
-      F := 75;
-      G := C;
-      H1 := D;
-    End Else
-    Begin
-      E := A;
-      F := B;
-      G := C;
-      H1 := D;
+        Writeln('Found fire, staying away');
+      E:=139;
+      F:=75;
+      G:=C;
+      H1:=D;
     End;
-  End;
 
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
@@ -2008,27 +621,32 @@ Begin
     SearchFromY:= (MSCY - 35);
 
   SetColorSpeed2Modifiers(Hue,Sat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,pArray,Color,E,F,G,H1,Tolerance);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,Color,E,F,G,H1,Tolerance);
+  ColorToleranceSpeed(CTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
 
+  ATPA := SplitTPAEx(TPA,Width,Height);
 
-  aPArray := SplitTPAEx(pArray, Width, Height);
+  If (Length(ATPA) = 0) Then
+    Exit;
 
-  If Debug Then
-    DebugATPABounds(aPArray);
+  H:=High(ATPA);
 
-  If (Length(aPArray) = 0) Then
+  For I:=0 To H Do
   Begin
-    ColorToleranceSpeed(CTS);
-    SetColorSpeed2Modifiers(0.2, 0.2);
-  End;
+    MiddleTPAEx(ATPA[I],X,Y);
 
-  H := High(aPArray);
+    If Debug Then
+      Writeln('Empty Tree Length: '+tostr(Length(atpa[i])));
 
-  For I := 0 To H Do
-  Begin
-    MiddleTPAEx(aPArray[I], X, Y);
+    If LowerCase(CatchType)='red' Then
+    Begin
+      AvoidDeadTree;
+      If PointInBox(Point(X,Y),DeadTreeBox) Then
+          Continue;
+    End;
 
-    If Length(aPArray[I]) < 22 then
+    If (Length(ATPA[I]) < 22) Then
       Continue;
 
     HumanMMouse(X+Increase,Y,0,2);
@@ -2038,52 +656,41 @@ Begin
       If (WaitUpTextMulti(['Dism','sman','mant','antle'],RandomRange(200,300))) Then
       Begin
         If Debug Then
-          Writeln('FOUND DISMANTLE OPTION, CLICKING');
-
+          Writeln('Found dismantle option, clicking');
         ClickMouse2(False);
 
         If WaitOptionMulti(['Dism','sman','mant','antle'],RandomRange(400,500)) Then
         Begin
           If Debug Then
-            Writeln('FOUND OPTION TO DISMANTLE');
-
-          ColorToleranceSpeed(CTS);
-          SetColorSpeed2Modifiers(0.2, 0.2);
-
+            Writeln('Found option to dismantle');
           Release;
-
           Exit;
         End;
       End;
-    End
-    Else
-
+    End Else
     Begin
       If (WaitUpTextMulti(['Set'],RandomRange(200,300))) Then
       Begin
+        GetMousePos(XT,YT);
+
         If Debug Then
-          Writeln('FOUND UPTEXT SET');
+          Writeln('X: '+tostr(XT)+' Y: '+tostr(YT));
+
+        If Debug Then
+          Writeln('Found uptext set, clicking');
 
         ClickMouse2(False);
 
         If WaitOption('Set',RandomRange(400,500)) Then
         Begin
           If Debug Then
-            Writeln('FOUND OPTION SET');
-
-          ColorToleranceSpeed(CTS);
-          SetColorSpeed2Modifiers(0.2, 0.2);
-
+            Writeln('Found option set');
           Release;
-
           Exit;
         End;
       End;
     End;
   End;
-
-  ColorToleranceSpeed(CTS);
-  SetColorSpeed2Modifiers(0.2, 0.2);
 End;
 
 {*******************************************************************************
@@ -2132,24 +739,19 @@ End;
 
 Procedure CheckNet;
 Var
-  X,Y: Integer;
+  X,Y,T: Integer;
+Label
+  Jumper;
 Begin
   If (Not(LoggedIn)) Then
     Exit;
 
-  If FindNormalRandoms Then
-  Begin
-    If CatchType = 'Red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-    SetAngle(SRL_ANGLE_HIGH);
-  End;
+  CheckStuff;
+  If QuickClick Then
+    GoTo Jumper;
 
-  If Not FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+  If Not FindDTMRotated(Check,X,Y,A,B,C,D,-Pi,Pi,Pi/30,aFound) Then
     Exit;
-
-  If OnScreen Then
-    SMART_DrawText(225,462,StatChars,'Checking for Caught Salamanders',clWhite) ;
 
   If Debug Then
     Writeln('Checking for Caught Salamanders');
@@ -2159,33 +761,28 @@ Begin
   If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
   Begin
     If Debug Then
-      Writeln('FOUND CHECK NET DTM');
-
+      Writeln('Found check net dtm');
     HumanMMouse(X,Y,3,3);
 
     If WaitUpTextMulti(['Chec','heck'],RandomRange(500,650)) Then
     Begin
       ClickMouse2(False);
 
+      Jumper:
       If WaitOptionMulti(['Check'],800) Then
       Begin
-
         If Debug Then
-          Writeln('CHOSE CHECK NET OPTION');
-
+          Writeln('Chose check net option');
         InvCnt := InvCount;
-
-        MarkTime(T2);
-
+        MarkTime(T);
         Repeat
-          Wait(RandomRange(200,300));
-          If TimeFromMark(T2) > 8000 Then
+          If TimeFromMark(T) > 8000 Then
             Exit;
         Until (InvCount = InvCnt + 3);
-
         SalamanderCount := SalamanderCount + 1;
         ProgressReport;
       End;
+      QuickClick:=False;
     End;
   End;
 
@@ -2198,59 +795,67 @@ Begin
   End;
 End;
 
+Function RedDots: Boolean;
+Var
+  CTS: Integer;
+  TPA: TPointArray;
+Begin
+  Result:=False;
+
+  CTS := GetColorToleranceSpeed;
+  ColorToleranceSpeed(1);
+  FindColorsSpiralTolerance(MMCX,MMCY,TPA,1314513,592,75,644,102,43);
+  ColorToleranceSpeed(CTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+
+  If Length(TPA)> 0 Then
+  Begin
+    If Debug Then
+      Writeln(tostr(TPA));
+    Result:=True;
+  End;
+End;
+
 Procedure FailedTrap;
 Var
-  X,Y,X1,Y1,X2,Y2,X3,Y3: Integer;
-  E,F,G,H,T: Integer;
+  X,Y,E,F,G,H,T: Integer;
+  TrapFail: Boolean;
 Begin
   If (Not(LoggedIn)) Then
     Exit;
 
-  If FindNormalRandoms Then
-  Begin
-    If CatchType = 'Red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-
-    SetAngle(SRL_ANGLE_HIGH);
-
-    If Debug Then
-      Writeln('FOUND RANDOM');
-  End;
-
-  If OnScreen Then
-    SMART_DrawText(225,462,StatChars,'Looking for Failed Traps',clWhite) ;
+  CheckStuff;
 
   If Debug Then
     Writeln('Looking for Failed Traps');
 
-  If CatchType = 'Red' Then
+  MarkTime(TrapTime);
+
+  If LowerCase(CatchType) = 'red' Then
   Begin
-    If FindDTM(SWDTM,X1,Y1,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X2,Y2,MMX1,MMY1,MMX2,MMY2) Then
+    If FindDTM(SWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Then
     Begin
       If Debug Then
-        Writeln('LARGE SEARCH AREA FOR FAILED TRAPS');
-
+        Writeln('Using large search area for failed traps');
       E := 102;
       F := 100;
-      G := 417;          //Large search area
+      G := 417;
       H := 340;
     End Else
     Begin
       If Debug Then
-        Writeln('SMALL SEARCH AREA FOR FAILED TRAPS');
-
+        Writeln('Using small search area for failed traps');
       E := 132;
-      F := 80;           //Small search area
+      F := 80;
       G := 333;
       H := 265;
     End;
   End Else
   Begin
-    If FindDTM(FireDTM,X1,Y1,MSX1,MSY1,MSX2,MSY2) Then
+    If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
     Begin
       If Debug Then
-        Writeln('FOUND FIRE STAYING AWAY');
+        Writeln('Found fire staying away');
       E := 139;
       F := 75;
       G := C;
@@ -2269,117 +874,103 @@ Begin
   If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
   Begin
     If Debug Then
-      Writeln('FOUND POTENTIAL ROPE(1) ON GROUND, CLICKING');
+      Writeln('Found potential rope(1) on ground, clicking');
 
     HumanMMouse(X,Y,2,2);
-
     ClickMouse2(False);
 
     Invcnt := InvCount;
-
     If WaitOption('Take',RandomRange(300,400)) Then
     Begin
       If Debug Then
-        Writeln('FOUND OPTION TAKE, WAITING TO STOP MOVING');
+        Writeln('Found option to take, waiting to stop moving');
 
-      MarkTime(T2);
+      MarkTime(T);
       Repeat
-        Wait(RandomRange(150,200));
-      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T2) > 6000));
+        Wait(RandomRange(10,20));
+      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
 
-      If T < 1 Then
+      If Not TrapFail Then
       Begin
         If Debug Then
-          Writeln('TRYING TO PICK UP SECOND PART OF TRAP');
+          Writeln('Trying to pick up second part of trap');
 
         HumanMMouse(261,177,3,3);
-
         ClickMouse2(False);
 
         Invcnt := InvCount;
-
         If WaitOption('Take',RandomRange(300,400)) Then
         Begin
           If Debug Then
-            Writeln('FOUND OPTION TO PICK UP SECOND PART OF TRAP');
+            Writeln('Found option to pick up second part of trap');
 
-          MarkTime(T2);
-
+          MarkTime(T);
           Repeat
-            Wait(RandomRange(100,200));
-          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T2) > 6000));
+            Wait(RandomRange(10,20));
+          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
         End
         Else
         Begin
           If Debug Then
-            Writeln('DIDNT FIND SECOND PART OF TRAP, TRYING AGAIN');
-
-          T := 1;
-
+            Writeln('Didnt find second part of trap, trying again');
+          TrapFail:=True;
           FailedTrap;
         End;
       End;
     End;
   End;
 
-  If FindObjEx(X3,Y3,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
+  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
   Begin
-    If T < 1 Then
+    If Debug Then
+      Writeln('Found potential failed trap(2)');
+    HumanMMouse(X,Y,2,2);
+    ClickMouse2(False);
+
+    Invcnt := InvCount;
+    If WaitOption('Take',RandomRange(300,400)) Then
     Begin
       If Debug Then
-        Writeln('FOUND POTENTIAL FAILED TRAP (2)');
-      HumanMMouse(X3,Y3,2,2);
+        Writeln('Found option to pickup');
 
-      ClickMouse2(False);
+      MouseSpeed := RandomRange(18, 23);
 
-      Invcnt := InvCount;
+      MarkTime(T);
+      Repeat
+        Wait(RandomRange(10,20));
+      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
 
-      If WaitOption('Take',RandomRange(300,400)) Then
+
+      If Not TrapFail Then
       Begin
         If Debug Then
-          Writeln('FOUND OPTION TO PICK UP');
-
-        MouseSpeed := RandomRange(18, 23);
-
-        MarkTime(T2);
-        Repeat
-          Wait(RandomRange(150,200));
-        Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T2) > 6000));
-
-        If Debug Then
-          Writeln('TRYING TO PICK UP SECOND PART OF TRAP');
+          Writeln('Trying to pickup second part of trap');
 
         HumanMMouse(261,177,3,3);
-
         ClickMouse2(False);
 
         Invcnt := InvCount;
-
         If WaitOption('Take',RandomRange(300,400)) Then
         Begin
           If Debug Then
-            Writeln('FOUND SECOND PART OF TRAP');
+            Writeln('Found second part of trap');
 
-          MarkTime(T2);
-
+          MarkTime(T);
           Repeat
-            Wait(RandomRange(100,200));
-          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T2) > 6000));
-        End
-        Else
+            Wait(RandomRange(10,20));
+          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
+        End Else
         Begin
           If Debug Then
-            Writeln('FAILED TO PICK UP SECOND TRAP, TRYING AGAIN');
-
-          T := 1;
-
+            Writeln('Failed to pickup second part of trap, trying again');
+          TrapFail:=True;
           FailedTrap;
         End;
       End;
     End;
   End;
 
-  T := 0;
+  TrapFail:=False;
 
   If OptionsExist(['Exam','mine','Examine','Canc','ncel','Cancel'],False) Then
     MMouse(37,32,10,10);
@@ -2392,37 +983,25 @@ Begin
   If (Not(LoggedIn)) Then
     Exit;
 
-  If FindNormalRandoms Then
-  Begin
-    If CatchType = 'Red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-    SetAngle(SRL_ANGLE_HIGH);
-  End;
-
-  If OnScreen Then
-    SMART_DrawText(225,462,StatChars,'Walking to main spot',clWhite) ;
+  CheckStuff;
 
   If Debug Then
-    Writeln('WALKING TO MAIN SPOT');
+    Writeln('Walking to main spot');
 
-  If CatchType = 'Red' Then
+  If Lowercase(CatchType) = 'red' Then
   Begin
     If FindDTM(RSpotDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Then
     Begin
       If Debug Then
-        Writeln('FOUND START SPOT RED');
+        Writeln('Found start spot red');
 
       Mouse(X,Y,2,2,True);
-
       Wait(RandomRange(600,700));
-
       If IsMoving Then
       Begin
         Repeat
           Wait(100);
         Until(Not IsMoving);
-
         Writeln('You are now in the correct spot, good luck!');
       End;
     End Else
@@ -2432,29 +1011,24 @@ Begin
     If FindDTM(GSpotDTM,X,Y,575,45,680,127) Then
     Begin
       If Debug Then
-        Writeln('FOUND GREEN MAIN SPOT');
+        Writeln('Found green main spot');
 
       Mouse(X,Y,2,2,True);
-
       Wait(RandomRange(600,700));
-
       If IsMoving Then
       Begin
         Repeat
           Wait(100);
         Until(Not IsMoving);
-
         If Debug Then
           Writeln('Repositioned.');
       End;
-    End
-    Else
+    End Else
     Begin
       If Debug Then
         Writeln('DID NOT FIND GREEN SPOT, TRY TO MANUALLY CORRECT');
 
       Mouse(187,304,3,3,False);
-
       WaitOptionMulti(['Walk','Wal','alk','here'],RandomRange(500,700));
     End;
   End;
@@ -2467,35 +1041,18 @@ Begin
   Repeat
     If Length(GetMiniMapDotsIn('w',610,74,642,102))>0 Then
     Begin
-      If OnScreen Then
-        SMART_DrawText(225,462,StatChars,'Someone is in this spot, hopping.',clWhite);
-
       If Debug Then
         WriteLn('Someone is in this spot, hopping.');
 
       ExitToLobby;
-
       Wait(RandomRange(5000,6000));
-
       MMouse(100,100,100,100);
-
       ChangeWorld(RandomWorld(True,False));
-
       Wait(RandomRange(30000,45000));
 
-      If FindNormalRandoms Then
-      Begin
-        If CatchType = 'Red' Then
-          MakeCompass('N') Else
-          MakeCompass('S');
-
-        SetAngle(SRL_ANGLE_HIGH);
-      End;
+      CheckStuff;
     End;
   Until ((Length(GetMiniMapDotsIn('w',615,75,642,102))=0) And (Not FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound)));
-
-  If OnScreen Then
-    SMART_DrawText(225,462,StatChars,'Found an open world, starting.',clWhite);
 
   If Debug Then
     WriteLn('Found an open world, starting.');
@@ -2505,7 +1062,7 @@ End;
 
 Procedure CorrectPOS;
 Var
-X,Y:Integer;
+  X,Y:Integer;
 Begin
   If FindDTMRotated(Position,X,Y,MSX1,MSY1,MSX2,MSY2,-Pi,Pi,Pi/30,aFound) Then
     Walktospot;
@@ -2514,12 +1071,15 @@ End;
 Procedure Setup;
 Begin
   ClearDebug;
-
   AutoUpdateMe;
 
-  Smart_Server := 10;
-  Smart_Members := True;
-  Smart_Signed := True;
+
+//  Smart_FixSpeed:=True;
+//  SRL_SixHourFix:= True;
+
+  Smart_Server:= 10;
+  Smart_Members:= True;
+  Smart_Signed:= True;
 
   SetupSRL;
 
@@ -2531,11 +1091,14 @@ Begin
   DeclarePlayers;
   LoginPlayer;
 
+  If Not LoggedIn Then
+    Repeat
+      Wait(100);
+    Until LoggedIn;
+
   AddOnTerminate('FR33DTM');
   SetDTM;
-
-  SMART_ClearMS;
-  SMART_ClearCanvas;
+  ClearDebug;
 
   If PlaySounds Then
     If (Not FileExists(ScriptPath+'noyelling.wav')) Then
@@ -2544,14 +1107,13 @@ Begin
   SoundPath:=ScriptPath+'noyelling.wav';
 
   StartTime:=GetSystemTime;
-                     //4.8
-  RunTime := Round(TimetoRun * 60 * 60 * 1000 + Random(30000));
+  MarkTime(TrapTime);
+
+  RunTime:= Round(TimetoRun * 60 * 60 * 1000 + Random(30000));
   Writeln('You are going to run for ' + MsToTime(RunTime, Time_Formal));
 
   SetTrap:=0;
-
-  Wait(RandomRange(4000,5000));
-
+  PTS:= 1;                  // ***Pouch To Summon.. 1 for arctic bear, 0 for nothing***
   SetRun(True);
 
   NumberofTraps := CountItems('DTM',RopeDTM,[]);
@@ -2570,63 +1132,56 @@ Begin
   Writeln('You can use '+IntToStr(Level)+' trap spots with my script at your level.');
 
   CurrentLevel:= GetSkillLevel(Skill_Hunter);
-
   StartingXP:= XpTillNextLevel(Skill_Hunter);
-
   LevelsGained:= 0;
-
-  SetAllChats('Filter','On','Off','Off','Off','Off','Off');
-
   GameTab(Tab_Inv);
-
   ToggleXPBar(True);
   StartingExperience := GetXPBarTotal;
 
   SmartSetRefresh(80);
 
-  If CatchType = 'Red' Then
-    Begin
-      Writeln('You are catching Red Salamanders');
-      A := 102;
-      B := 100;    //   Area to look for sallys
-      C := 417;
-      D := 340;
-      J := 2450;
-      K := 2550;
-      Check := CheckDTM;
-      Sal := SalDTM;
-      Color := 2106666;
-      Tolerance := 4;
-      Hue := 0.26;
-      Sat := 0.26;
-      Width := 10;
-      Height := 14;
-      Increase := 4;
-    End
-    Else
-    Begin
-      Writeln('You are catching Green Salamanders');
-      A := 1;
-      B := 23;    //  Area to look for sallys
-      C := 498;
-      D := 312;
-      J := 2750;         // Increased wait time for green sally
-      K := 2950;
-      Check := GCheckDTM;
-      Sal := GSalDTM;
-      Color := 2237218;
-      Tolerance := 3;
-      Hue := 0.00;
-      Sat := 1.33;
-      Width := 10;
-      Height := 14;
-      Increase := 2;
-    End;
+  If LowerCase(CatchType) = 'red' Then
+  Begin
+    Writeln('You are catching Red Salamanders');
+    A         := 102;
+    B         := 100;
+    C         := 417;
+    D         := 340;
+    J         := 2450;
+    K         := 2550;
+    Check     := CheckDTM;
+    Sal       := SalDTM;
+    Color     := 2106666;
+    Tolerance := 4;
+    Hue       := 0.26;
+    Sat       := 0.26;
+    Width     := 10;
+    Height    := 14;
+    Increase  := 3;
+  End Else
+  Begin
+    Writeln('You are catching Green Salamanders');
+    A         := 1;
+    B         := 23;
+    C         := 498;
+    D         := 312;
+    J         := 2750;
+    K         := 2950;
+    Check     := GCheckDTM;
+    Sal       := GSalDTM;
+    Color     := 2237218;
+    Tolerance := 3;
+    Hue       := 0.00;
+    Sat       := 1.33;
+    Width     := 10;
+    Height    := 14;
+    Increase  := 2;
+  End;
 End;
 
 Procedure MainLoop;
 Begin
-  If CatchType = 'Green' Then
+  If Lowercase(CatchType) = 'green' Then
   Begin
     Runaways;
     CorrectPOS;
@@ -2634,24 +1189,22 @@ Begin
 
   FindEmptyTree;
   CheckNet;
-  FailedTrap;
-
-  If TimeFromMark(TS) > (300000+Random(10000)) Then
-    SummoningRenew(PTS);
+  If (RedDots) Or (TimeFromMark(TrapTime)>(120000+Random(30000))) Then
+    FailedTrap;
+  SummoningRenew(PTS);
 End;
 
 Procedure Cleanup;
+Var
+  T: Integer;
 Begin
   SetTrap:=1;
-
   If Debug Then
-    Writeln('COLLECTING ALL OF YOUR SUPPLIES TO HOP, RESTART SMART, OR SHUT DOWN');
-
+    Writeln('Collecting supplies to hop');
   MarkTime(T);
   Repeat
     Mainloop;
-  Until ((CountItems('DTM',RopeDTM,[])=(NumberofTraps)) Or (TimeFromMark(T)> RandomRange(65000,70000)));
-
+  Until ((CountItems('DTM',RopeDTM,[])=(NumberofTraps)) Or (TimeFromMark(T)> RandomRange(80000,90000)));
   SetTrap:=0;
 End;
 
@@ -2663,29 +1216,23 @@ Begin
   Begin
     If (Length(GetMiniMapDotsIn('w',610,74,642,102))>0) Then
     Begin
-      If TimeFromMark(Crash)>60000 Then
+      If TimeFromMark(Crash)>RandomRange(60000,65000) Then
       Begin
         If PlaySounds Then
           PlaySound(SoundPath);
 
         MarkTime(Crash);
-
         Crashed := False;
-
         Writeln('Another Player has been here too long, hopping');
-
         Result:=True;
-
         Cleanup;
       End;
     End Else
     Begin
       If Debug Then
-        Writeln('THE OTHER PLAYER LEFT, WE ARE GOOD');
-
-      Crashed := False;
-
-      MarkTime(Crash);
+        Writeln('The other player left, we are good');
+      Crashed:=False;
+      Crash:=0;
     End;
   End Else
   Begin
@@ -2694,11 +1241,12 @@ Begin
       If PlaySounds Then
         PlaySound(SoundPath);
 
-      Writeln('FOUND ANOTHER PLAYER, IF THEY DONT LEAVE IN 60 SECONDS, WE WILL HOP');
-
-      MarkTime(Crash);
-
-      Crashed := True;
+      If Hopper Then
+      Begin
+        Writeln('Found another player, if they dont leave in 60 seconds we gonna hop');
+        MarkTime(Crash);
+        Crashed:=True;
+      End;
     End;
   End;
 
@@ -2712,43 +1260,35 @@ End;
 
 Begin
   Setup;
-
   Repeat
-    If CatchType = 'Red' Then
+    If LowerCase(CatchType) = 'red' Then
       MakeCompass('N') Else
       MakeCompass('S');
+
     SetAngle(SRL_ANGLE_HIGH);
-
     WalkToSpot;
-
     WorldHop;
-
     SummoningRenew(PTS);
 
-    MarkTime(T);
+    MarkTime(RunTimer);
     Repeat
       Mainloop;
-
       If Crasher Then
       Begin
         WalkToSpot;
         WorldHop;
       End;
-
-    Until (RunTime < TimeFromMark(T)) or (Not(LoggedIn));
+    Until (RunTime < TimeFromMark(RunTimer)) or (Not(LoggedIn));
 
     If LoggedIn Then
     Begin
       Cleanup;
-
       Logout;
-
       Writeln('Time Ran: ' + TimeRunning);
 
       If HowManyPlayers <= 1 Then
       Begin
         {$IFDEF SMARTManager}
-          Fr33DTM;
           SMARTManager;
         {$ENDIF}
         TerminateScript;
@@ -2756,8 +1296,6 @@ Begin
     End;
 
     NextPlayer(Players[CurrentPlayer].Active);
-    MarkTime(T);
+    MarkTime(RunTimer);
   Until (AllPlayersInactive);
-
-  Fr33DTM;
 End.
