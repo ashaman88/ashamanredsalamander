@@ -11,7 +11,7 @@ Program Ashaman2IOSalamander;
   {$I SRL/SRL/Misc/Debug.Simba}
 
 {
-Ashaman2IOSalamander v6.07
+Ashaman2IOSalamander v6.08
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -64,11 +64,11 @@ Var
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat,SalamandersPH,XPH: Extended;
   SoundPath: String;
-  Crashed,QuickClick: Boolean;
+  Crashed,QuickClick,RestartScript: Boolean;
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.07';
+  ScriptVersion = '6.08';
   UseAutoChecker = True;
   Debug = False;
 
@@ -1074,12 +1074,15 @@ Begin
   AutoUpdateMe;
 
 
-//  Smart_FixSpeed:=True;
-//  SRL_SixHourFix:= True;
-
-  Smart_Server:= 10;
-  Smart_Members:= True;
-  Smart_Signed:= True;
+  {$IFDEF SIMBAMAJOR980}
+    SMART_SERVER := 10;
+    SMART_MEMBERS := TRUE;
+    SMART_SIGNED := TRUE;
+    SMART_SUPERDETAIL := FALSE;
+  {$ELSE}
+    SRL_SIXHOURFIX := TRUE;
+    SMART_FIXSPEED := TRUE;
+  {$ENDIF}
 
   SetupSRL;
 
@@ -1098,6 +1101,7 @@ Begin
 
   AddOnTerminate('FR33DTM');
   SetDTM;
+  RestartScript:=False;
   ClearDebug;
 
   If PlaySounds Then
@@ -1189,7 +1193,7 @@ Begin
 
   FindEmptyTree;
   CheckNet;
-  If (RedDots) Or (TimeFromMark(TrapTime)>(120000+Random(30000))) Then
+  If (RedDots) Or (TimeFromMark(TrapTime)>(80000+Random(30000))) Then
     FailedTrap;
   SummoningRenew(PTS);
 End;
@@ -1258,7 +1262,10 @@ Begin
   End;
 End;
 
+Label
+  Restart;
 Begin
+  Restart:
   Setup;
   Repeat
     If LowerCase(CatchType) = 'red' Then
@@ -1290,6 +1297,12 @@ Begin
       Begin
         {$IFDEF SMARTManager}
           SMARTManager;
+        {$ELSE}
+          {$IFDEF SIMBAMAJOR990}
+            SixHourFix;
+            RestartScript:=True;
+            Break;
+          {$ENDIF}
         {$ENDIF}
         TerminateScript;
       End;
@@ -1298,4 +1311,7 @@ Begin
     NextPlayer(Players[CurrentPlayer].Active);
     MarkTime(RunTimer);
   Until (AllPlayersInactive);
+
+  If RestartScript Then
+    GoTo Restart;
 End.
