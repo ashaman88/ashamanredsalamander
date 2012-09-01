@@ -11,10 +11,11 @@ Program Ashaman2IOSalamander;
   {$I SRL/SRL/Misc/Debug.Simba}
 
 {
-Ashaman2IOSalamander v6.08
+Ashaman2IOSalamander v6.09
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
+-Make sure zoom is farthest out
 -Don't be an A hole, find an empty world
 -FILL OUT THE STUFF BELOW
 -READ THE OP DIRECTIONS
@@ -31,8 +32,7 @@ Ashaman2IOSalamander v6.08
 Const
   SRLStats_Username = '';       // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  OnScreenProggy    = False;    // ***Set to False if you don't want proggy on screen.***
-  TimetoRun         = 4.8;      // ***Enter number of hours to run until SmartManager restarts or time per character (default at 5hrs)***
+  TimetoRun         = 4.8;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid or time per character (default at 5hrs prob don't touch)***
   HealthMin         = 300;      // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
   PlaySounds        = True;     // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
@@ -68,7 +68,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.08';
+  ScriptVersion = '6.09';
   UseAutoChecker = True;
   Debug = False;
 
@@ -230,9 +230,6 @@ Begin
     SetAngle(SRL_ANGLE_HIGH);
     Result:=True;
   End;
-
-  If Not LoggedIn Then
-    TerminateScript;
 End;
 
 Function SummoningRenew(PouchToSummon: Integer): Boolean;
@@ -433,6 +430,7 @@ Var
 Begin
   j := MouseSpeed;
   GetMousePos(X, Y);
+  Y:=Y-50;
   Dist := Distance(X, Y, eX, eY);
   MP := Round(Dist/150);
   If MP < 0 Then
@@ -443,6 +441,7 @@ Begin
   Y2 := RandomRange(eY-(j*MP), eY+(j*MP));
   SuperWindMouse(X, Y, X2, Y2, 11, 8, 10.0 / randSpeed, 12.0 / randSpeed, 10.0 * randSpeed, 10.0 * randSpeed);
   GetMousePos(X, Y);
+  Y:=Y-50;
   MMouse(eX, eY, ranX, ranY);
   MouseSpeed := j;
 End;
