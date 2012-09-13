@@ -9,9 +9,10 @@ Program Ashaman2IOSalamander;
   {$I SRL/SRL.Simba}
   {$I SRL/SRL/Skill/Fighting.Simba}
   {$I SRL/SRL/Misc/Debug.Simba}
+  {$i SRL/SRL/misc/SmartGraphics.simba}
 
 {
-Ashaman2IOSalamander v6.09
+Ashaman2IOSalamander v6.10
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -32,7 +33,7 @@ Ashaman2IOSalamander v6.09
 Const
   SRLStats_Username = '';       // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  TimetoRun         = 4.8;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid or time per character (default at 5hrs prob don't touch)***
+  TimetoRun         = 5.5;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid or time per character (default at 5hrs prob don't touch)***
   HealthMin         = 300;      // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
   PlaySounds        = True;     // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
@@ -61,14 +62,14 @@ End;
 Var
   SalamanderCount,XP,StartTime,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
   StartingXP,LevelsGained,XPTL,TrapTime,XT,YT,PTS: Integer;
-  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,Position,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
+  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat,SalamandersPH,XPH: Extended;
   SoundPath: String;
   Crashed,QuickClick,RestartScript: Boolean;
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.09';
+  ScriptVersion = '6.10';
   UseAutoChecker = True;
   Debug = False;
 
@@ -113,6 +114,22 @@ Begin
     WriteLn('!!!!! Not checking for latest version, you may be outdated!');
 End;
 
+Function WaitLoggedIn(Time:Integer): Boolean;
+Var
+  T: Integer;
+Begin
+  Repeat
+    MarkTime(T);
+    SRL_ResetNavBar;
+    If TimeFromMark(T)>Time Then
+    Begin
+      Result:=False;
+      Exit;
+    End;
+  Until (GetColor(472, 490) = 16777215);
+  Result:=True;
+End;
+
 Procedure SetDTM;
 Begin
   Case LowerCase(CatchType) Of
@@ -129,7 +146,7 @@ Begin
       GSpotDTM := DTMFromString('mWAAAAHicY2FgYMhnYmAoA+IsKA4AivkAsR8QRwKxi7U2Q1R4KBz/B4rxI2FGNAwCAKfPB/U=');
       GSalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmCwAWJ3IH4K5L8B4ntALKQlzCCoLsggoCLAwA/kwzAjEgYCAM+HBIo=');
       GCheckDTM := DTMFromString('mWAAAAHicY2FgYPBkZGBwgmJ/IF4CFFsIxLOAeD4Qq4aoMfBysTOwszIzcHGwMnABxZAxIxoGAQAkOgSy');
-      Position := DTMFromString('mlwAAAHicY2dgYOgBYnUgdmRkYJgGpHcwQIAkEGcAsTMQiwIxH1T8PBAnArGCogKDk4c5g7OzFYNDZgRDYJgXg7KKMoOahhqDCFAehvnRMCMeDAUAoe4Jkw==');
+      PositionDTM := DTMFromString('mrAAAAHic42BgYChhYmDIBOJYII4D4gogzgfiZiDuBOJ2oJo2IG4F4qlAXAjE84F4LhAXAPH///8ZCr3UGapThMDYpzgZjP0rMxhcM6MY+IFq8GFGAhgGAPoQEqU=');
       FireDTM := DTMFromString('mQwAAAHicY2ZgYFAFYm0gVoLSJkCsAsTxgQYMFhamDDfmyDLwA/kwzIiEgQAAnsgEPw==');
     End;
   End;
@@ -152,7 +169,7 @@ Begin
       FreeDTM(GSpotDTM);
       FreeDTM(GSalDTM);
       FreeDTM(GCheckDTM);
-      FreeDTM(Position);
+      FreeDTM(PositionDTM);
       FreeDTM(FireDTM);
     End;
   End;
@@ -216,12 +233,12 @@ Function CheckStuff: Boolean;
 Begin
   Result:=False;
 
-  If Not LoggedIn Then
+  If Not WaitLoggedIn(1000) Then
     LoginPlayer;
 
   If FindNormalRandoms Then
   Begin
-    If Not LoggedIn Then
+    If Not WaitLoggedIn(1000) Then
       TerminateScript;
     If LowerCase(CatchType) = 'red' Then
       MakeCompass('N') Else
@@ -239,7 +256,8 @@ Begin
   If PouchToSummon = 0 Then
     Exit;
 
-  If Not LoggedIn Then
+  CheckStuff;
+  If Not WaitLoggedIn(1000) Then
     Exit;
 
   If UsingFamiliar Then
@@ -430,7 +448,6 @@ Var
 Begin
   j := MouseSpeed;
   GetMousePos(X, Y);
-  Y:=Y-50;
   Dist := Distance(X, Y, eX, eY);
   MP := Round(Dist/150);
   If MP < 0 Then
@@ -441,7 +458,6 @@ Begin
   Y2 := RandomRange(eY-(j*MP), eY+(j*MP));
   SuperWindMouse(X, Y, X2, Y2, 11, 8, 10.0 / randSpeed, 12.0 / randSpeed, 10.0 * randSpeed, 10.0 * randSpeed);
   GetMousePos(X, Y);
-  Y:=Y-50;
   MMouse(eX, eY, ranX, ranY);
   MouseSpeed := j;
 End;
@@ -450,11 +466,11 @@ Procedure Release;
 Var
   X,Y,I,T1: Integer;
 Begin
-  If (Not(LoggedIn)) Then
+  CheckStuff;
+  If Not WaitLoggedIn(1000) Then
     Exit;
 
   MouseSpeed := RandomRange(18, 23);
-  CheckStuff;
   QuickClick:=False;
 
   For I:=0 To 1 Do
@@ -503,6 +519,8 @@ Begin
       End;
     End Else
     Begin
+      If Debug Then
+        Writeln('No sally found');
       InvCnt := InvCount;
       MarkTime(T1);
       If I=0 Then
@@ -560,10 +578,9 @@ Var
   TPA: TPointArray;
   ATPA: T2DPointArray;
 Begin
-  If (Not(LoggedIn)) Then
-    Exit;
-
   CheckStuff;
+  If Not WaitLoggedIn(1000) Then
+    Exit;
 
   If ((CountItems('DTM',RopeDTM,[])=(NumberofTraps-Level)) Or (CountItems('DTM',RopeDTM,[])=0)) And (SetTrap=0)  Then
   Begin
@@ -593,14 +610,18 @@ Begin
 
   If LowerCase(CatchType)='green' Then
     If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
-    Begin
-      If Debug Then
-        Writeln('Found fire, staying away');
-      E:=139;
-      F:=75;
-      G:=C;
-      H1:=D;
-    End;
+      If Not PointInBox(Point(X,Y),IntToBox(0,115-50,48,168-50)) Then
+      Begin
+        If Debug Then
+          Writeln('Found fire, staying away');
+        E:=139;
+        F:=75;
+        G:=C;
+        H1:=D;
+      End;
+
+  If Debug Then
+    SMART_DrawBox(IntToBox(E,F,G,H1));
 
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
@@ -625,6 +646,9 @@ Begin
   SetColorSpeed2Modifiers(0.2, 0.2);
 
   ATPA := SplitTPAEx(TPA,Width,Height);
+
+  If Debug Then
+    DebugATPABounds(ATPA);
 
   If (Length(ATPA) = 0) Then
     Exit;
@@ -707,12 +731,13 @@ Begin
   XPH := Round(XP * (3600.0 / (GetTimeRunning / 1000.0)));
   SalamandersPH := Round((SalamanderCount * (3600.0 / (GetTimeRunning / 1000.0))));
 
-  If (StartingXP - XP) < 0 Then
-  Begin
-    StartingXP:= (XpTillNextLevel(Skill_Hunter)+XP);
-    Writeln('Gained a level!!');
-    LevelsGained := LevelsGained + 1;
-  End;
+  If CurrentLevel<99 Then
+    If (StartingXP - XP) < 0 Then
+    Begin
+      StartingXP:= (XpTillNextLevel(Skill_Hunter)+XP);
+      Writeln('Gained a level!!');
+      LevelsGained := LevelsGained + 1;
+    End;
 
   If ((CurrentLevel+LevelsGained)>=40) Then
     Level:=3;
@@ -742,10 +767,10 @@ Var
 Label
   Jumper;
 Begin
-  If (Not(LoggedIn)) Then
+  CheckStuff;
+  If Not WaitLoggedIn(1000) Then
     Exit;
 
-  CheckStuff;
   If QuickClick Then
     GoTo Jumper;
 
@@ -820,10 +845,9 @@ Var
   X,Y,E,F,G,H,T: Integer;
   TrapFail: Boolean;
 Begin
-  If (Not(LoggedIn)) Then
-    Exit;
-
   CheckStuff;
+  If Not WaitLoggedIn(1000) Then
+    Exit;
 
   If Debug Then
     Writeln('Looking for Failed Traps');
@@ -853,12 +877,21 @@ Begin
   Begin
     If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
     Begin
-      If Debug Then
-        Writeln('Found fire staying away');
-      E := 139;
-      F := 75;
-      G := C;
-      H := D;
+      If Not PointInBox(Point(X,Y),IntToBox(0,115-50,48,168-50)) Then
+      Begin
+        If Debug Then
+          Writeln('Found fire staying away');
+        E := 139;
+        F := 75;
+        G := C;
+        H := D;
+      End Else
+      Begin
+        E := A;
+        F := B;
+        G := C;
+        H := D;
+      End;
     End Else
     Begin
       E := A;
@@ -867,6 +900,9 @@ Begin
       H := D;
     End;
   End;
+
+  If Debug Then
+    Smart_DrawBox(IntToBox(E,F,G,H));
 
   MouseSpeed := RandomRange(18, 23);
 
@@ -979,10 +1015,9 @@ Procedure Walktospot;
 Var
   X,Y: Integer;
 Begin
-  If (Not(LoggedIn)) Then
-    Exit;
-
   CheckStuff;
+  If Not WaitLoggedIn(1000) Then
+    Exit;
 
   If Debug Then
     Writeln('Walking to main spot');
@@ -1045,10 +1080,8 @@ Begin
 
       ExitToLobby;
       Wait(RandomRange(5000,6000));
-      MMouse(100,100,100,100);
       ChangeWorld(RandomWorld(True,False));
       Wait(RandomRange(30000,45000));
-
       CheckStuff;
     End;
   Until ((Length(GetMiniMapDotsIn('w',615,75,642,102))=0) And (Not FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound)));
@@ -1063,8 +1096,10 @@ Procedure CorrectPOS;
 Var
   X,Y:Integer;
 Begin
-  If FindDTMRotated(Position,X,Y,MSX1,MSY1,MSX2,MSY2,-Pi,Pi,Pi/30,aFound) Then
-    Walktospot;
+  If FindDTMRotated(PositionDTM,X,Y,MSX1,MMY1,MMX2,MMY2,-Pi,Pi,Pi/30,aFound) Then
+    Walktospot Else
+    If Debug Then
+      Writeln('Bad position not found');
 End;
 
 Procedure Setup;
@@ -1072,28 +1107,30 @@ Begin
   ClearDebug;
   AutoUpdateMe;
 
+  If Not RestartScript Then
+  Begin
+    {$IFDEF SIMBAMAJOR980}
+      SMART_SERVER := 10;
+      SMART_MEMBERS := TRUE;
+      SMART_SIGNED := TRUE;
+      SMART_SUPERDETAIL := FALSE;
+    {$ELSE}
+      SRL_SIXHOURFIX := TRUE;
+      SMART_FIXSPEED := TRUE;
+    {$ENDIF}
 
-  {$IFDEF SIMBAMAJOR980}
-    SMART_SERVER := 10;
-    SMART_MEMBERS := TRUE;
-    SMART_SIGNED := TRUE;
-    SMART_SUPERDETAIL := FALSE;
-  {$ELSE}
-    SRL_SIXHOURFIX := TRUE;
-    SMART_FIXSPEED := TRUE;
-  {$ENDIF}
+    SetupSRL;
 
-  SetupSRL;
+    If (SRLStats_Username = '') Then
+      SetupSRLStats(754, 'Anonymous', 'anon1337')
+    Else
+      SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
 
-  If (SRLStats_Username = '') Then
-    SetupSRLStats(754, 'Anonymous', 'anon1337')
-  Else
-    SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
-
-  DeclarePlayers;
+    DeclarePlayers;
+  End;
   LoginPlayer;
 
-  If Not LoggedIn Then
+  If Not WaitLoggedIn(1000) Then
     Repeat
       Wait(100);
     Until LoggedIn;
@@ -1284,9 +1321,9 @@ Begin
         WalkToSpot;
         WorldHop;
       End;
-    Until (RunTime < TimeFromMark(RunTimer)) or (Not(LoggedIn));
+    Until (RunTime < TimeFromMark(RunTimer)) or (Not(WaitLoggedIn(1000)));
 
-    If LoggedIn Then
+    If WaitLoggedIn(1000) Then
     Begin
       Cleanup;
       Logout;
