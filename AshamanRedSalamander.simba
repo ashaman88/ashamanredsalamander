@@ -12,7 +12,7 @@ Program Ashaman2IOSalamander;
   {$i SRL/SRL/misc/SmartGraphics.simba}
 
 {
-Ashaman2IOSalamander v6.10
+Ashaman2IOSalamander v6.11
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -69,7 +69,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.10';
+  ScriptVersion = '6.11';
   UseAutoChecker = True;
   Debug = False;
 
@@ -118,8 +118,8 @@ Function WaitLoggedIn(Time:Integer): Boolean;
 Var
   T: Integer;
 Begin
+  MarkTime(T);
   Repeat
-    MarkTime(T);
     SRL_ResetNavBar;
     If TimeFromMark(T)>Time Then
     Begin
