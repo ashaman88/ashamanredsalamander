@@ -12,7 +12,7 @@ Program Ashaman2IOSalamander;
   {$i SRL/SRL/misc/SmartGraphics.simba}
 
 {
-Ashaman2IOSalamander v6.11
+Ashaman2IOSalamander v6.12
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -33,7 +33,8 @@ Ashaman2IOSalamander v6.11
 Const
   SRLStats_Username = '';       // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  TimetoRun         = 5.5;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid or time per character (default at 5hrs prob don't touch)***
+  TimetoRun         = 5.2;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
+  Restart           = True;     // ***After timetorun is hit, do you want to stop the script or just take a break?***
   HealthMin         = 300;      // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
   PlaySounds        = True;     // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
@@ -60,8 +61,8 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,StartTime,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
-  StartingXP,LevelsGained,XPTL,TrapTime,XT,YT,PTS: Integer;
+  SalamanderCount,XP,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
+  StartingXP,LevelsGained,XPTL,TrapTime,XT,YT,PTS,MiniBreak,MiniBreakTime: Integer;
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat,SalamandersPH,XPH: Extended;
   SoundPath: String;
@@ -69,7 +70,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.11';
+  ScriptVersion = '6.12';
   UseAutoChecker = True;
   Debug = False;
 
@@ -189,6 +190,196 @@ Begin
   Result:= GetMMLevels('HP', ColourString);
 End;
 
+ {*******************************************************************************
+
+All of these mouse movements are credited to benland100 and flight
+
+*******************************************************************************}
+
+
+//By Bandland100, modified to shift mouse speeds after every step
+Procedure SuperWindMouse(xs, ys, xe, ye, gravity, wind, minWait, maxWait, maxStep, targetArea: extended);
+Var
+  veloX,veloY,windX,windY,veloMag,dist,randomDist,lastDist,step: extended;
+  lastX,lastY,MSP,W: integer;
+  sqrt2,sqrt3,sqrt5: extended;
+Begin
+  MSP  := MouseSpeed;
+  sqrt2:= sqrt(2);
+  sqrt3:= sqrt(3);
+  sqrt5:= sqrt(5);
+  While hypot(xs - xe, ys - ye) > 1 Do
+  Begin
+    dist:= hypot(xs - xe, ys - ye);
+    wind:= minE(wind, dist);
+    If dist >= targetArea Then
+    Begin
+      windX:= windX / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
+      windY:= windY / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
+    End Else
+    Begin
+      windX:= windX / sqrt2;
+      windY:= windY / sqrt2;
+      If (maxStep < 3) Then
+      Begin
+        maxStep:= random(3) + 3.0;
+      End Else
+      Begin
+        maxStep:= maxStep / sqrt5;
+      End;
+    End;
+    veloX:= veloX + windX;
+    veloY:= veloY + windY;
+    veloX:= veloX + gravity * (xe - xs) / dist;
+    veloY:= veloY + gravity * (ye - ys) / dist;
+    if hypot(veloX, veloY) > maxStep then
+    Begin
+      randomDist:= maxStep / 2.0 + random(round(maxStep) div 2);
+      veloMag:= sqrt(veloX * veloX + veloY * veloY);
+      veloX:= (veloX / veloMag) * randomDist;
+      veloY:= (veloY / veloMag) * randomDist;
+    End;
+    lastX:= Round(xs);
+    lastY:= Round(ys);
+    xs:= xs + veloX;
+    ys:= ys + veloY;
+
+    Case Random(50) Of
+      1..25: W := (MSP + (Random((MSP/4))));
+      26..50: W := (MSP - (RandomRange((MSP/2), MSP-1)));
+    End;
+    If (W < 1) Then
+      W := 1;
+
+    If (lastX <> Round(xs)) Or (lastY <> Round(ys)) Then
+      MoveMouse(Round(xs), Round(ys));
+
+    step:= hypot(xs - lastX, ys - lastY);
+    //W := round((maxWait - minWait) * (step / maxStep) + minWait);
+    wait(W);
+    lastdist:= dist;
+  End;
+
+  If (Round(xe) <> Round(xs)) or (Round(ye) <> Round(ys)) Then
+    MoveMouse(Round(xe), Round(ye));
+
+  MouseSpeed := MSP;
+End;
+
+Procedure HumanMMouse(eX, eY, ranX, ranY: Integer);
+Var
+  randSpeed: extended;
+  X,Y,X2,Y2,j,Dist,MP: integer;
+Begin
+  j := MouseSpeed;
+  GetMousePos(X, Y);
+  Dist := Distance(X, Y, eX, eY);
+  MP := Round(Dist/150);
+  If MP < 0 Then
+    MP := 1;
+
+  randSpeed := (random(MouseSpeed) / 2.0 + MouseSpeed) / 10.0;
+  X2 := RandomRange(eX-(j*MP), eX+(j*MP));
+  Y2 := RandomRange(eY-(j*MP), eY+(j*MP));
+  SuperWindMouse(X, Y, X2, Y2, 11, 8, 10.0 / randSpeed, 12.0 / randSpeed, 10.0 * randSpeed, 10.0 * randSpeed);
+  GetMousePos(X, Y);
+  MMouse(eX, eY, ranX, ranY);
+  MouseSpeed := j;
+End;
+
+(*
+MmmWeGotOff
+~~~~~~~~
+
+.. code-block:: pascal
+
+    Procedure MmmWeGotOff(RedTu: Variant);
+
+Moves the mouse to the choosen side of the screen, replicating
+the use of a human to move thier mouse "off-screen" as if
+browsing another part of their computer.
+(What do you do when you browsing "other websites?")
+Int Type:
+
+    1 = Go top side, off-screen
+    2 = Go left side, off-screen
+    3 = Go bottom side, off-screen
+    4 = Go right side, off-screen
+
+.. note::
+
+  by Le Jingle.
+
+Example:
+
+.. code-block:: pascal
+
+  MmmWeGotOff(Random(4), 0, 0);
+
+*)
+Procedure OffMM(RedTu, LeWait, rWait: Integer);
+Var
+  W,H,RX,RY,T,RT: Integer;
+Begin
+  GetClientDimensions(W,H);
+  H:=H+50;
+  RX := RandomRange(0, W);
+  RY := RandomRange(0, H);
+  Case (RedTu) Of
+    0..1: HumanMMouse(W/2, RandomRange(-110,-60), RX, 0);
+    2: HumanMMouse(RandomRange(-50,-10), H/2, 0, RY);
+    3: HumanMMouse(W/2, h+RandomRange(10,50), RX, 0);
+    4: HumanMMouse(W+RandomRange(10,50), H/2, 0, RY);
+  End;
+  RT:=(Random(rWait));
+  MarkTime(T);
+  Repeat
+    Wait(Random(100));
+  Until TimeFromMark(T)>(LeWait+RT);
+End;
+
+Procedure FailedTrap; Forward;
+
+Function CheckStuff: Boolean;
+Begin
+  Result:=False;
+
+  If Not WaitLoggedIn(1000) Then
+  Begin
+    LoginPlayer;
+    If LowerCase(CatchType) = 'red' Then
+      MakeCompass('N') Else
+      MakeCompass('S');
+
+    SetAngle(SRL_ANGLE_HIGH);
+  End;
+
+  If FindNormalRandoms Then
+  Begin
+    If Not WaitLoggedIn(1000) Then
+      TerminateScript;
+    If LowerCase(CatchType) = 'red' Then
+      MakeCompass('N') Else
+      MakeCompass('S');
+
+    SetAngle(SRL_ANGLE_HIGH);
+    Result:=True;
+  End;
+
+  If TimeFromMark(MiniBreak)>MiniBreakTime Then
+  Begin
+    FailedTrap;
+    Writeln('MiniBreak');
+    OffMM(Random(4),RandomRange(2500,4000),5000);
+    Wait(RandomRange(13000,85000));
+    FailedTrap;
+    FailedTrap;
+    MarkTime(MiniBreak);
+    MiniBreakTime:=RandomRange(300000,600000);
+  End;
+End;
+
+
 {*******************************************************************************
 Function Runaways;
 By: ggzz
@@ -201,6 +392,44 @@ Begin
   Begin
     Writeln('Ghast beat you up, logging out.');
     Logout;
+  End;
+End;
+
+Function UsingFamiliarFSS: Boolean;
+Var
+  CTS: Integer;
+  TPA: TPointArray;
+Begin
+  CTS:= GetColorToleranceSpeed;
+  SetColorToleranceSpeed(2);
+  SetColorSpeed2Modifiers(0.18, 0.88);
+  Result:= FindColorsTolerance(TPA, 8763221, 692, 130, 721, 160, 21);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+  ColorToleranceSpeed(CTS);
+End;
+
+Function UsingFamiliarFS: Boolean;              //By Flight.   Modified highly!
+Var
+  X, Y: Integer;
+Begin
+  Result := UsingFamiliarFSS Or FindColorTolerance(X, Y, 11192179, 695, 130, 720, 155, 20);
+  If (Not Result) Then
+  Begin
+    If FindColorTolerance(X, Y, 3426817, 695, 130, 720, 155, 20) Then
+    Begin
+      Result:= False;
+      Exit;
+    End;
+
+    HumanMMouse(708, 144, 5, 5);
+
+    Repeat
+      GetMousePos(X, Y);
+      Wait(RandomRange(200,300));
+      CheckStuff;
+    Until(PointInBox(Point(X, Y), IntToBox(691, 131, 720, 159)));
+
+    Result:= (Not WaitUptextMulti(['elect', 'lect'], RandomRange(400,500)));
   End;
 End;
 
@@ -219,6 +448,9 @@ Begin
     End;
 
     Result := CountColorTolerance(12501952,135,90,380,329,100)>1000;
+
+    If Not Result Then
+      Result:=UsingFamiliarFS;
   End;
 End;
 
@@ -227,26 +459,6 @@ Var
   ColourString: String;
 Begin
   Result:= GetMMLevels('summon', ColourString);
-End;
-
-Function CheckStuff: Boolean;
-Begin
-  Result:=False;
-
-  If Not WaitLoggedIn(1000) Then
-    LoginPlayer;
-
-  If FindNormalRandoms Then
-  Begin
-    If Not WaitLoggedIn(1000) Then
-      TerminateScript;
-    If LowerCase(CatchType) = 'red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-
-    SetAngle(SRL_ANGLE_HIGH);
-    Result:=True;
-  End;
 End;
 
 Function SummoningRenew(PouchToSummon: Integer): Boolean;
@@ -365,103 +577,6 @@ Begin
   FreeDTM(Empty);
 End;
 
- {*******************************************************************************
-
-All of these mouse movements are credited to benland100 and flight
-
-*******************************************************************************}
-
-
-//By Bandland100, modified to shift mouse speeds after every step
-Procedure SuperWindMouse(xs, ys, xe, ye, gravity, wind, minWait, maxWait, maxStep, targetArea: extended);
-Var
-  veloX,veloY,windX,windY,veloMag,dist,randomDist,lastDist,step: extended;
-  lastX,lastY,MSP,W: integer;
-  sqrt2,sqrt3,sqrt5: extended;
-Begin
-  MSP  := MouseSpeed;
-  sqrt2:= sqrt(2);
-  sqrt3:= sqrt(3);
-  sqrt5:= sqrt(5);
-  While hypot(xs - xe, ys - ye) > 1 Do
-  Begin
-    dist:= hypot(xs - xe, ys - ye);
-    wind:= minE(wind, dist);
-    If dist >= targetArea Then
-    Begin
-      windX:= windX / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
-      windY:= windY / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
-    End Else
-    Begin
-      windX:= windX / sqrt2;
-      windY:= windY / sqrt2;
-      If (maxStep < 3) Then
-      Begin
-        maxStep:= random(3) + 3.0;
-      End Else
-      Begin
-        maxStep:= maxStep / sqrt5;
-      End;
-    End;
-    veloX:= veloX + windX;
-    veloY:= veloY + windY;
-    veloX:= veloX + gravity * (xe - xs) / dist;
-    veloY:= veloY + gravity * (ye - ys) / dist;
-    if hypot(veloX, veloY) > maxStep then
-    Begin
-      randomDist:= maxStep / 2.0 + random(round(maxStep) div 2);
-      veloMag:= sqrt(veloX * veloX + veloY * veloY);
-      veloX:= (veloX / veloMag) * randomDist;
-      veloY:= (veloY / veloMag) * randomDist;
-    End;
-    lastX:= Round(xs);
-    lastY:= Round(ys);
-    xs:= xs + veloX;
-    ys:= ys + veloY;
-
-    Case Random(50) Of
-      1..25: W := (MSP + (Random((MSP/4))));
-      26..50: W := (MSP - (RandomRange((MSP/2), MSP-1)));
-    End;
-    If (W < 1) Then
-      W := 1;
-
-    If (lastX <> Round(xs)) Or (lastY <> Round(ys)) Then
-      MoveMouse(Round(xs), Round(ys));
-
-    step:= hypot(xs - lastX, ys - lastY);
-    //W := round((maxWait - minWait) * (step / maxStep) + minWait);
-    wait(W);
-    lastdist:= dist;
-  End;
-
-  If (Round(xe) <> Round(xs)) or (Round(ye) <> Round(ys)) Then
-    MoveMouse(Round(xe), Round(ye));
-
-  MouseSpeed := MSP;
-End;
-
-Procedure HumanMMouse(eX, eY, ranX, ranY: Integer);
-Var
-  randSpeed: extended;
-  X,Y,X2,Y2,j,Dist,MP: integer;
-Begin
-  j := MouseSpeed;
-  GetMousePos(X, Y);
-  Dist := Distance(X, Y, eX, eY);
-  MP := Round(Dist/150);
-  If MP < 0 Then
-    MP := 1;
-
-  randSpeed := (random(MouseSpeed) / 2.0 + MouseSpeed) / 10.0;
-  X2 := RandomRange(eX-(j*MP), eX+(j*MP));
-  Y2 := RandomRange(eY-(j*MP), eY+(j*MP));
-  SuperWindMouse(X, Y, X2, Y2, 11, 8, 10.0 / randSpeed, 12.0 / randSpeed, 10.0 * randSpeed, 10.0 * randSpeed);
-  GetMousePos(X, Y);
-  MMouse(eX, eY, ranX, ranY);
-  MouseSpeed := j;
-End;
-
 Procedure Release;
 Var
   X,Y,I,T1: Integer;
@@ -470,7 +585,7 @@ Begin
   If Not WaitLoggedIn(1000) Then
     Exit;
 
-  MouseSpeed := RandomRange(18, 23);
+  MouseSpeed := RandomRange(14, 19);
   QuickClick:=False;
 
   For I:=0 To 1 Do
@@ -601,7 +716,7 @@ Begin
     If Debug Then
       Writeln('Looking for Laid Traps');
 
-  MouseSpeed := RandomRange(18, 23);
+  MouseSpeed := RandomRange(14, 19);
 
   E:=A;
   F:=B;
@@ -780,7 +895,7 @@ Begin
   If Debug Then
     Writeln('Checking for Caught Salamanders');
 
-  MouseSpeed := RandomRange(18, 23);
+  MouseSpeed := RandomRange(14, 19);
 
   If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
   Begin
@@ -904,7 +1019,7 @@ Begin
   If Debug Then
     Smart_DrawBox(IntToBox(E,F,G,H));
 
-  MouseSpeed := RandomRange(18, 23);
+  MouseSpeed := RandomRange(14, 19);
 
   If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
   Begin
@@ -968,7 +1083,7 @@ Begin
       If Debug Then
         Writeln('Found option to pickup');
 
-      MouseSpeed := RandomRange(18, 23);
+      MouseSpeed := RandomRange(14, 19);
 
       MarkTime(T);
       Repeat
@@ -1127,7 +1242,16 @@ Begin
       SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
 
     DeclarePlayers;
+    AddOnTerminate('FR33DTM');
+    SetDTM;
   End;
+
+  If RestartScript Then
+  Begin
+    Writeln('Taking a break');
+    Wait(RandomRange(30000,600000));
+  End;
+
   LoginPlayer;
 
   If Not WaitLoggedIn(1000) Then
@@ -1135,21 +1259,13 @@ Begin
       Wait(100);
     Until LoggedIn;
 
-  AddOnTerminate('FR33DTM');
-  SetDTM;
-  RestartScript:=False;
   ClearDebug;
 
-  If PlaySounds Then
-    If (Not FileExists(ScriptPath+'noyelling.wav')) Then
-      writeln('No audio file found to alert when another person logs in. Please download audio file from OP.');
-
-  SoundPath:=ScriptPath+'noyelling.wav';
-
-  StartTime:=GetSystemTime;
   MarkTime(TrapTime);
+  MarkTime(MiniBreak);
+  MiniBreakTime:=RandomRange(300000,600000);
 
-  RunTime:= Round(TimetoRun * 60 * 60 * 1000 + Random(30000));
+  RunTime:= Round(TimetoRun * 60 * 60 * 1000 + Random(300000));
   Writeln('You are going to run for ' + MsToTime(RunTime, Time_Formal));
 
   SetTrap:=0;
@@ -1171,56 +1287,67 @@ Begin
     Level:= 3;
   Writeln('You can use '+IntToStr(Level)+' trap spots with my script at your level.');
 
-  CurrentLevel:= GetSkillLevel(Skill_Hunter);
-  StartingXP:= XpTillNextLevel(Skill_Hunter);
-  LevelsGained:= 0;
-  GameTab(Tab_Inv);
-  ToggleXPBar(True);
-  StartingExperience := GetXPBarTotal;
-
-  SmartSetRefresh(80);
-
-  If LowerCase(CatchType) = 'red' Then
+  If Not RestartScript Then
   Begin
-    Writeln('You are catching Red Salamanders');
-    A         := 102;
-    B         := 100;
-    C         := 417;
-    D         := 340;
-    J         := 2450;
-    K         := 2550;
-    Check     := CheckDTM;
-    Sal       := SalDTM;
-    Color     := 2106666;
-    Tolerance := 4;
-    Hue       := 0.26;
-    Sat       := 0.26;
-    Width     := 10;
-    Height    := 14;
-    Increase  := 3;
-  End Else
-  Begin
-    Writeln('You are catching Green Salamanders');
-    A         := 1;
-    B         := 23;
-    C         := 498;
-    D         := 312;
-    J         := 2750;
-    K         := 2950;
-    Check     := GCheckDTM;
-    Sal       := GSalDTM;
-    Color     := 2237218;
-    Tolerance := 3;
-    Hue       := 0.00;
-    Sat       := 1.33;
-    Width     := 10;
-    Height    := 14;
-    Increase  := 2;
+    If PlaySounds Then
+      If (Not FileExists(ScriptPath+'noyelling.wav')) Then
+        writeln('No audio file found to alert when another person logs in. Please download audio file from OP.');
+
+    SoundPath:=ScriptPath+'noyelling.wav';
+
+
+    CurrentLevel:= GetSkillLevel(Skill_Hunter);
+    StartingXP:= XpTillNextLevel(Skill_Hunter);
+    LevelsGained:= 0;
+    GameTab(Tab_Inv);
+    ToggleXPBar(True);
+    StartingExperience := GetXPBarTotal;
+
+    If LowerCase(CatchType) = 'red' Then
+    Begin
+      Writeln('You are catching Red Salamanders');
+      A         := 102;
+      B         := 100;
+      C         := 417;
+      D         := 340;
+      J         := 2450;
+      K         := 2550;
+      Check     := CheckDTM;
+      Sal       := SalDTM;
+      Color     := 2106666;
+      Tolerance := 4;
+      Hue       := 0.26;
+      Sat       := 0.26;
+      Width     := 10;
+      Height    := 14;
+      Increase  := 3;
+    End Else
+    Begin
+      Writeln('You are catching Green Salamanders');
+      A         := 1;
+      B         := 23;
+      C         := 498;
+      D         := 312;
+      J         := 2750;
+      K         := 2950;
+      Check     := GCheckDTM;
+      Sal       := GSalDTM;
+      Color     := 2237218;
+      Tolerance := 3;
+      Hue       := 0.00;
+      Sat       := 1.33;
+      Width     := 10;
+      Height    := 14;
+      Increase  := 2;
+    End;
   End;
+
+  RestartScript:=False;
 End;
 
 Procedure MainLoop;
 Begin
+  Wait(Random(400));
   If Lowercase(CatchType) = 'green' Then
   Begin
     Runaways;
@@ -1228,7 +1355,9 @@ Begin
   End;
 
   FindEmptyTree;
+  Wait(Random(400));
   CheckNet;
+  Wait(Random(400));
   If (RedDots) Or (TimeFromMark(TrapTime)>(80000+Random(30000))) Then
     FailedTrap;
   SummoningRenew(PTS);
@@ -1299,9 +1428,9 @@ Begin
 End;
 
 Label
-  Restart;
+  Restartd;
 Begin
-  Restart:
+  Restartd:
   Setup;
   Repeat
     If LowerCase(CatchType) = 'red' Then
@@ -1320,6 +1449,7 @@ Begin
       Begin
         WalkToSpot;
         WorldHop;
+        MarkTime(MiniBreak);
       End;
     Until (RunTime < TimeFromMark(RunTimer)) or (Not(WaitLoggedIn(1000)));
 
@@ -1343,11 +1473,11 @@ Begin
         TerminateScript;
       End;
     End;
-
     NextPlayer(Players[CurrentPlayer].Active);
     MarkTime(RunTimer);
   Until (AllPlayersInactive);
 
   If RestartScript Then
-    GoTo Restart;
+    If Restart Then
+      GoTo Restartd;
 End.
