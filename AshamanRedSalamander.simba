@@ -70,7 +70,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.12';
+  ScriptVersion = '6.13';
   UseAutoChecker = True;
   Debug = False;
 
@@ -338,7 +338,174 @@ Begin
   Until TimeFromMark(T)>(LeWait+RT);
 End;
 
-Procedure FailedTrap; Forward;
+Procedure FailedTrap;
+Var
+  X,Y,E,F,G,H,T: Integer;
+  TrapFail: Boolean;
+Begin
+  If Not WaitLoggedIn(1000) Then
+    Exit;
+
+  If Debug Then
+    Writeln('Looking for Failed Traps');
+
+  MarkTime(TrapTime);
+
+  If LowerCase(CatchType) = 'red' Then
+  Begin
+    If FindDTM(SWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Then
+    Begin
+      If Debug Then
+        Writeln('Using large search area for failed traps');
+      E := 102;
+      F := 100;
+      G := 417;
+      H := 340;
+    End Else
+    Begin
+      If Debug Then
+        Writeln('Using small search area for failed traps');
+      E := 132;
+      F := 80;
+      G := 333;
+      H := 265;
+    End;
+  End Else
+  Begin
+    If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
+    Begin
+      If Not PointInBox(Point(X,Y),IntToBox(0,115-50,48,168-50)) Then
+      Begin
+        If Debug Then
+          Writeln('Found fire staying away');
+        E := 139;
+        F := 75;
+        G := C;
+        H := D;
+      End Else
+      Begin
+        E := A;
+        F := B;
+        G := C;
+        H := D;
+      End;
+    End Else
+    Begin
+      E := A;
+      F := B;
+      G := C;
+      H := D;
+    End;
+  End;
+
+  If Debug Then
+    Smart_DrawBox(IntToBox(E,F,G,H));
+
+  MouseSpeed := RandomRange(14, 19);
+
+  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
+  Begin
+    If Debug Then
+      Writeln('Found potential rope(1) on ground, clicking');
+
+    ClickMouse2(False);
+
+    Invcnt := InvCount;
+    If WaitOption('Take',RandomRange(300,400)) Then
+    Begin
+      If Debug Then
+        Writeln('Found option to take, waiting to stop moving');
+
+      MarkTime(T);
+      Repeat
+        Wait(RandomRange(10,20));
+      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
+
+      If Not TrapFail Then
+      Begin
+        If Debug Then
+          Writeln('Trying to pick up second part of trap');
+
+        HumanMMouse(261,177,3,3);
+        ClickMouse2(False);
+
+        Invcnt := InvCount;
+        If WaitOption('Take',RandomRange(300,400)) Then
+        Begin
+          If Debug Then
+            Writeln('Found option to pick up second part of trap');
+
+          MarkTime(T);
+          Repeat
+            Wait(RandomRange(10,20));
+          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
+        End
+        Else
+        Begin
+          If Debug Then
+            Writeln('Didnt find second part of trap, trying again');
+          TrapFail:=True;
+          FailedTrap;
+        End;
+      End;
+    End;
+  End;
+
+  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
+  Begin
+    If Debug Then
+      Writeln('Found potential failed trap(2)');
+
+    ClickMouse2(False);
+
+    Invcnt := InvCount;
+    If WaitOption('Take',RandomRange(300,400)) Then
+    Begin
+      If Debug Then
+        Writeln('Found option to pickup');
+
+      MouseSpeed := RandomRange(14, 19);
+
+      MarkTime(T);
+      Repeat
+        Wait(RandomRange(10,20));
+      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
+
+
+      If Not TrapFail Then
+      Begin
+        If Debug Then
+          Writeln('Trying to pickup second part of trap');
+
+        HumanMMouse(261,177,3,3);
+        ClickMouse2(False);
+
+        Invcnt := InvCount;
+        If WaitOption('Take',RandomRange(300,400)) Then
+        Begin
+          If Debug Then
+            Writeln('Found second part of trap');
+
+          MarkTime(T);
+          Repeat
+            Wait(RandomRange(10,20));
+          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
+        End Else
+        Begin
+          If Debug Then
+            Writeln('Failed to pickup second part of trap, trying again');
+          TrapFail:=True;
+          FailedTrap;
+        End;
+      End;
+    End;
+  End;
+
+  TrapFail:=False;
+
+  If OptionsExist(['Exam','mine','Examine','Canc','ncel','Cancel'],False) Then
+    MMouse(37,32,10,10);
+End;
 
 Function CheckStuff: Boolean;
 Begin
@@ -685,6 +852,22 @@ Begin
   DeadTreeBox:=GetATPABounds(ATPA);
 End;
 
+Function AvoidSetTraps(Tree: TBox): Boolean;
+Var
+  CTS: Integer;
+  TPA: TPointArray;
+Begin
+  CTS := GetColorToleranceSpeed;
+  ColorToleranceSpeed(2);
+  SetColorSpeed2Modifiers(0.03,0.06);
+  FindColorsSpiralTolerance(MSCX,MSCY,TPA,1203841,Tree.X1,Tree.Y1,Tree.X2,Tree.Y2,6);
+  ColorToleranceSpeed(CTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+
+  If (Length(TPA) > 0) Then
+    Result:=True;
+End;
+
 
 Procedure FindEmptyTree;
 Var
@@ -692,6 +875,7 @@ Var
   E,F,G,H1: Integer;
   TPA: TPointArray;
   ATPA: T2DPointArray;
+  CaughtBox: TBox;
 Begin
   CheckStuff;
   If Not WaitLoggedIn(1000) Then
@@ -787,6 +971,14 @@ Begin
     If (Length(ATPA[I]) < 22) Then
       Continue;
 
+    CaughtBox:=GetTPABounds(ATPA[I]);
+    CaughtBox:=IntToBox(CaughtBox.X1-10,CaughtBox.Y1-10,CaughtBox.X2+10,CaughtBox.Y2+10);
+    If FindDTMRotated(Check,X,Y,CaughtBox.X1,CaughtBox.Y1,CaughtBox.X2,CaughtBox.Y2,-Pi,Pi,Pi/30,aFound) Then
+      Continue;
+
+    If AvoidSetTraps(CaughtBox) Then
+      Continue;
+
     HumanMMouse(X+Increase,Y,0,2);
 
     If SetTrap=1 Then
@@ -795,14 +987,29 @@ Begin
       Begin
         If Debug Then
           Writeln('Found dismantle option, clicking');
-        ClickMouse2(False);
 
-        If WaitOptionMulti(['Dism','sman','mant','antle'],RandomRange(400,500)) Then
-        Begin
-          If Debug Then
-            Writeln('Found option to dismantle');
-          Release;
-          Exit;
+        Case Random(10) Of
+          0..7:
+          Begin
+            ClickMouse2(True);
+            If DidRedClick Then
+            Begin
+              Release;
+              Exit;
+            End;
+          End;
+          8,9:
+          Begin
+            ClickMouse2(False);
+
+            If WaitOptionMulti(['Dism','sman','mant','antle'],RandomRange(400,500)) Then
+            Begin
+              If Debug Then
+                Writeln('Found option to dismantle');
+              Release;
+              Exit;
+            End;
+          End;
         End;
       End;
     End Else
@@ -817,14 +1024,28 @@ Begin
         If Debug Then
           Writeln('Found uptext set, clicking');
 
-        ClickMouse2(False);
+        Case Random(10) Of
+          0..7:
+          Begin
+            ClickMouse2(True);
+            If DidRedClick Then
+            Begin
+              Release;
+              Exit;
+            End;
+          End;
+          8,9:
+          Begin
+            ClickMouse2(False);
 
-        If WaitOption('Set',RandomRange(400,500)) Then
-        Begin
-          If Debug Then
-            Writeln('Found option set');
-          Release;
-          Exit;
+            If WaitOption('Set',RandomRange(400,500)) Then
+            Begin
+              If Debug Then
+                Writeln('Found option set');
+              Release;
+              Exit;
+            End;
+          End;
         End;
       End;
     End;
@@ -905,6 +1126,28 @@ Begin
 
     If WaitUpTextMulti(['Chec','heck'],RandomRange(500,650)) Then
     Begin
+      Case Random(10) Of
+        0..7:
+        Begin
+          ClickMouse2(True);
+          If DidRedClick Then
+          Begin
+            If Debug Then
+              Writeln('Chose check net option');
+            InvCnt := InvCount;
+            MarkTime(T);
+            Repeat
+              If TimeFromMark(T) > 6000 Then
+                Exit;
+            Until (InvCount = InvCnt + 3);
+            SalamanderCount := SalamanderCount + 1;
+            ProgressReport;
+          End;
+          QuickClick:=False;
+          Exit;
+        End;
+      End;
+
       ClickMouse2(False);
 
       Jumper:
@@ -915,7 +1158,7 @@ Begin
         InvCnt := InvCount;
         MarkTime(T);
         Repeat
-          If TimeFromMark(T) > 8000 Then
+          If TimeFromMark(T) > 6000 Then
             Exit;
         Until (InvCount = InvCnt + 3);
         SalamanderCount := SalamanderCount + 1;
@@ -953,177 +1196,6 @@ Begin
       Writeln(tostr(TPA));
     Result:=True;
   End;
-End;
-
-Procedure FailedTrap;
-Var
-  X,Y,E,F,G,H,T: Integer;
-  TrapFail: Boolean;
-Begin
-  CheckStuff;
-  If Not WaitLoggedIn(1000) Then
-    Exit;
-
-  If Debug Then
-    Writeln('Looking for Failed Traps');
-
-  MarkTime(TrapTime);
-
-  If LowerCase(CatchType) = 'red' Then
-  Begin
-    If FindDTM(SWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Then
-    Begin
-      If Debug Then
-        Writeln('Using large search area for failed traps');
-      E := 102;
-      F := 100;
-      G := 417;
-      H := 340;
-    End Else
-    Begin
-      If Debug Then
-        Writeln('Using small search area for failed traps');
-      E := 132;
-      F := 80;
-      G := 333;
-      H := 265;
-    End;
-  End Else
-  Begin
-    If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
-    Begin
-      If Not PointInBox(Point(X,Y),IntToBox(0,115-50,48,168-50)) Then
-      Begin
-        If Debug Then
-          Writeln('Found fire staying away');
-        E := 139;
-        F := 75;
-        G := C;
-        H := D;
-      End Else
-      Begin
-        E := A;
-        F := B;
-        G := C;
-        H := D;
-      End;
-    End Else
-    Begin
-      E := A;
-      F := B;
-      G := C;
-      H := D;
-    End;
-  End;
-
-  If Debug Then
-    Smart_DrawBox(IntToBox(E,F,G,H));
-
-  MouseSpeed := RandomRange(14, 19);
-
-  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
-  Begin
-    If Debug Then
-      Writeln('Found potential rope(1) on ground, clicking');
-
-    HumanMMouse(X,Y,2,2);
-    ClickMouse2(False);
-
-    Invcnt := InvCount;
-    If WaitOption('Take',RandomRange(300,400)) Then
-    Begin
-      If Debug Then
-        Writeln('Found option to take, waiting to stop moving');
-
-      MarkTime(T);
-      Repeat
-        Wait(RandomRange(10,20));
-      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
-
-      If Not TrapFail Then
-      Begin
-        If Debug Then
-          Writeln('Trying to pick up second part of trap');
-
-        HumanMMouse(261,177,3,3);
-        ClickMouse2(False);
-
-        Invcnt := InvCount;
-        If WaitOption('Take',RandomRange(300,400)) Then
-        Begin
-          If Debug Then
-            Writeln('Found option to pick up second part of trap');
-
-          MarkTime(T);
-          Repeat
-            Wait(RandomRange(10,20));
-          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
-        End
-        Else
-        Begin
-          If Debug Then
-            Writeln('Didnt find second part of trap, trying again');
-          TrapFail:=True;
-          FailedTrap;
-        End;
-      End;
-    End;
-  End;
-
-  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
-  Begin
-    If Debug Then
-      Writeln('Found potential failed trap(2)');
-    HumanMMouse(X,Y,2,2);
-    ClickMouse2(False);
-
-    Invcnt := InvCount;
-    If WaitOption('Take',RandomRange(300,400)) Then
-    Begin
-      If Debug Then
-        Writeln('Found option to pickup');
-
-      MouseSpeed := RandomRange(14, 19);
-
-      MarkTime(T);
-      Repeat
-        Wait(RandomRange(10,20));
-      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
-
-
-      If Not TrapFail Then
-      Begin
-        If Debug Then
-          Writeln('Trying to pickup second part of trap');
-
-        HumanMMouse(261,177,3,3);
-        ClickMouse2(False);
-
-        Invcnt := InvCount;
-        If WaitOption('Take',RandomRange(300,400)) Then
-        Begin
-          If Debug Then
-            Writeln('Found second part of trap');
-
-          MarkTime(T);
-          Repeat
-            Wait(RandomRange(10,20));
-          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
-        End Else
-        Begin
-          If Debug Then
-            Writeln('Failed to pickup second part of trap, trying again');
-          TrapFail:=True;
-          FailedTrap;
-        End;
-      End;
-    End;
-  End;
-
-  TrapFail:=False;
-
-  If OptionsExist(['Exam','mine','Examine','Canc','ncel','Cancel'],False) Then
-    MMouse(37,32,10,10);
 End;
 
 Procedure Walktospot;
@@ -1347,7 +1419,7 @@ End;
 
 Procedure MainLoop;
 Begin
-  Wait(Random(400));
+  Wait(Random(200));
   If Lowercase(CatchType) = 'green' Then
   Begin
     Runaways;
@@ -1355,9 +1427,9 @@ Begin
   End;
 
   FindEmptyTree;
-  Wait(Random(400));
+  Wait(Random(200));
   CheckNet;
-  Wait(Random(400));
+  Wait(Random(200));
   If (RedDots) Or (TimeFromMark(TrapTime)>(80000+Random(30000))) Then
     FailedTrap;
   SummoningRenew(PTS);
