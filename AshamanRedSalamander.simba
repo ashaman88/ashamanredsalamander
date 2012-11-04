@@ -12,10 +12,11 @@ Program Ashaman2IOSalamander;
   {$i SRL/SRL/misc/SmartGraphics.simba}
 
 {
-Ashaman2IOSalamander v6.14
+Ashaman2IOSalamander v6.15
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
+-Have arctic bear pouches in inventory w/ summ pots
 -Make sure zoom is farthest out
 -Don't be an A hole, find an empty world
 -FILL OUT THE STUFF BELOW
@@ -34,7 +35,7 @@ Const
   SRLStats_Username = '';       // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
   TimetoRun         = 5.2;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
-  Restart           = True;     // ***After timetorun is hit, do you want to stop the script or just take a break?***
+  Restart           = True;     // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, false shuts down***
   HealthMin         = 300;      // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
   PlaySounds        = True;     // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
@@ -49,8 +50,6 @@ Begin
   Players[0].Name := '';        // ***Username***
   Players[0].Pass := '';        // ***Password***
   Players[0].Active := True;
-  Players[0].BoxRewards := ['Xp', 'lamp', 'oins', 'aphire', 'ssence'];
-  LampSkill := 'hunter';
 End;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +60,7 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,A,B,C,D,J,K,Increase,CurrentLevel: Integer;
+  SalamanderCount,XP,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,Increase,CurrentLevel: Integer;
   StartingXP,LevelsGained,XPTL,TrapTime,XT,YT,PTS,MiniBreak,MiniBreakTime: Integer;
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
   aFound,Hue,Sat,SalamandersPH,XPH: Extended;
@@ -70,7 +69,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.14';
+  ScriptVersion = '6.15';
   UseAutoChecker = True;
   Debug = False;
 
@@ -340,7 +339,7 @@ End;
 
 Procedure FailedTrap;
 Var
-  X,Y,E,F,G,H,T: Integer;
+  X,Y,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,T: Integer;
   TrapFail: Boolean;
 Begin
   If Not WaitLoggedIn(1000) Then
@@ -357,18 +356,18 @@ Begin
     Begin
       If Debug Then
         Writeln('Using large search area for failed traps');
-      E := 102;
-      F := 100;
-      G := 417;
-      H := 340;
+      TempSearchX1 := 102;
+      TempSearchY1 := 100;
+      TempSearchX2 := 417;
+      TempSearchY2 := 340;
     End Else
     Begin
       If Debug Then
         Writeln('Using small search area for failed traps');
-      E := 132;
-      F := 80;
-      G := 333;
-      H := 265;
+      TempSearchX1 := 120;
+      TempSearchY1 := 80;
+      TempSearchX2 := 333;
+      TempSearchY2 := 265;
     End;
   End Else
   Begin
@@ -378,32 +377,30 @@ Begin
       Begin
         If Debug Then
           Writeln('Found fire staying away');
-        E := 139;
-        F := 75;
-        G := C;
-        H := D;
+        TempSearchX1 := 139;
+        TempSearchY1 := 75;
+        TempSearchY2 := SearchX2;
+        TempSearchX2 := SearchY2;
       End Else
       Begin
-        E := A;
-        F := B;
-        G := C;
-        H := D;
+        TempSearchX1 := SearchX1;
+        TempSearchY1 := SearchY1;
+        TempSearchX2 := SearchX2;
+        TempSearchY2 := SearchY2;
       End;
     End Else
     Begin
-      E := A;
-      F := B;
-      G := C;
-      H := D;
+      TempSearchX1 := SearchX1;
+      TempSearchY1 := SearchY1;
+      TempSearchX2 := SearchX2;
+      TempSearchY2 := SearchY2;
     End;
   End;
 
   If Debug Then
-    Smart_DrawBox(IntToBox(E,F,G,H));
+    Smart_DrawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2));
 
-  MouseSpeed := RandomRange(14, 19);
-
-  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,E,F,G,H) Then
+  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
   Begin
     If Debug Then
       Writeln('Found potential rope(1) on ground, clicking');
@@ -451,7 +448,7 @@ Begin
     End;
   End;
 
-  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,E,F,G,H) Then
+  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
   Begin
     If Debug Then
       Writeln('Found potential failed trap(2)');
@@ -463,8 +460,6 @@ Begin
     Begin
       If Debug Then
         Writeln('Found option to pickup');
-
-      MouseSpeed := RandomRange(14, 19);
 
       MarkTime(T);
       Repeat
@@ -542,7 +537,7 @@ Begin
     FailedTrap;
     FailedTrap;
     MarkTime(MiniBreak);
-    MiniBreakTime:=RandomRange(400000,1000000);
+    MiniBreakTime:=RandomRange(1800000,3600000);
   End;
 End;
 
@@ -727,7 +722,7 @@ Begin
       Wait(RandomRange(1000,1200));
       If FindBlackChatMessage('area') Then
       Begin
-        MMouse(209,174,4,4);
+        HumanMMouse(209,174,4,4);
         If WaitUpText('alk',900) Then
           ClickMouse2(True) Else
           Begin
@@ -752,7 +747,6 @@ Begin
   If Not WaitLoggedIn(1000) Then
     Exit;
 
-  MouseSpeed := RandomRange(14, 19);
   QuickClick:=False;
 
   For I:=0 To 1 Do
@@ -770,7 +764,7 @@ Begin
         If (XT<269) And (YT<156) Then
           Wait(RandomRange(1280,1350)) Else
           Wait(RandomRange(790,850));
-        ChooseOption('ease')
+        ChooseOption('ease');
       End Else
         If WaitOption('ease',800) Then
         Begin
@@ -786,7 +780,7 @@ Begin
           If TimeFromMark(T1)>2000 Then
             Break;
           If Not QuickClick Then
-            If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+            If FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
             Begin
               If Debug Then
                 Writeln('Found check net dtm in release');
@@ -809,7 +803,7 @@ Begin
       Begin
         Repeat
           If Not QuickClick Then
-            If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+            If FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
             Begin
               If Debug Then
                 Writeln('Found check net dtm in release');
@@ -843,7 +837,7 @@ Begin
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
   SetColorSpeed2Modifiers(0.04,0.46);
-  FindColorsSpiralTolerance(MSCX,MSCY,TPA,4345948,A,B,C,D,8);
+  FindColorsSpiralTolerance(MSCX,MSCY,TPA,4345948,SearchX1,SearchY1,SearchX2,SearchY2,8);
   ColorToleranceSpeed(CTS);
   SetColorSpeed2Modifiers(0.2, 0.2);
 
@@ -859,7 +853,7 @@ Var
 Begin
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
-  SetColorSpeed2Modifiers(0.03,0.06);
+  SetColorSpeed2Modifiers(0.03,0.07);
   FindColorsSpiralTolerance(MSCX,MSCY,TPA,1203841,Tree.X1,Tree.Y1,Tree.X2,Tree.Y2,6);
   ColorToleranceSpeed(CTS);
   SetColorSpeed2Modifiers(0.2, 0.2);
@@ -872,7 +866,7 @@ End;
 Procedure FindEmptyTree;
 Var
   X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY: Integer;
-  E,F,G,H1: Integer;
+  TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
   TPA: TPointArray;
   ATPA: T2DPointArray;
   CaughtBox: TBox;
@@ -900,12 +894,10 @@ Begin
     If Debug Then
       Writeln('Looking for Laid Traps');
 
-  MouseSpeed := RandomRange(14, 19);
-
-  E:=A;
-  F:=B;
-  G:=C;
-  H1:=D;
+  TempSearchX1:=SearchX1;
+  TempSearchY1:=SearchY1;
+  TempSearchX2:=SearchX2;
+  TempSearchY2:=SearchY2;
 
   If LowerCase(CatchType)='green' Then
     If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
@@ -913,14 +905,14 @@ Begin
       Begin
         If Debug Then
           Writeln('Found fire, staying away');
-        E:=139;
-        F:=75;
-        G:=C;
-        H1:=D;
+        TempSearchX1:=139;
+        TempSearchY1:=75;
+        TempSearchX2:=SearchX2;
+        TempSearchY2:=SearchY2;
       End;
 
   If Debug Then
-    SMART_DrawBox(IntToBox(E,F,G,H1));
+    SMART_DrawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2));
 
   CTS := GetColorToleranceSpeed;
   ColorToleranceSpeed(2);
@@ -940,7 +932,7 @@ Begin
     SearchFromY:= (MSCY - 35);
 
   SetColorSpeed2Modifiers(Hue,Sat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,Color,E,F,G,H1,Tolerance);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,Color,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,Tolerance);
   ColorToleranceSpeed(CTS);
   SetColorSpeed2Modifiers(0.2, 0.2);
 
@@ -976,8 +968,9 @@ Begin
     If FindDTMRotated(Check,X,Y,CaughtBox.X1,CaughtBox.Y1,CaughtBox.X2,CaughtBox.Y2,-Pi,Pi,Pi/30,aFound) Then
       Continue;
 
-    If AvoidSetTraps(CaughtBox) Then
-      Continue;
+    If SetTrap<>1 Then
+      If AvoidSetTraps(CaughtBox) Then
+        Continue;
 
     HumanMMouse(X+Increase,Y,0,2);
 
@@ -1110,19 +1103,19 @@ Begin
   If QuickClick Then
     GoTo Jumper;
 
-  If Not FindDTMRotated(Check,X,Y,A,B,C,D,-Pi,Pi,Pi/30,aFound) Then
+  If Not FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
     Exit;
 
   If Debug Then
     Writeln('Checking for Caught Salamanders');
 
-  MouseSpeed := RandomRange(14, 19);
-
-  If FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound) Then
+  If FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
   Begin
     If Debug Then
       Writeln('Found check net dtm');
-    HumanMMouse(X,Y,3,3);
+
+    If Not IsUpTextMultiCustom(['Chec','heck']) Then
+      HumanMMouse(X,Y,3,3);
 
     If WaitUpTextMulti(['Chec','heck'],RandomRange(500,650)) Then
     Begin
@@ -1216,7 +1209,8 @@ Begin
       If Debug Then
         Writeln('Found start spot red');
 
-      Mouse(X,Y,2,2,True);
+      HumanMMouse(X,Y,2,2);
+      ClickMouse2(True);
       Wait(RandomRange(600,700));
       If IsMoving Then
       Begin
@@ -1234,7 +1228,8 @@ Begin
       If Debug Then
         Writeln('Found green main spot');
 
-      Mouse(X,Y,2,2,True);
+      HumanMMouse(X,Y,2,2);
+      ClickMouse2(True);
       Wait(RandomRange(600,700));
       If IsMoving Then
       Begin
@@ -1249,7 +1244,8 @@ Begin
       If Debug Then
         Writeln('DID NOT FIND GREEN SPOT, TRY TO MANUALLY CORRECT');
 
-      Mouse(187,304,3,3,False);
+      HumanMMouse(187,304,3,3);
+      ClickMouse2(False);
       WaitOptionMulti(['Walk','Wal','alk','here'],RandomRange(500,700));
     End;
   End;
@@ -1271,7 +1267,7 @@ Begin
       Wait(RandomRange(30000,45000));
       CheckStuff;
     End;
-  Until ((Length(GetMiniMapDotsIn('w',615,75,642,102))=0) And (Not FindDTMRotated(Check,X,Y,a,b,c,d,-Pi,Pi,Pi/30,aFound)));
+  Until ((Length(GetMiniMapDotsIn('w',615,75,642,102))=0) And (Not FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound)));
 
   If Debug Then
     WriteLn('Found an open world, starting.');
@@ -1335,7 +1331,7 @@ Begin
 
   MarkTime(TrapTime);
   MarkTime(MiniBreak);
-  MiniBreakTime:=RandomRange(400000,1000000);
+  MiniBreakTime:=RandomRange(1800000,3600000);
 
   RunTime:= Round(TimetoRun * 60 * 60 * 1000 + Random(300000));
   Writeln('You are going to run for ' + MsToTime(RunTime, Time_Formal));
@@ -1378,12 +1374,10 @@ Begin
     If LowerCase(CatchType) = 'red' Then
     Begin
       Writeln('You are catching Red Salamanders');
-      A         := 102;
-      B         := 100;
-      C         := 417;
-      D         := 340;
-      J         := 2450;
-      K         := 2550;
+      SearchX1         := 102;
+      SearchY1         := 100;
+      SearchX2         := 417;
+      SearchY2         := 340;
       Check     := CheckDTM;
       Sal       := SalDTM;
       Color     := 2106666;
@@ -1396,12 +1390,10 @@ Begin
     End Else
     Begin
       Writeln('You are catching Green Salamanders');
-      A         := 1;
-      B         := 23;
-      C         := 498;
-      D         := 312;
-      J         := 2750;
-      K         := 2950;
+      SearchX1         := 1;
+      SearchY1         := 23;
+      SearchX2         := 498;
+      SearchY2         := 312;
       Check     := GCheckDTM;
       Sal       := GSalDTM;
       Color     := 2237218;
