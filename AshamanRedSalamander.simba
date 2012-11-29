@@ -12,7 +12,7 @@ Program Ashaman2IOSalamander;
   {$i SRL/SRL/misc/SmartGraphics.simba}
 
 {
-Ashaman2IOSalamander v6.15
+Ashaman2IOSalamander v6.16
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -69,7 +69,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.15';
+  ScriptVersion = '6.16';
   UseAutoChecker = True;
   Debug = False;
 
@@ -118,6 +118,9 @@ Function WaitLoggedIn(Time:Integer): Boolean;
 Var
   T: Integer;
 Begin
+  Result:=(GetColor(472, 490) = 16777215);
+  If Result Then
+    Exit;
   MarkTime(T);
   Repeat
     SRL_ResetNavBar;
@@ -126,6 +129,7 @@ Begin
       Result:=False;
       Exit;
     End;
+    Wait(Random(100));
   Until (GetColor(472, 490) = 16777215);
   Result:=True;
 End;
@@ -357,7 +361,7 @@ Begin
       If Debug Then
         Writeln('Using large search area for failed traps');
       TempSearchX1 := 102;
-      TempSearchY1 := 100;
+      TempSearchY1 := 105;
       TempSearchX2 := 417;
       TempSearchY2 := 340;
     End Else
@@ -365,7 +369,7 @@ Begin
       If Debug Then
         Writeln('Using small search area for failed traps');
       TempSearchX1 := 120;
-      TempSearchY1 := 80;
+      TempSearchY1 := 105;
       TempSearchX2 := 333;
       TempSearchY2 := 265;
     End;
@@ -405,6 +409,13 @@ Begin
     If Debug Then
       Writeln('Found potential rope(1) on ground, clicking');
 
+    If IsUpTextMultiCustom([' B','Bones','ones','nes']) Then
+    Begin
+      If Debug Then
+        Writeln('Staying away from bones!');
+      Exit;
+    End;
+
     ClickMouse2(False);
 
     Invcnt := InvCount;
@@ -415,7 +426,7 @@ Begin
 
       MarkTime(T);
       Repeat
-        Wait(RandomRange(10,20));
+        Wait(Random(100));
       Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
 
       If Not TrapFail Then
@@ -791,6 +802,7 @@ Begin
                 QuickClick:=True;
               End;
           End;
+          Wait(Random(100));
         Until (CountItems('DTM',Sal,[]) < InvCnt);
       End;
     End Else
@@ -816,6 +828,7 @@ Begin
             End;
           If TimeFromMark(T1)>3500 Then
             Break;
+          Wait(Random(100));
         Until (InvCount < InvCnt);
         If Not QuickClick Then
           Wait(RandomRange(1100,1200)) Else
@@ -1045,12 +1058,6 @@ Begin
   End;
 End;
 
-{*******************************************************************************
-Function ProgressReport;
-By: Sin
-Edited By: Ashaman88
-Description: Will Make a progress report.
-*******************************************************************************}
 Procedure ProgressReport;
 Begin
   If Not Debug Then
@@ -1132,6 +1139,7 @@ Begin
             Repeat
               If TimeFromMark(T) > 6000 Then
                 Exit;
+              Wait(Random(100));
             Until (InvCount = InvCnt + 3);
             SalamanderCount := SalamanderCount + 1;
             ProgressReport;
@@ -1153,6 +1161,7 @@ Begin
         Repeat
           If TimeFromMark(T) > 6000 Then
             Exit;
+          Wait(Random(100));
         Until (InvCount = InvCnt + 3);
         SalamanderCount := SalamanderCount + 1;
         ProgressReport;
@@ -1267,6 +1276,7 @@ Begin
       Wait(RandomRange(30000,45000));
       CheckStuff;
     End;
+    Wait(Random(100));
   Until ((Length(GetMiniMapDotsIn('w',615,75,642,102))=0) And (Not FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound)));
 
   If Debug Then
@@ -1407,6 +1417,7 @@ Begin
   End;
 
   RestartScript:=False;
+  ToggleActionBar(False);
 End;
 
 Procedure MainLoop;
