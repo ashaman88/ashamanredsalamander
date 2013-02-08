@@ -71,7 +71,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.18';
+  ScriptVersion = '6.19';
   UseAutoChecker = True;
   Debug = False;
 
@@ -1747,6 +1747,113 @@ Begin
   Until TimeFromMark(T)>(LeWait+RT);
 End;
 
+Procedure AvoidDeadTree;
+Var
+  CTS: Integer;
+  TPA: TPointArray;
+  ATPA: T2DPointArray;
+  TempBox: TBox;
+Begin
+  CTS := GetColorToleranceSpeed;
+  ColorToleranceSpeed(2);
+  SetColorSpeed2Modifiers(0.04,0.46);
+  FindColorsSpiralTolerance(MSCX,MSCY,TPA,4345948,SearchX1,SearchY1,SearchX2,SearchY2,8);
+  ColorToleranceSpeed(CTS);
+  SetColorSpeed2Modifiers(0.2, 0.2);
+
+  ATPA := SplitTPAEx(TPA,30,30);
+  SortATPASize(ATPA,True);
+  TempBox:=GetATPABounds(ATPA);
+  DeadTreeBox:=IntToBox(TempBox.X1-15,TempBox.Y1-20,TempBox.X2+55,TempBox.Y2+40);
+
+  If Debug Then
+    Try
+      Smart_DrawBox(DeadTreeBox);
+    Except
+      Writeln('Box out of bounds');
+    End;
+End;
+
+
+function FindObjEx2(var cx, cy: Integer; Text: TStringArray; Color: TIntegerArray;
+    Tol, Step, xs, ys, xe, ye: Integer): Boolean;
+var
+  MidX, MidY, i, j, k, x, y, width, height, HalfWidth, HalfHeight: Integer;
+  ColorFound: Boolean;
+  SearchBoxes: Array of Array of TBox;
+  p: TPointArray;
+begin
+  Result := False;
+
+  //check for all the colors
+  for i := 0 to (GetArrayLength(Color)-1) do
+    if (FindColorSpiralTolerance(cx, cy, Color[i], xs, ys, xe, ye, Tol)) then
+    begin
+      ColorFound := True;
+      Break;
+    end;
+
+  if not(ColorFound) then
+    Exit; //None of the colors could be found on screen
+
+  //Start coordinates
+  MidX := Round((xe - xs) / 2);
+  MidY := Round((ye - ys) / 2);
+
+  //width and height in boxes
+  Width := Ceil(abs(xe - xs) / 2 / Step - 0.5) * 2 + 1;
+  Height := Ceil(abs(ye - ys) / 2 / Step - 0.5) * 2 + 1;
+
+  SetLength(SearchBoxes, Width);
+
+  //Getting mid of screen in boxes, not pixels
+  HalfWidth := Floor(Width / 2);
+  HalfHeight := Floor(Height / 2)
+
+  //Create the search boxes, starting in mid because of backwards compatibility
+  for x := -1 * HalfWidth to HalfWidth do
+  begin
+    SetLength(SearchBoxes[x + HalfWidth], Height);
+    for y := -1 * HalfHeight to HalfHeight do
+      SearchBoxes[x + HalfWidth][y + HalfHeight] := IntToBox(
+         Max(xs, xs + Round(MidX + ((x - 0.5) * Step))),
+         Max(ys, ys + Round(MidY + ((y - 0.5) * Step))),
+         Min(xe, xs + Round(MidX + ((x + 0.5) * Step))),
+         Min(ye, ys + Round(MidY + ((y + 0.5) * Step))));
+  end;
+
+  //Create a TPA, where points are representing the boxes
+  p := TPAFromBox(IntToBox(0, 0, Width-1, Height-1));
+
+  //Sort thid TPA from the middle to get a spiral like effect
+  SortTPAFrom(p, Point(floor(Width / 2), floor(Height / 2)));
+
+  //Loop through the boxes, searching for the object (the k and j loop might be better to switch though)
+  for k := 0 to High(Color) do
+    for j := 0 to High(p) do
+    begin
+      if (FindColorTolerance(cx, cy, Color[k], SearchBoxes[p[j].x][p[j].y].x1,
+        SearchBoxes[p[j].x][p[j].y].y1, SearchBoxes[p[j].x][p[j].y].x2,
+        SearchBoxes[p[j].x][p[j].y].y2, Tol)) then
+      begin
+        If LowerCase(CatchType)='red' Then
+        Begin
+          AvoidDeadTree;
+          If PointInBox(Point(CX,CY),DeadTreeBox) Then
+            Continue;
+        End;
+        HumanMMouse(cx, cy, 3, 3);
+        If (WaitUptextMulti(Text, 300)) then
+        begin
+          GetMousePos(cx, cy);
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+end;
+
+
 Procedure FailedTrap;
 Var
   X,Y,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,T: Integer;
@@ -1769,15 +1876,15 @@ Begin
       TempSearchX1 := 102;
       TempSearchY1 := 105;
       TempSearchX2 := 417;
-      TempSearchY2 := 340;
+      TempSearchY2 := 340-12;
     End Else
     Begin
       If Debug Then
-        Writeln('Using small search area for failed traps');
-      TempSearchX1 := 120;
-      TempSearchY1 := 105;
-      TempSearchX2 := 333;
-      TempSearchY2 := 265;
+        Writeln('Using normal search area for failed traps');
+      TempSearchX1:=SearchX1;
+      TempSearchY1:=SearchY1;
+      TempSearchX2:=SearchX2;
+      TempSearchY2:=SearchY2;
     End;
   End Else
   Begin
@@ -1810,7 +1917,7 @@ Begin
   If Debug Then
     Smart_DrawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2));
 
-  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
+  If FindObjEx2(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
   Begin
     If Debug Then
       Writeln('Found potential rope(1) on ground, clicking');
@@ -1869,7 +1976,7 @@ Begin
     End;
   End;
 
-  If FindObjEx(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
+  If FindObjEx2(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
   Begin
     If Debug Then
       Writeln('Found potential failed trap(2)');
@@ -2249,30 +2356,12 @@ Begin
         If Not QuickClick Then
           Wait(RandomRange(1100,1200)) Else
           Begin
-            Wait(RandomRange(450,550))
+            Wait(RandomRange(450,750))
             Exit;
           End;
       End;
     End;
   End;
-End;
-
-Procedure AvoidDeadTree;
-Var
-  CTS: Integer;
-  TPA: TPointArray;
-  ATPA: T2DPointArray;
-Begin
-  CTS := GetColorToleranceSpeed;
-  ColorToleranceSpeed(2);
-  SetColorSpeed2Modifiers(0.04,0.46);
-  FindColorsSpiralTolerance(MSCX,MSCY,TPA,4345948,SearchX1,SearchY1,SearchX2,SearchY2,8);
-  ColorToleranceSpeed(CTS);
-  SetColorSpeed2Modifiers(0.2, 0.2);
-
-  ATPA := SplitTPAEx(TPA,30,30);
-  SortATPASize(ATPA,True);
-  DeadTreeBox:=GetATPABounds(ATPA);
 End;
 
 Function AvoidSetTraps(Tree: TBox): Boolean;
@@ -2374,7 +2463,7 @@ Begin
     Begin
       AvoidDeadTree;
       If PointInBox(Point(X,Y),DeadTreeBox) Then
-          Continue;
+        Continue;
     End;
 
     If LowerCase(CatchType)='green' Then
@@ -2391,7 +2480,7 @@ Begin
             Writeln('Firebox is: '+ToStr(IntToBox(XF-10,YF-60,XF+50,YF+20)));
           End;
 
-    If Debug Then
+    If (Debug) And (LowerCase(CatchType)='green') Then
       SMART_DrawBox(IntToBox(XF-10,YF-60,XF+50,YF+20));
 
     If (Length(ATPA[I]) < 22) Then
@@ -2575,7 +2664,7 @@ Begin
             InvCnt := InvCount;
             MarkTime(T);
             Repeat
-              If TimeFromMark(T) > 6000 Then
+              If TimeFromMark(T) > 4400 Then
                 Exit;
               Wait(Random(100));
               If Not WaitLoggedIn(1000) Then
@@ -2599,7 +2688,7 @@ Begin
         InvCnt := InvCount;
         MarkTime(T);
         Repeat
-          If TimeFromMark(T) > 6000 Then
+          If TimeFromMark(T) > 4400 Then
             Exit;
           Wait(Random(100));
           If Not WaitLoggedIn(1000) Then
@@ -2869,7 +2958,7 @@ Begin
       SearchX1         := 102;
       SearchY1         := 100;
       SearchX2         := 417;
-      SearchY2         := 340;
+      SearchY2         := 340-12;
       Check     := CheckDTM;
       Sal       := SalDTM;
       Color     := 2106666;
