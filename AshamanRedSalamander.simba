@@ -1,23 +1,14 @@
-{NOTE! THERE WILL NEVER BE BANKING ADDED TO THE PUBLIC VERSION. DO NOT ASK.
-DO NOT REQUEST FROM ANYONE TO ADD IT. DO NOT POST BANKING ON THE THREAD.
-IF YOU ADD IT FOR PERSONAL USE, UNDER NO CIRCUMSTANCES SHOULD YOU RELEASE.
-IF THERE IS A BANKING VERSION RELEASED OR TOO MANY PEOPLE NAG, I WILL TAKE
-DOWN THE GREEN SALAMANDER OPTION ALL TOGETHER. DO NOT ASK FOR BANKING!!!}
-
-Program Ashaman2IOSalamander;
-  {$Define SMART8}  //Take out the 8 if you are using older smart version
-  {$I SRL/SRL.Simba}
-  {$I SRL/SRL/Skill/Fighting.Simba}
-  {$I SRL/SRL/Misc/Debug.Simba}
-  {$i SRL/SRL/misc/SmartGraphics.simba}
+program Ashaman2IOSalamander;
+{$Define SMART}
+{$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v6.18
+Ashaman2IOSalamander v7.0
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
--Have arctic bear pouches in inventory w/ summ pots
--Make sure zoom is farthest out
+-Have arctic bear pouches in inventory w/ summ pots ***DISABLED FOR NOW****
+-Make sure zoom is farthest out & that chatbox is as short as possible
 -Don't be an A hole, find an empty world
 -FILL OUT THE STUFF BELOW
 -READ THE OP DIRECTIONS
@@ -31,27 +22,33 @@ Ashaman2IOSalamander v6.18
 //                                                                   //
 ///////////////////////////////////////////////////////////////////////
 
+
 Const
-  SRLStats_Username = '';       // ***Leave blank if you don't have a stats account***
+  SRLStats_Username = '';         // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  OnScreenProggy    = True;     // ***Progress report on screen? Will take up more memory***
-  TimetoRun         = 5.3;      // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
-  Restart           = True;     // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, false shuts down***
-  HealthMin         = 300;      // ***If health is below this amount script will log out (Only for low levels at green salamanders)***
-  CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
-  PlaySounds        = True;     // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
-  Hopper            = False;    // ***Hops if another player logs into your world and stays for more than 60 seconds***
+  OnScreenProggy    = True;       // ***Progress report on screen? Will take up more memory***
+  TimetoRun         = 5.2;        // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
+  Restart           = True;       // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, false shuts down***
+  HealthMin         = 300;        // ***DISABLE FOR NOW - If health is below this amount script will log out (Only for low levels at green salamanders)***
+  CatchType         = 'Green';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
+  Hopper            = False;      // ***Hops if another player logs into your world and stays for more than 60 seconds***
 
 Procedure DeclarePlayers;
 Begin
-  HowManyPlayers := 1;          // ***Change to however many players you want***
-  NumberOfPlayers(HowManyPlayers);
-  CurrentPlayer := 0;
+  Players.Setup(['Account1Name'], 'PlayerFile'); //***Fill this out, Account1Name = Name of the account in player manager, PlayerFile = name of the player file***
+  SetLength(Players,1);
 
-  Players[0].Name := '';        // ***Username***
-  Players[0].Pass := '';        // ***Password***
-  Players[0].Active := True;
+  //***If NOT using the player manager, fill out the loginname and password below, otherwise ignore those two***
+  With players[0] Do
+  Begin
+  // loginName := '';      {Remove the "//" from this line if you arent using player manager}
+  // password := '';       {Remove the "//" from this line if you arent using player manager}
+    IsActive := True;
+  End;
+  CurrentPlayer := 0;
 End;
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                       //
@@ -61,19 +58,161 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,RunTime,StartingExperience,RunTimer,Invcnt,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,Increase,CurrentLevel: Integer;
-  StartingXP,LevelsGained,XPTL,TrapTime,XT,YT,PTS,MiniBreak,MiniBreakTime,Proggy: Integer;
-  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,Crash,SetTrap,Color,Tolerance,Width,Height: Integer;
-  aFound,Hue,Sat,SalamandersPH,XPH: Extended;
+  SalamanderCount,XP,RunTime,StartingExperience,Invcnt,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
+  LevelsGained,XPTL,XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange: Integer;
+  GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance: Integer;
+  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
+  aFound,TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
   StartTime,CurrentTime: Int64;
+  TrapTime,RunTimer,MiniBreak,Timeout,Crash: TTimeMarker;
   SoundPath: String;
-  Crashed,QuickClick,RestartScript: Boolean;
+  Crashed,QuickClick,RestartScript,TrapFail: Boolean;
+  Screen: TMufasaBitmap;
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '6.19';
+  ScriptVersion = '7.0';
   UseAutoChecker = True;
   Debug = False;
+  DebugSally = False;
+
+Procedure QuickBoxSort(var A: TIntegerArray; var B: TBoxArray; iLo, iHi: Integer; SortUp: Boolean);
+Var
+  Lo, Hi, Mid, T: Integer;
+  TP: TBox;
+Begin
+  If (Length(A) <> Length(B)) Then
+    Exit;
+  Lo := iLo;
+  Hi := iHi;
+  Mid := A[(Lo + Hi) shr 1];
+  Repeat
+    If SortUp Then
+    Begin
+      While (A[Lo] < Mid) Do Inc(Lo);
+      While (A[Hi] > Mid) Do Dec(Hi);
+    End Else
+    Begin
+      While (A[Lo] > Mid) Do Inc(Lo);
+      While (A[Hi] < Mid) Do Dec(Hi);
+    End;
+    If (Lo <= Hi) Then
+    Begin
+      T := A[Lo];
+      A[Lo] := A[Hi];
+      A[Hi] := T;
+      TP := B[Lo];
+      B[Lo] := B[Hi];
+      B[Hi] := TP;
+      Inc(Lo);
+      Dec(Hi);
+    End;
+  Until Lo > Hi;
+  If (Hi > iLo) Then QuickBoxSort(A, B, iLo, Hi, SortUp);
+  If (Lo < iHi) Then QuickBoxSort(A, B, Lo, iHi, SortUp);
+End;
+
+
+{*
+  Sorts A TBoxArray by Mid-Point. Closest OverallBox by Midpoint to the From-Point First.
+*}
+Procedure MidSortBoxArrayFrom(Var BoxArray: TBoxArray; Const From: TPoint);
+Var
+   I,L: Integer;
+   Mid: TPoint;
+   DistArr: TIntegerArray;
+Begin
+  L := High(BoxArray);
+  If (L < 0) Then
+    Exit;
+  SetLength(DistArr, L + 1);
+
+  For I := 0 To L Do
+  Begin
+    Mid := MiddleBox(BoxArray[I]);
+    DistArr[I] := Round(Sqr(From.X - Mid.X) + Sqr(From.Y - Mid.Y));
+  End;
+
+  QuickBoxSort(DistArr,BoxArray,0,l,True);
+End;
+
+//by Home
+function AreaToBoxArray(const AreaX1, AreaY1, AreaX2, AreaY2, Width, Height: Integer): TBoxArray;
+var
+  AreaW, AreaH: Integer;
+  BoxX, BoxY: Integer;
+  x, y, i: Integer;
+begin
+  // Calculate the area dimensions
+  AreaW := AreaX2 - AreaX1 + 1;
+  AreaH := AreaY2 - AreaY1 + 1;
+
+  // Calculate the number of boxes in each dimension
+  BoxX := AreaW div Width;
+  if AreaW mod Width <> 0 then Inc(BoxX);
+  BoxY := AreaH div Height;
+  if AreaH mod Height <> 0 then Inc(BoxY);
+
+  // Set the number of boxes
+  SetLength(Result, BoxX * BoxY);
+
+  // Calculate the boxes
+  i := 0;
+  for y := 0 to BoxY - 1 do
+    for x := 0 to BoxX - 1 do
+    begin
+      Result[i] := IntToBox(AreaX1 + x * Width,
+        AreaY1 + y * Height,
+        Min(AreaX2, AreaX1 + (x + 1) * Width - 1),
+        Min(AreaY2, AreaY1 + (y + 1) * Height - 1));
+      Inc(i);
+    end;
+end;
+
+Procedure CheckMovingObjs(RClick: Boolean);
+var
+  TBA: TBoxArray;
+  MidBox: TPoint;
+  TIA: TIntegerArray;
+  H,I,J,X,Y,T: Integer;
+  TPA,PBox: TPointArray;
+begin
+  if not IsLoggedIn then Exit;
+
+  SetColorToleranceSpeed(1);
+  SetToleranceSpeed2Modifiers(0.2, 0.2);
+
+  PBox := TPAFromBox(MainScreen.PlayerBox);
+  TBA := AreaToBoxArray(Mainscreen.X1, Mainscreen.Y1, Mainscreen.X2, Mainscreen.Y2, 35, 35);
+  TIA := GetPixelShift(TBA, 300);
+
+  for H := 0 to High(TBA) do
+  begin
+    if (TIA[H] > 100) then
+    begin
+      MidBox := MiddleBox(TBA[H]);
+      SetArrayLength(TPA, Length(TPA)+1);
+      TPA[High(TPA)] := MidBox;
+    end;
+  end;
+
+  ClearTPAFromTPAWrap(TPA, PBox, TPA);
+  if (Length(TPA) < 1) then Exit;
+
+  I := Random(Length(TPA));
+  Mouse(Point(TPA[I].X+GaussRangeInt(-10,10), TPA[I].Y+GaussRangeInt(-10,10)),Mouse_Move,Mouse_Human);
+
+  if RClick then
+  begin
+    FastClick(Mouse_Right);
+    if (chooseOption.isOpen(500)) then
+      J := Length(ChooseOption.__getOptions());
+    Wait(GaussRangeInt(J*75, J*120));
+
+    ChooseOption.Close
+  end;
+  SetArrayLength(TPA,0);
+end;
 
 {*******************************************************************************
 Function AutoupdateMe;
@@ -116,52 +255,6 @@ Begin
     WriteLn('!!!!! Not checking for latest version, you may be outdated!');
 End;
 
-Function WaitLoggedIn(Time:Integer): Boolean;
-Var
-  T: Integer;
-Begin
-  Result:=(GetColor(472, 490) = 16777215);
-  If Result Then
-    Exit;
-  MarkTime(T);
-  Repeat
-    SRL_ResetNavBar;
-    If TimeFromMark(T)>Time Then
-    Begin
-      Result:=False;
-      Exit;
-    End;
-    Wait(Random(100));
-  Until (GetColor(472, 490) = 16777215);
-  Result:=True;
-End;
-
-//by LeJingle!!!
-procedure ConvertTime64(timeMS:int64; var YEAR, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND:integer);
-var
-  x: int64;
-begin
-  x := timeMS;
-  (* Better to do the calculations in my opinion (especially for year) now,
-   * trying at run time usually results in breaking/miscalculation.
-   * Hence, commented out [equilavent] expressions
-   *)
-  YEAR   := x div (31536000000); // 1000 * 60 * 60 * 24 * 365 (1 year or 365 days)
-  x      := x mod (31536000000);
-  MONTH  := x div (2592000000); // 1000 * 60 * 60 * 24 * 30 (1 month or 30 days)
-  x      := x mod (2592000000);
-  WEEK   := x div (604800000); // 1000 * 60 * 60 * 24 * 7 (1 week or 7 days)
-  x      := x mod (604800000);
-  DAY    := x div (86400000); // 1000 * 60 * 60 * 24 (1 day or 24 hours)
-  x      := x mod (86400000);
-  HOUR   := x div (3600000); // 1000 * 60 * 60 (1 hour or 60 minutes)
-  x      := x mod (3600000);
-  MINUTE := x div (60000); // 1000 * 60 (1 minute or 60 seconds)
-  x      := x mod (60000);
-  SECOND := x div (1000); // 1000 (1 second, is in MS format now)
-  x      := x mod (1000);
-end;
-
 function MsToTime64(MS: int64): string;
 var
   STA: TVariantArray;
@@ -191,13 +284,13 @@ Begin
     'green':
     Begin
       GSpotDTM := DTMFromString('mWAAAAHicY2FgYMhnYmAoA+IsKA4AivkAsR8QRwKxi7U2Q1R4KBz/B4rxI2FGNAwCAKfPB/U=');
-      GSalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmCwAWJ3IH4K5L8B4ntALKQlzCCoLsggoCLAwA/kwzAjEgYCAM+HBIo=');
-      GCheckDTM := DTMFromString('mWAAAAHicY2FgYPBkZGBwgmJ/IF4CFFsIxLOAeD4Qq4aoMfBysTOwszIzcHGwMnABxZAxIxoGAQAkOgSy');
+      GSalDTM := DTMFromString('mWAAAAHicY2FgYGBkYWD4w8zAwAykOYBYi5GBQR+IVYFYHoj5FPgY+FUEGATVBSFsoB5kzIiGQQAAtKgDAQ==');
+      GCheckDTM := DTMFromString('mWAAAAHicY2FgYNjLxMCwB4j3AfEhII5jZGBIAuIoIA4DYgljcQY5aVEGCRNxBgkZEQZ+oB5kzIiGQQAAiv8GFQ==');
       PositionDTM := DTMFromString('mrAAAAHic42BgYChhYmDIBOJYII4D4gogzgfiZiDuBOJ2oJo2IG4F4qlAXAjE84F4LhAXAPH///8ZCr3UGapThMDYpzgZjP0rMxhcM6MY+IFq8GFGAhgGAPoQEqU=');
       FireDTM := DTMFromString('mQwAAAHicY2ZgYFAFYm0gVoLSJkCsAsTxgQYMFhamDDfmyDLwA/kwzIiEgQAAnsgEPw==');
     End;
   End;
-  RopeDTM := DTMFromString('mbQAAAHicY2VgYHBkYmBwAGIPILYGYmcgfgQUv80AoZ9BsbsJF4OfvRKDtb4UQ6iLKoOXtQIDP1AcHTNiwWAAAI72CS0=');
+  RopeDTM := DTMFromString('mbQAAAHicY2VgYJjGDMHzgLgfiGcB8TZGBoYNQLwVincCsaOJLIOvBTeDm4U8g7cZF4OzIScDP1A/OmbEgsEAAOBYCa0=');
   If OnScreenProggy Then
     Proggy := BitmapFromString(510, 133, 'meJzsvXd4G8e1N+xd0jYs2WZc' +
             'RKtRVKEqVSn2DoDoAAGQ6I0AqyRLsuUqWVbvvXdSIlVIsfembss1c' +
@@ -1592,109 +1685,12 @@ By: ggzz
 Edited By: Ashaman88
 Description: Gets HP Level.
 *******************************************************************************}
-Function HPLevel: Integer;
+{Function HPLevel: Integer;
 Var
   ColourString: String;
 Begin
   Result:= GetMMLevels('HP', ColourString);
-End;
-
- {*******************************************************************************
-
-All of these mouse movements are credited to benland100 and flight
-
-*******************************************************************************}
-
-
-//By Bandland100, modified to shift mouse speeds after every step
-Procedure SuperWindMouse(xs, ys, xe, ye, gravity, wind, minWait, maxWait, maxStep, targetArea: extended);
-Var
-  veloX,veloY,windX,windY,veloMag,dist,randomDist,lastDist,step: extended;
-  lastX,lastY,MSP,W: integer;
-  sqrt2,sqrt3,sqrt5: extended;
-Begin
-  MSP  := MouseSpeed;
-  sqrt2:= sqrt(2);
-  sqrt3:= sqrt(3);
-  sqrt5:= sqrt(5);
-  While hypot(xs - xe, ys - ye) > 1 Do
-  Begin
-    dist:= hypot(xs - xe, ys - ye);
-    wind:= minE(wind, dist);
-    If dist >= targetArea Then
-    Begin
-      windX:= windX / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
-      windY:= windY / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
-    End Else
-    Begin
-      windX:= windX / sqrt2;
-      windY:= windY / sqrt2;
-      If (maxStep < 3) Then
-      Begin
-        maxStep:= random(3) + 3.0;
-      End Else
-      Begin
-        maxStep:= maxStep / sqrt5;
-      End;
-    End;
-    veloX:= veloX + windX;
-    veloY:= veloY + windY;
-    veloX:= veloX + gravity * (xe - xs) / dist;
-    veloY:= veloY + gravity * (ye - ys) / dist;
-    if hypot(veloX, veloY) > maxStep then
-    Begin
-      randomDist:= maxStep / 2.0 + random(round(maxStep) div 2);
-      veloMag:= sqrt(veloX * veloX + veloY * veloY);
-      veloX:= (veloX / veloMag) * randomDist;
-      veloY:= (veloY / veloMag) * randomDist;
-    End;
-    lastX:= Round(xs);
-    lastY:= Round(ys);
-    xs:= xs + veloX;
-    ys:= ys + veloY;
-
-    Case Random(50) Of
-      1..25: W := (MSP + (Random((MSP/4))));
-      26..50: W := (MSP - (RandomRange((MSP/2), MSP-1)));
-    End;
-    If (W < 1) Then
-      W := 1;
-
-    If (lastX <> Round(xs)) Or (lastY <> Round(ys)) Then
-      MoveMouse(Round(xs), Round(ys));
-
-    step:= hypot(xs - lastX, ys - lastY);
-    //W := round((maxWait - minWait) * (step / maxStep) + minWait);
-    wait(W);
-    lastdist:= dist;
-  End;
-
-  If (Round(xe) <> Round(xs)) or (Round(ye) <> Round(ys)) Then
-    MoveMouse(Round(xe), Round(ye));
-
-  MouseSpeed := MSP;
-End;
-
-Procedure HumanMMouse(eX, eY, ranX, ranY: Integer);
-Var
-  randSpeed: extended;
-  X,Y,X2,Y2,j,Dist,MP: integer;
-Begin
-  j := MouseSpeed;
-  GetMousePos(X, Y);
-  Dist := Distance(X, Y, eX, eY);
-  MP := Round(Dist/150);
-  If MP < 0 Then
-    MP := 1;
-
-  randSpeed := (random(MouseSpeed) / 2.0 + MouseSpeed) / 10.0;
-  X2 := RandomRange(eX-(j*MP), eX+(j*MP));
-  Y2 := RandomRange(eY-(j*MP), eY+(j*MP));
-  SuperWindMouse(X, Y, X2, Y2, 11, 8, 10.0 / randSpeed, 12.0 / randSpeed, 10.0 * randSpeed, 10.0 * randSpeed);
-  GetMousePos(X, Y);
-  MMouse(eX, eY, ranX, ranY);
-  MouseSpeed := j;
-End;
+End;      }
 
 (*
 MmmWeGotOff
@@ -1729,639 +1725,126 @@ Example:
 Procedure OffMM(RedTu, LeWait, rWait: Integer);
 Var
   W,H,RX,RY,T,RT: Integer;
+  OffTimer: TTimeMarker;
 Begin
   GetClientDimensions(W,H);
   H:=H+50;
   RX := RandomRange(0, W);
   RY := RandomRange(0, H);
   Case (RedTu) Of
-    0..1: HumanMMouse(W/2, RandomRange(-110,-60), RX, 0);
-    2: HumanMMouse(RandomRange(-50,-10), H/2, 0, RY);
-    3: HumanMMouse(W/2, h+RandomRange(10,50), RX, 0);
-    4: HumanMMouse(W+RandomRange(10,50), H/2, 0, RY);
+    0..1: mouse(Point(Round(W/2)+RX, RandomRange(-110,-60)),Mouse_Move,Mouse_Break);
+    2: mouse(Point(RandomRange(-50,-10), Round(H/2)+RY),Mouse_Move,Mouse_Break);
+    3: mouse(Point(Round(W/2)+RX, h+RandomRange(10,50)),Mouse_Move,Mouse_Break);
+    4: mouse(Point(W+RandomRange(10,50), Round(H/2)+RY),Mouse_Move,Mouse_Break);
   End;
   RT:=(Random(rWait));
-  MarkTime(T);
+  OffTimer.Start();
   Repeat
-    Wait(Random(100));
-  Until TimeFromMark(T)>(LeWait+RT);
+    Wait(GaussRangeInt(100,200));
+  Until OffTimer.getTime()>(LeWait+RT);
 End;
 
-Procedure AvoidDeadTree;
+Procedure PaintOnSmart;
+Begin
+  If OnScreenProggy Then
+  Begin
+    smartImage.Clear;
+    smartimage.drawbitmap(proggy,Point(11,467));
+    SmartImage.DrawText('v'+ScriptVersion,Point(320,480),clWhite);
+    SmartImage.DrawText(ToStr(SalamanderCount),Point(145,505),clWhite);
+    SmartImage.DrawText(ToStr(SalamandersPH),Point(145,522),clWhite);
+    SmartImage.DrawText(ToStr(XP),Point(95,540),clWhite);
+    SmartImage.DrawText(ToStr(XPH),Point(91,557),clWhite);
+    SmartImage.DrawText(ToStr(MsToTime64(CurrentTime)),Point(110,570),clWhite);
+  End;
+End;
+
+Procedure ProgressReport;
+Begin
+  If Not Debug Then
+    ClearDebug;
+
+  CurrentTime:= GetSystemTime - StartTime;
+  XP := (XP+152);
+  XPH := Round(XP * (3600.0 / (GetTimeRunning / 1000.0)));
+  SalamandersPH := Round((SalamanderCount * (3600.0 / (GetTimeRunning / 1000.0))));
+
+  {If CurrentLevel<99 Then
+    If (StartingXP - XP) < 0 Then
+    Begin
+      StartingXP:= (XpTillNextLevel(Skill_Hunter)+XP);
+      Writeln('Gained a level!!');
+      LevelsGained := LevelsGained + 1;
+    End;    }
+
+  If ((CurrentLevel+LevelsGained)>=40) Then
+    Level:=3;
+
+  If XPH < 1000 Then
+    XPH:=1000.0;
+
+ // XPTL:= Round(((StartingXP-XP) / (XPH/1000.0))*3600.0);
+
+  Writeln('========AshamanSalamander v'+ScriptVersion+'=========');
+  Writeln('Time Running: ' + ToStr(MsToTime64(CurrentTime)));
+  Writeln('Catching: ' + CatchType+' Salamanders');
+  Writeln('Salamanders Caught: ' + ToStr(SalamanderCount));//+'    TTL: '+MsToTime(XPTL, Time_Formal));
+  Writeln('Experience Earned: ' + IntToStr(XP));//+ '   Levels Gained: ' +IntToStr(LevelsGained));
+  Writeln('Experience/Hour: ' + ToStr(XPH));
+  Writeln('Salamanders/H: ' + ToStr(SalamandersPH));
+  Writeln('=======================================');
+
+  PaintOnSmart;
+
+  StatsIncVariable('Hunter EXP (Gained)', 272);
+  StatsIncVariable('Items Picked Up', 1);
+  StatsCommit;
+End;
+
+Procedure Failsafe;
+Begin
+  Mouse(Point(289+GaussRangeInt(-10,10),203+GaussRangeInt(-10,10)),Mouse_Left,Mouse_Human);
+  Wait(GaussRangeInt(400,2000));
+End;
+
+Function AvoidBadStuff: Tbox;
 Var
-  CTS: Integer;
+  CTS,T: Integer;
   TPA: TPointArray;
   ATPA: T2DPointArray;
   TempBox: TBox;
 Begin
-  CTS := GetColorToleranceSpeed;
-  ColorToleranceSpeed(2);
-  SetColorSpeed2Modifiers(0.04,0.46);
-  FindColorsSpiralTolerance(MSCX,MSCY,TPA,4345948,SearchX1,SearchY1,SearchX2,SearchY2,8);
-  ColorToleranceSpeed(CTS);
-  SetColorSpeed2Modifiers(0.2, 0.2);
+  CTS := GetToleranceSpeed;
+  SetColorToleranceSpeed(2);
 
-  ATPA := SplitTPAEx(TPA,30,30);
+  SetToleranceSpeed2Modifiers(AvoidHue,AvoidSat);
+  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,AvoidColor,Max(0,SearchX1-100),SearchY1,SearchX2,SearchY2,AvoidTolerance);
+  SetColorToleranceSpeed(CTS);
+  SetToleranceSpeed2Modifiers(0.2, 0.2);
+
+  ATPA := SplitTPAEx(TPA,10,10);
   SortATPASize(ATPA,True);
-  TempBox:=GetATPABounds(ATPA);
-  DeadTreeBox:=IntToBox(TempBox.X1-15,TempBox.Y1-20,TempBox.X2+55,TempBox.Y2+40);
+  If Length(ATPA)=0 Then
+    Exit;
+  If Debug Then
+  Begin
+    DebugATPABounds(ATPA);
+    Writeln('This is the mushroom');
+    Writeln(Length(ATPA[0]));
+  End;
+
+  TempBox:=GetTPABounds(ATPA[0]);
+  Result:=IntToBox(Max(0,TempBox.X1),Max(0,TempBox.Y1-100),Min(Mainscreen.X2,TempBox.X2+100),Min(Mainscreen.Y2,TempBox.Y2+50));
 
   If Debug Then
     Try
-      Smart_DrawBox(DeadTreeBox);
+      smartImage.clear;
+      smartImage.drawBox(Result, false, clRed);
     Except
       Writeln('Box out of bounds');
     End;
-End;
-
-
-function FindObjEx2(var cx, cy: Integer; Text: TStringArray; Color: TIntegerArray;
-    Tol, Step, xs, ys, xe, ye: Integer): Boolean;
-var
-  MidX, MidY, i, j, k, x, y, width, height, HalfWidth, HalfHeight: Integer;
-  ColorFound: Boolean;
-  SearchBoxes: Array of Array of TBox;
-  p: TPointArray;
-begin
-  Result := False;
-
-  //check for all the colors
-  for i := 0 to (GetArrayLength(Color)-1) do
-    if (FindColorSpiralTolerance(cx, cy, Color[i], xs, ys, xe, ye, Tol)) then
-    begin
-      ColorFound := True;
-      Break;
-    end;
-
-  if not(ColorFound) then
-    Exit; //None of the colors could be found on screen
-
-  //Start coordinates
-  MidX := Round((xe - xs) / 2);
-  MidY := Round((ye - ys) / 2);
-
-  //width and height in boxes
-  Width := Ceil(abs(xe - xs) / 2 / Step - 0.5) * 2 + 1;
-  Height := Ceil(abs(ye - ys) / 2 / Step - 0.5) * 2 + 1;
-
-  SetLength(SearchBoxes, Width);
-
-  //Getting mid of screen in boxes, not pixels
-  HalfWidth := Floor(Width / 2);
-  HalfHeight := Floor(Height / 2)
-
-  //Create the search boxes, starting in mid because of backwards compatibility
-  for x := -1 * HalfWidth to HalfWidth do
-  begin
-    SetLength(SearchBoxes[x + HalfWidth], Height);
-    for y := -1 * HalfHeight to HalfHeight do
-      SearchBoxes[x + HalfWidth][y + HalfHeight] := IntToBox(
-         Max(xs, xs + Round(MidX + ((x - 0.5) * Step))),
-         Max(ys, ys + Round(MidY + ((y - 0.5) * Step))),
-         Min(xe, xs + Round(MidX + ((x + 0.5) * Step))),
-         Min(ye, ys + Round(MidY + ((y + 0.5) * Step))));
-  end;
-
-  //Create a TPA, where points are representing the boxes
-  p := TPAFromBox(IntToBox(0, 0, Width-1, Height-1));
-
-  //Sort thid TPA from the middle to get a spiral like effect
-  SortTPAFrom(p, Point(floor(Width / 2), floor(Height / 2)));
-
-  //Loop through the boxes, searching for the object (the k and j loop might be better to switch though)
-  for k := 0 to High(Color) do
-    for j := 0 to High(p) do
-    begin
-      if (FindColorTolerance(cx, cy, Color[k], SearchBoxes[p[j].x][p[j].y].x1,
-        SearchBoxes[p[j].x][p[j].y].y1, SearchBoxes[p[j].x][p[j].y].x2,
-        SearchBoxes[p[j].x][p[j].y].y2, Tol)) then
-      begin
-        If LowerCase(CatchType)='red' Then
-        Begin
-          AvoidDeadTree;
-          If PointInBox(Point(CX,CY),DeadTreeBox) Then
-            Continue;
-        End;
-        HumanMMouse(cx, cy, 3, 3);
-        If (WaitUptextMulti(Text, 300)) then
-        begin
-          GetMousePos(cx, cy);
-          Result := True;
-          Exit;
-        end;
-      end;
-    end;
-end;
-
-
-Procedure FailedTrap;
-Var
-  X,Y,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,T: Integer;
-  TrapFail: Boolean;
-Begin
-  If Not WaitLoggedIn(1000) Then
-    Exit;
-
-  If Debug Then
-    Writeln('Looking for Failed Traps');
-
-  MarkTime(TrapTime);
-
-  If LowerCase(CatchType) = 'red' Then
-  Begin
-    If FindDTM(SWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Or FindDTM(NWDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Then
-    Begin
-      If Debug Then
-        Writeln('Using large search area for failed traps');
-      TempSearchX1 := 102;
-      TempSearchY1 := 105;
-      TempSearchX2 := 417;
-      TempSearchY2 := 340-12;
-    End Else
-    Begin
-      If Debug Then
-        Writeln('Using normal search area for failed traps');
-      TempSearchX1:=SearchX1;
-      TempSearchY1:=SearchY1;
-      TempSearchX2:=SearchX2;
-      TempSearchY2:=SearchY2;
-    End;
-  End Else
-  Begin
-    If FindDTM(FireDTM,X,Y,MSX1,MSY1,MSX2,MSY2) Then
-    Begin
-      If Not PointInBox(Point(X,Y),IntToBox(0,115-50,48,168-50)) Then
-      Begin
-        If Debug Then
-          Writeln('Found fire staying away, failedtrap');
-        TempSearchX1 := 139;
-        TempSearchY1 := 75;
-        TempSearchX2 := SearchX2;
-        TempSearchY2 := SearchY2;
-      End Else
-      Begin
-        TempSearchX1 := SearchX1;
-        TempSearchY1 := SearchY1;
-        TempSearchX2 := SearchX2;
-        TempSearchY2 := SearchY2;
-      End;
-    End Else
-    Begin
-      TempSearchX1 := SearchX1;
-      TempSearchY1 := SearchY1;
-      TempSearchX2 := SearchX2;
-      TempSearchY2 := SearchY2;
-    End;
-  End;
-
-  If Debug Then
-    Smart_DrawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2));
-
-  If FindObjEx2(X,Y,['Take','heck','Set','antle','Inter'],[1853259],9,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
-  Begin
-    If Debug Then
-      Writeln('Found potential rope(1) on ground, clicking');
-
-    If IsUpTextMultiCustom([' B','Bones','ones','nes']) Then
-    Begin
-      If Debug Then
-        Writeln('Staying away from bones!');
-      Exit;
-    End;
-
-    ClickMouse2(False);
-
-    Invcnt := InvCount;
-    If WaitOptionMulti(['ishin','hing','net','Rope','ope'],RandomRange(300,400)) Then
-    Begin
-      If Debug Then
-        Writeln('Found option to take, waiting to stop moving');
-
-      MarkTime(T);
-      Repeat
-        Wait(Random(100));
-        If Not WaitLoggedIn(1000) Then
-          Exit;
-      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
-
-      If Not TrapFail Then
-      Begin
-        If Debug Then
-          Writeln('Trying to pick up second part of trap');
-
-        HumanMMouse(261,177,3,3);
-        ClickMouse2(False);
-
-        Invcnt := InvCount;
-        If WaitOptionMulti(['ishin','hing','net','Rope','ope'],RandomRange(300,400)) Then
-        Begin
-          If Debug Then
-            Writeln('Found option to pick up second part of trap');
-
-          MarkTime(T);
-          Repeat
-            Wait(Random(100));
-            If Not WaitLoggedIn(1000) Then
-              Exit;
-          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
-        End
-        Else
-        Begin
-          If Debug Then
-            Writeln('Didnt find second part of trap, trying again');
-          TrapFail:=True;
-          FailedTrap;
-        End;
-      End;
-    End;
-  End;
-
-  If FindObjEx2(X,Y,['Take','heck','Set','antle','Inter'],[669259,993843,1519924,1523275,1258044,1258045,1191227,993075],2,50,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2) Then
-  Begin
-    If Debug Then
-      Writeln('Found potential failed trap(2)');
-
-    ClickMouse2(False);
-
-    Invcnt := InvCount;
-    If WaitOptionMulti(['ishin','hing','net','Rope','ope'],RandomRange(300,400)) Then
-    Begin
-      If Debug Then
-        Writeln('Found option to pickup');
-
-      MarkTime(T);
-      Repeat
-        Wait(Random(100));
-        If Not WaitLoggedIn(1000) Then
-          Exit;
-      Until (((Invcount = Invcnt +1) And (Not(IsMoving))) Or (TimeFromMark(T) > 6000));
-
-
-      If Not TrapFail Then
-      Begin
-        If Debug Then
-          Writeln('Trying to pickup second part of trap');
-
-        HumanMMouse(261,177,3,3);
-        ClickMouse2(False);
-
-        Invcnt := InvCount;
-        If WaitOptionMulti(['ishin','hing','net','Rope','ope'],RandomRange(300,400)) Then
-        Begin
-          If Debug Then
-            Writeln('Found second part of trap');
-
-          MarkTime(T);
-          Repeat
-            Wait(Random(100));
-            If Not WaitLoggedIn(1000) Then
-              Exit;
-          Until ((InvCount = Invcnt + 1) Or (TimeFromMark(T) > 6000));
-        End Else
-        Begin
-          If Debug Then
-            Writeln('Failed to pickup second part of trap, trying again');
-          TrapFail:=True;
-          FailedTrap;
-        End;
-      End;
-    End;
-  End;
-
-  TrapFail:=False;
-
-  If OptionsExist(['Exam','mine','Examine','Canc','ncel','Cancel'],False) Then
-    MMouse(37,32,10,10);
-End;
-
-Function CheckStuff: Boolean;
-Begin
-  Result:=False;
-
-  If Not WaitLoggedIn(1000) Then
-  Begin
-    LoginPlayer;
-    If LowerCase(CatchType) = 'red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-
-    SetAngle(SRL_ANGLE_HIGH);
-  End;
-
-  If FindNormalRandoms Then
-  Begin
-    If Not WaitLoggedIn(1000) Then
-      TerminateScript;
-    If LowerCase(CatchType) = 'red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
-
-    SetAngle(SRL_ANGLE_HIGH);
-    Result:=True;
-  End;
-
-  If TimeFromMark(MiniBreak)>MiniBreakTime Then
-  Begin
-    FailedTrap;
-    Writeln('MiniBreak');
-    OffMM(Random(4),RandomRange(2500,4000),5000);
-    Wait(RandomRange(5000,15000));
-    FailedTrap;
-    FailedTrap;
-    MarkTime(MiniBreak);
-    MiniBreakTime:=RandomRange(1800000,3600000);
-  End;
-End;
-
-
-{*******************************************************************************
-Function Runaways;
-By: ggzz
-Edited By: Ashaman88
-Description: Runs away when low on health.
-*******************************************************************************}
-Procedure Runaways;
-Begin
-  If (InFight and (HPLevel < HealthMin)) Then
-  Begin
-    Writeln('Ghast beat you up, logging out.');
-    Logout;
-  End;
-End;
-
-Function UsingFamiliarFSS: Boolean;
-Var
-  CTS: Integer;
-  TPA: TPointArray;
-Begin
-  CTS:= GetColorToleranceSpeed;
-  SetColorToleranceSpeed(2);
-  SetColorSpeed2Modifiers(0.18, 0.88);
-  Result:= FindColorsTolerance(TPA, 8763221, 692, 130, 721, 160, 21);
-  SetColorSpeed2Modifiers(0.2, 0.2);
-  ColorToleranceSpeed(CTS);
-End;
-
-Function UsingFamiliarFS: Boolean;              //By Flight.   Modified highly!
-Var
-  X, Y: Integer;
-Begin
-  Result := UsingFamiliarFSS Or FindColorTolerance(X, Y, 11192179, 695, 130, 720, 155, 20);
-  If (Not Result) Then
-  Begin
-    If FindColorTolerance(X, Y, 3426817, 695, 130, 720, 155, 20) Then
-    Begin
-      Result:= False;
-      Exit;
-    End;
-
-    HumanMMouse(708, 144, 5, 5);
-
-    Repeat
-      GetMousePos(X, Y);
-      Wait(RandomRange(200,300));
-      CheckStuff;
-      If Not WaitLoggedIn(1000) Then
-        Exit;
-    Until(PointInBox(Point(X, Y), IntToBox(691, 131, 720, 159)));
-
-    Result:= (Not WaitUptextMulti(['Pet', 'et '], RandomRange(400,500)));
-  End;
-End;
-
-Function UsingFamiliar: Boolean;              //By Flight.   Modified highly!
-Var
-  X,Y: Integer;
-Begin
-  Result := FindColorTolerance(X,Y,11192179,695,130,720,155,20);
-
-  If (Not Result) Then
-  Begin
-    If FindColorTolerance(X,Y, 3426817,695,130,720,155,20) Then
-    Begin
-      Result:= False;
-      Exit;
-    End;
-
-    Result := CountColorTolerance(12501952,135,90,380,329,100)>1000;
-
-    If Not Result Then
-      Result:=UsingFamiliarFS;
-  End;
-End;
-
-Function SummonPoints: Integer;
-Var
-  ColourString: String;
-Begin
-  Result:= GetMMLevels('summon', ColourString);
-End;
-
-Function SummoningRenew(PouchToSummon: Integer): Boolean;
-Var
-  Pouch, X, Y, Tries, Summoning, Empty: Integer;
-Begin
-  If PouchToSummon = 0 Then
-    Exit;
-
-  CheckStuff;
-  If Not WaitLoggedIn(1000) Then
-    Exit;
-
-  If UsingFamiliar Then
-  Begin
-    Result:= True;
-    Exit;
-  End;
-
-  Case PouchToSummon Of
-    0: Exit;
-    1: Pouch := DTMFromString('mQwAAAHicY2aAAE4g5gBidiDmgoqdOnGQoai8guHk4bUMckA+DDMiYSAAANpKBnA=');          //arctic bear
-  End;
-
-  Summoning := DTMFromString('mWAAAAHicY2FgYHBigmBXIPYEYn1GBgYrILaE4vz8Ega5a3cZZC/dBKpmYkgBkuxImBENgwAAgewHaA==');              //Potion to drink.
-  Empty := DTMFromString('mbQAAAHicY2VgYHBkYmBwBWJ7KHYDYh5GBgYOKBYDYhEgTkxMZbC1c2BIS8tmiE9IYQgKDmPgAupHx4xYMBgAAMSrBxM=');      //emptypot
-
-  If ((SummonPoints < 10) and (Not FindDTM(Summoning, X, Y, MIX1, MIY1, MIX2, MIY2))) Then
-  Begin
-    If Debug Then
-      Writeln('Did not find summoning potion and low on points');
-    FreeDTM(Pouch);
-    FreeDTM(Summoning);
-    FreeDTM(Empty);
-    PTS:=0;
-    Exit;
-  End;
-
-  If (Not UsingFamiliar) Then
-  Begin
-    If (GetCurrentTab <> Tab_Inv) Then
-      GameTab(Tab_Inv);
-
-    If (Not FindDTM(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2)) Then
-    Begin
-      If Debug Then
-        Writeln('No more pouches');
-      FreeDTM(Pouch);
-      FreeDTM(Summoning);
-      FreeDTM(Empty);
-      PTS:=0;
-      Exit;
-    End;
-
-    If (FindDTM(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2) And FindDTM(Summoning, x, y, MIX1, MIY1, MIX2, MIY2)) Then
-      If(SummonPoints < 10) Then
-      Begin
-        If Debug Then
-          Writeln('Need to Refill Summoning Points.');
-
-        If(FindDTM(Summoning, X, Y, MIX1, MIY1, MIX2, MIY2)) Then
-        Begin
-          MMouse(X,Y,4,4);
-          If WaitUptextMulti(['ummoning', 'potion'], 500) Then
-          Begin
-            ClickMouse2(False);
-            WaitOptionMulti(['rink', 'Drink', 'rink Summoning', 'Drink Summoning'],RandomRange(400,500));
-            Wait(RandomRange(1888,2000));
-          End;
-
-          If FindDTM(Empty, X, Y, MIX1, MIY1, MIX2, MIY2) Then
-          Begin
-            MMouse(X,Y,4,4);
-            If WaitUptextMulti(['ial', 'Vial'], 500) Then
-            Begin
-              ClickMouse2(False);
-              WaitOptionMulti(['Drop', 'rop', 'p Vial', 'Drop Vial'],RandomRange(400,500));
-              Wait(RandomRange(1880,2000));
-            End;
-          End;
-        End;
-      End;
-
-    If (SummonPoints < 10) Then
-    Begin
-      FreeDTM(Pouch);
-      FreeDTM(Summoning);
-      FreeDTM(Empty);
-      Exit;
-    End;
-
-    Tries := 0;
-
-    If(FindDtm(Pouch, X, Y, MIX1, MIY1, MIX2, MIY2) And (SummonPoints >= 10)) Then
-    Begin
-      MMouse(X, Y, 5, 5);
-      ClickMouse2(false);
-      WaitOption('Summon',500);
-      Wait(RandomRange(1000,1200));
-      If FindBlackChatMessage('area') Then
-      Begin
-        HumanMMouse(209,174,4,4);
-        If WaitUpText('alk',900) Then
-          ClickMouse2(True) Else
-          Begin
-            ClickMouse2(False);
-            WaitOption('alk',900);
-          End;
-        ExamineInv;
-        SummoningRenew(PTS);
-      End;
-    End;
-  End;
-  FreeDTM(Pouch);
-  FreeDTM(Summoning);
-  FreeDTM(Empty);
-End;
-
-Procedure Release;
-Var
-  X,Y,I,T1: Integer;
-Begin
-  CheckStuff;
-  If Not WaitLoggedIn(1000) Then
-    Exit;
-
-  QuickClick:=False;
-
-  For I:=0 To 1 Do
-  Begin
-    If FindDTM(Sal,X,Y,MIX1,MIY1,MIX2,MIY2) Then
-    Begin
-      If Debug Then
-        Writeln('Releasing Salamanders');
-
-      HumanMMouse(X,Y,5,5);
-      ClickMouse2(False);
-
-      If I=0 Then
-      Begin
-        If (XT<269) And (YT<156) Then
-          Wait(RandomRange(1280,1350)) Else
-          Wait(RandomRange(790,850));
-        ChooseOption('ease');
-      End Else
-        If WaitOption('ease',800) Then
-        Begin
-          QuickClick:=False;
-          Exit;
-        End;
-
-      InvCnt:=CountItems('DTM',Sal,[]);
-      MarkTime(T1);
-      If I=0 Then
-      Begin
-        Repeat
-          If TimeFromMark(T1)>2000 Then
-            Break;
-          If Not QuickClick Then
-            If FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
-            Begin
-              If Debug Then
-                Writeln('Found check net dtm in release');
-              HumanMMouse(X,Y,3,3);
-              If WaitUpTextMulti(['Chec','heck'],RandomRange(300,320)) Then
-              Begin
-                ClickMouse2(False);
-                QuickClick:=True;
-              End;
-          End;
-          Wait(Random(100));
-        Until (CountItems('DTM',Sal,[]) < InvCnt);
-      End;
-    End Else
-    Begin
-      If Debug Then
-        Writeln('No sally found');
-      InvCnt := InvCount;
-      MarkTime(T1);
-      If I=0 Then
-      Begin
-        Repeat
-          If Not QuickClick Then
-            If FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
-            Begin
-              If Debug Then
-                Writeln('Found check net dtm in release');
-              HumanMMouse(X,Y,3,3);
-              If WaitUpTextMulti(['Chec','heck'],RandomRange(300,320)) Then
-              Begin
-                ClickMouse2(False);
-                QuickClick:=True;
-              End;
-            End;
-          If TimeFromMark(T1)>3500 Then
-            Break;
-          Wait(Random(100));
-        Until (InvCount < InvCnt);
-        If Not QuickClick Then
-          Wait(RandomRange(1100,1200)) Else
-          Begin
-            Wait(RandomRange(450,750))
-            Exit;
-          End;
-      End;
-    End;
-  End;
+  SetLength(TPA,0);
+  SetLength(ATPA,0);
 End;
 
 Function AvoidSetTraps(Tree: TBox): Boolean;
@@ -2369,45 +1852,528 @@ Var
   CTS: Integer;
   TPA: TPointArray;
 Begin
-  CTS := GetColorToleranceSpeed;
-  ColorToleranceSpeed(2);
-  SetColorSpeed2Modifiers(0.03,0.07);
-  FindColorsSpiralTolerance(MSCX,MSCY,TPA,1203841,Tree.X1,Tree.Y1,Tree.X2,Tree.Y2,6);
-  ColorToleranceSpeed(CTS);
-  SetColorSpeed2Modifiers(0.2, 0.2);
+  CTS := GetToleranceSpeed;
+  SetColorToleranceSpeed(2);
+  SetToleranceSpeed2Modifiers(SetRopeHue,SetRopeSat);
+  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,SetRopeColor,Tree.X1,Tree.Y1,Tree.X2,Tree.Y2,SetRopeTolerance);
+  SetColorToleranceSpeed(CTS);
+  SetToleranceSpeed2Modifiers(0.2, 0.2);
 
   If (Length(TPA) > 0) Then
     Result:=True;
+  SetLength(TPA,0);
+End;
+
+Function CheckNet(Click,Pickup: Boolean): Boolean;
+Var
+  X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
+  TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
+  T: TTimeMarker;
+  MBP: TPoint;
+  TPA,TPA2: TPointArray;
+  ATPA,ATPA2: T2DPointArray;
+  AvoidBox,NetBox: TBox;
+  TBA: TBoxArray;
+Label
+  Jumper;
+Begin
+  If Not IsLoggedIn Then
+    Exit;
+
+  If Debug Then
+    Writeln('Looking for Caught Traps');
+
+  If QuickClick Then
+    GoTo Jumper;
+
+  TempSearchX1:=SearchX1;
+  TempSearchY1:=SearchY1;
+  TempSearchX2:=SearchX2;
+  TempSearchY2:=SearchY2;
+
+  If Debug Then
+  Begin
+    smartImage.clear;
+    smartImage.drawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2), false, clRed);
+    writeln('This is the search box');
+  End;
+
+  CTS := GetToleranceSpeed;
+  SetColorToleranceSpeed(2);
+
+  SetToleranceSpeed2Modifiers(NetHue,NetSat);
+  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,NetColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,NetTolerance);
+  SetColorToleranceSpeed(CTS);
+  SetToleranceSpeed2Modifiers(0.2, 0.2);
+
+  ATPA := SplitTPAEx(TPA,5,5);
+
+  If Debug Then
+    Try
+      DebugATPABounds(ATPA);
+    Except
+      Writeln('Box out of bounds');
+    End;
+
+  If (Length(ATPA) = 0) Then
+    Exit;
+
+  H:=High(ATPA);
+
+  For I:=0 To H Do
+  Begin
+    MiddleTPAEx(ATPA[I],X,Y);
+
+    If Debug Then
+      Writeln('Net Length: '+tostr(Length(atpa[i]))+' for I:= '+ToStr(I));
+
+    AvoidBox:=AvoidBadStuff;
+    If Debug Then
+    Begin
+      Writeln('Point: '+ToStr(Point(X,Y)));
+      Writeln('Box: '+ToStr(AvoidBox));
+    End;
+    If PointInBox(Point(X,Y),AvoidBox) Then
+      Continue;
+
+    If (Length(ATPA[I]) < 40) Or (Length(ATPA[I]) > 185) Then
+      Continue;
+
+    NetBox := GetTPABounds(ATPA[I]);
+    NetBox := IntToBox(Max(NetBox.X1,0),Max(NetBox.Y1,0),Min(NetBox.X2,Mainscreen.X2),Min(NetBox.Y2,Mainscreen.Y2));
+
+    With NetBox Do
+    Begin
+      SetColorToleranceSpeed(2);
+      SetToleranceSpeed2Modifiers(SallyHue,SallySat);
+
+      FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA2,SallyColor,NetBox.X1,NetBox.Y1,NetBox.X2,NetBox.Y2,SallyTolerance);
+      SetColorToleranceSpeed(CTS);
+      SetToleranceSpeed2Modifiers(0.2, 0.2);
+
+      If (Length(TPA2) > 2) And (Length(TPA2) < 20) Then
+      Begin
+        If DebugSally Then
+        Begin
+          Writeln('Inner Sally Length: '+ToStr(Length(TPA2)));
+          Writeln('NetBox:= '+ToStr(NetBox));
+        End;
+
+        SetArrayLength(TBA, Length(TBA)+1);
+        TBA[High(TBA)] := NetBox;
+      End;
+    End;
+  End;
+
+  If Debug Then
+  Try
+    smartImage.clear;
+    smartImage.drawBoxes(TBA, false, clRed);
+  Except
+    Writeln('Failed Drawing Boxes.');
+  End;
+
+  SetLength(TPA,0);
+  SetLength(ATPA,0);
+  SetLength(TPA2,0);
+  SetLength(ATPA2,0);
+
+  GetMousePos(XX,YY);
+  MidSortBoxArrayFrom(TBA,Point(XX,YY));
+  For H := 0 To High(TBA) Do
+  Begin
+    MBP := MiddleBox(TBA[H]);
+
+    If Not (IsMouseOverText(['Chec','heck'],RandomRange(0,0))) Then
+      Mouse(Point(MBP.X+GaussRangeInt(-10,10),MBP.Y+GaussRangeInt(-10,10)),Mouse_Move,Mouse_Break);
+
+    If (IsMouseOverText(['Chec','heck'],RandomRange(200,300))) Then
+    Begin
+      If Debug Then
+        Writeln('Found uptext Check, clicking');
+
+      If Click Then
+        Case GaussRangeInt(0,10) Of
+          0..8:
+          Begin
+            If DidClick(True) Then
+            Begin
+              Invcnt := tabBackpack.count();
+              T.Start;
+              Repeat
+                Wait(GaussRangeInt(100,200));
+                If Not isloggedin Then
+                  Exit;
+              Until ((tabBackpack.count() > Invcnt) Or (T.Gettime > 6000));
+              Wait(GaussRangeInt(0,1000));
+              SalamanderCount := SalamanderCount + 1;
+              ProgressReport;
+            End;
+            QuickClick:=False;
+            SetLength(TBA,0);
+            Exit;
+          End;
+        End;
+
+      FastClick(Mouse_Right);
+
+      Jumper:
+
+      If Not Click Then
+        If ChooseOption.OptionsExist(['Check'],100) Then
+        Begin
+          Result:=True;
+          SetLength(TBA,0);
+          Exit;
+        End;
+
+
+      If chooseOption.select(['Check']) Then
+      Begin
+        If Debug Then
+          Writeln('Found option to take, waiting to stop moving');
+        Invcnt := tabBackpack.count();
+        Wait(GaussRangeInt(400,900));
+        Case GaussRangeInt(0,10) Of
+          4..6:MouseBox(IntToBox(289-100,203-100,289+100,203+100),Mouse_Move);
+        End;
+        T.Start;
+        Repeat
+          Wait(GaussRangeInt(100,200));
+          If Not isloggedin Then
+            Exit;
+        Until ((tabBackpack.count() > Invcnt) Or (T.Gettime > 6000));
+        Wait(GaussRangeInt(0,1000));
+        SalamanderCount := SalamanderCount + 1;
+        Timeout.Reset;
+        Timeout.Start;
+        If Not Pickup Then
+          ProgressReport;
+      End;
+      QuickClick:=False;
+      SetLength(TBA,0);
+      Exit;
+    End;
+  End;
+  QuickClick:=False;
+  SetLength(TBA,0);
 End;
 
 
-Procedure FindEmptyTree;
+Procedure WorldHop;
+Var
+  X,Y: Integer;
+Begin
+  Repeat
+    If Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))>0 Then
+    Begin
+      If Debug Then
+        WriteLn('Someone is in this spot, hopping.');
+
+      Players[CurrentPlayer].ExitToLobby;
+      Wait(GaussRangeInt(5000,6000));
+      LobbyWorlds.SelectRandomWorld(True);
+      Wait(GaussRangeInt(30000,45000));
+    End;
+    Wait(Random(100));
+    If Not IsLoggedIn Then
+      Exit;
+  Until ((Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))=0) And (Not CheckNet(False,False)));
+
+  If Debug Then
+    WriteLn('Found an open world, starting.');
+
+  NumberofTraps := tabbackpack.countdtm(RopeDTM);
+End;
+
+Procedure Release;
+Var
+  XX,X,Y,YY,I,Ropes: Integer;
+  T: TTimeMarker;
+  RopeBox: TBox;
+Begin
+  If Not IsLoggedIn Then
+    Exit;
+
+  QuickClick:=False;
+
+  GetMousePos(XX,YY);
+  RopeBox:=TabBackpack.GetBounds;
+  RopeBox:=IntToBox(Max(0,RopeBox.X1),Max(0,RopeBox.Y1),Min(799,RopeBox.X2),Min(599,RopeBox.Y2));
+
+  Ropes:=Tabbackpack.countdtm(RopeDTM);
+
+  For I:=0 To 1 Do
+  Begin
+    If FindDTM(Sal,X,Y,RopeBox) Then
+    Begin
+      If Debug Then
+        Writeln('Releasing Salamanders');
+
+      Mouse(Point(X+GaussRangeInt(-10,10),Y+GaussRangeInt(-10,10)),Mouse_Right,Mouse_Accurate);
+
+      If I=0 Then
+      Begin
+        If (XX < 172) And (YY > 253) Then
+          Wait(GaussRangeInt(1200,1800)) Else
+          Wait(GaussRangeInt(750,1100));
+        ChooseOption.Select(['ease']);
+        InvCnt := tabbackpack.count;
+        T.Reset;
+        T.Start;
+        Repeat
+          If T.GetTime>3500 Then
+            Break;
+          Wait(GaussRangeInt(100,200));
+        Until Not (tabbackpack.count = InvCnt) Or Not (tabbackpack.countdtm(RopeDTM) = Ropes);
+        Wait(GaussRangeInt(600,800));
+        If (TabBackpack.CountDTM(Sal)=0) Then
+          Exit Else
+          Wait(GaussRangeInt(600,800));
+      End Else
+      Begin
+        ChooseOption.Select(['ease']);
+        QuickClick:=False;
+        Exit;
+      End;
+    End Else
+    Begin
+      InvCnt := tabbackpack.count;
+      T.Reset;
+      T.Start;
+      Wait(GaussRangeInt(400,900));
+      If I=0 Then
+      Begin
+        Case GaussRangeInt(0,10) Of
+          4..6:MouseBox(IntToBox(289-100,203-100,289+100,203+100),Mouse_Move);
+        End;
+        Repeat
+          If Not QuickClick Then
+            If CheckNet(False,False) Then
+              QuickClick:=True;
+          If T.GetTime>4500 Then
+            Break;
+          Wait(GaussRangeInt(100,200));
+        Until Not (tabbackpack.count = InvCnt) Or Not (tabbackpack.countdtm(RopeDTM) = Ropes);
+        If Not (tabbackpack.countdtm(RopeDTM) = Ropes) Then
+        Begin
+          Wait(GaussRangeInt(1500,1900));
+          Exit;
+        End;
+        If Not QuickClick Then
+        Begin
+          If (XX < 172) And (YY > 253) Then
+            Wait(GaussRangeInt(1200,1800)) Else
+            Wait(GaussRangeInt(750,1100));
+        End Else
+          Exit;
+      End;
+    End;
+  End;
+End;
+
+Procedure FailedTrap;
+Var
+  X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
+  TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
+  T: TTimeMarker;
+  TPA: TPointArray;
+  ATPA: T2DPointArray;
+  AvoidBox: TBox;
+Begin
+  If Not IsLoggedIn Then
+    Exit;
+
+  If Debug Then
+    Writeln('Looking for Failed Traps');
+
+  TrapTime.Reset;
+  TrapTime.Start;
+
+  TempSearchX1:=SearchX1;
+  TempSearchY1:=SearchY1;
+  TempSearchX2:=SearchX2;
+  TempSearchY2:=SearchY2;
+
+  If Debug Then
+  Begin
+    smartImage.clear;
+    smartImage.drawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2), false, clRed);
+    writeln('This is the search box');
+  End;
+
+  CTS := GetToleranceSpeed;
+  SetColorToleranceSpeed(2);
+
+  GetMousePos(XX, YY);
+  SearchFromX := MainScreen.PlayerPoint.X;
+  SearchFromY := MainScreen.PlayerPoint.Y;
+
+  If (XX > (MainScreen.PlayerPoint.X + 30)) Then
+    SearchFromX:= (MainScreen.PlayerPoint.X + 35)
+  Else If (XX < (MainScreen.PlayerPoint.X - 30)) Then
+    SearchFromX:= (MainScreen.PlayerPoint.X - 35);
+
+  If (YY > (MainScreen.PlayerPoint.Y + 30)) Then
+    SearchFromY:= (MainScreen.PlayerPoint.Y + 35)
+  Else If (YY < (MainScreen.PlayerPoint.Y - 30)) Then
+    SearchFromY:= (MainScreen.PlayerPoint.Y - 35);
+
+  SetToleranceSpeed2Modifiers(GroundRopeHue,GroundRopeSat);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,GroundRopeColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,GroundRopeTolerance);
+  SetColorToleranceSpeed(CTS);
+  SetToleranceSpeed2Modifiers(0.2, 0.2);
+
+  ATPA := SplitTPAEx(TPA,3,3);
+
+  If Debug Then
+    Try
+      DebugATPABounds(ATPA);
+    Except
+      Writeln('Box out of bounds');
+    End;
+
+  If (Length(ATPA) = 0) Then
+    Exit;
+
+  H:=High(ATPA);
+
+  For I:=0 To H Do
+  Begin
+    MiddleTPAEx(ATPA[I],X,Y);
+
+    If Debug Then
+      Writeln('Rope Length: '+tostr(Length(atpa[i])));
+
+    AvoidBox:=AvoidBadStuff;
+    If Debug Then
+    Begin
+      Writeln('Point: '+ToStr(Point(X,Y)));
+      Writeln('Box: '+ToStr(AvoidBox));
+    End;
+    If PointInBox(Point(X,Y),AvoidBox) Then
+      Continue;
+
+    If (Length(ATPA[I]) < 10) Then
+      Continue;
+
+    Mouse(Point(X+GaussRangeInt(-10,10),Y+GaussRangeInt(-10,10)),Mouse_Move,Mouse_Break);
+
+    If (IsMouseOverText([' B','Bones','ones','nes'],RandomRange(200,300))) Then
+    Begin
+      If Debug Then
+        Writeln('Staying away from bones!');
+      SetLength(TPA,0);
+      SetLength(ATPA,0);
+      Exit;
+    End;
+
+    If (IsMouseOverText(['Take','heck','Set','antle','Inter'],RandomRange(200,300))) Then
+    Begin
+      GetMousePos(XT,YT);
+
+      If Debug Then
+        Writeln('X: '+tostr(XT)+' Y: '+tostr(YT));
+
+      If Debug Then
+        Writeln('Found uptext set, clicking');
+
+      FastClick(Mouse_Right);
+
+      If chooseOption.select(['ishin','hing','net','Rope','ope']) Then
+      Begin
+        If Debug Then
+          Writeln('Found option to take, waiting to stop moving');
+        SetLength(TPA,0);
+        SetLength(ATPA,0);
+        Invcnt := tabBackpack.count();
+        Wait(GaussRangeInt(400,900));
+        Case GaussRangeInt(0,10) Of
+          4..6:MouseBox(IntToBox(289-100,203-100,289+100,203+100),Mouse_Move);
+        End;
+        T.Start;
+        Repeat
+          Wait(GaussRangeInt(100,200));
+          If Not isloggedin Then
+            Exit;
+        Until (((tabBackpack.count() > Invcnt) And (Not((minimap.isPlayerMoving())))) Or (T.Gettime > 6000));
+
+        If Not TrapFail Then
+        Begin
+          If Debug Then
+            Writeln('Trying to pick up second part of trap');
+
+          Mouse(Point(289+GaussRangeInt(-5,5),203+GaussRangeInt(-5,5)),Mouse_Right,Mouse_Human);
+
+
+          Invcnt := tabBackpack.count();
+          If chooseOption.select(['ishin','hing','net','Rope','ope']) Then
+          Begin
+            If Debug Then
+              Writeln('Found option to pick up second part of trap');
+
+            TrapFail:=False;
+            T.Start;
+            Repeat
+              Wait(GaussRangeInt(100,200));
+              If Not isloggedin Then
+                Exit;
+            Until ((tabBackpack.count() = Invcnt +1) Or (T.Gettime > 6000));
+            Timeout.Reset;
+            Timeout.Start;
+          End
+          Else
+          Begin
+            If Debug Then
+              Writeln('Didnt find second part of trap, trying again');
+            TrapFail:=True;
+          End;
+        End;
+        Exit;
+      End;
+    End;
+  End;
+  SetLength(TPA,0);
+  SetLength(ATPA,0);
+End;
+
+Procedure FindEmptyTree(Collect:Boolean);
 Var
   X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
   TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
   TPA: TPointArray;
   ATPA: T2DPointArray;
-  CaughtBox: TBox;
+  AvoidBox: TBox;
 Begin
-  CheckStuff;
-  If Not WaitLoggedIn(1000) Then
+  If Not IsLoggedIn Then
     Exit;
 
-  If ((CountItems('DTM',RopeDTM,[])=(NumberofTraps-Level)) Or (CountItems('DTM',RopeDTM,[])=0)) And (SetTrap=0)  Then
+  If Debug Then
+  Begin
+    Writeln(ToStr(tabbackpack.countdtm(RopeDTM))+' Ropes in inventory');
+    Writeln(ToStr(tabbackpack.countdtm(GSalDTM))+' Sally in inventory');
+  End;
+
+  If ((tabbackpack.countdtm(RopeDTM))=(NumberofTraps-Level)) Or (tabbackpack.countdtm(RopeDTM)=0) And (Not (Collect))  Then
   Begin
     If Debug Then
       Writeln('No more traps to setup');
     Exit;
   End;
 
-  If (CountItems('DTM',RopeDTM,[])=0) Then
+  If ((tabbackpack.countdtm(RopeDTM))=0) Then
   Begin
     NumberofTraps := NumberofTraps-1;
     Writeln('Lost a trap');
+    If NumberofTraps <= 0 Then
+    Begin
+      Writeln('Ran out of traps... sorry shutting down');
+      TerminateScript;
+    End;
     Exit;
   End;
 
-  If (SetTrap<>1) And (Debug=True) Then
+  If (Not (Collect)) And (Debug) Then
     Writeln('Finding Empty Trap Spot') Else
     If Debug Then
       Writeln('Looking for Laid Traps');
@@ -2418,34 +2384,42 @@ Begin
   TempSearchY2:=SearchY2;
 
   If Debug Then
-    SMART_DrawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2));
+  Begin
+    smartImage.clear;
+    smartImage.drawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2), false, clRed);
+    writeln('This is the search box');
+  End;
 
-  CTS := GetColorToleranceSpeed;
-  ColorToleranceSpeed(2);
+  CTS := GetToleranceSpeed;
+  SetColorToleranceSpeed(2);
 
   GetMousePos(XX, YY);
-  SearchFromX := MSCX;
-  SearchFromY := MSCY;
+  SearchFromX := MainScreen.PlayerPoint.X;
+  SearchFromY := MainScreen.PlayerPoint.Y;
 
-  If (XX > (MSCX + 30)) Then
-    SearchFromX:= (MSCX + 35)
-  Else If (XX < (MSCX - 30)) Then
-    SearchFromX:= (MSCX - 35);
+  If (XX > (MainScreen.PlayerPoint.X + 30)) Then
+    SearchFromX:= (MainScreen.PlayerPoint.X + 35)
+  Else If (XX < (MainScreen.PlayerPoint.X - 30)) Then
+    SearchFromX:= (MainScreen.PlayerPoint.X - 35);
 
-  If (YY > (MSCY + 30)) Then
-    SearchFromY:= (MSCY + 35)
-  Else If (YY < (MSCY - 30)) Then
-    SearchFromY:= (MSCY - 35);
+  If (YY > (MainScreen.PlayerPoint.Y + 30)) Then
+    SearchFromY:= (MainScreen.PlayerPoint.Y + 35)
+  Else If (YY < (MainScreen.PlayerPoint.Y - 30)) Then
+    SearchFromY:= (MainScreen.PlayerPoint.Y - 35);
 
-  SetColorSpeed2Modifiers(Hue,Sat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,Color,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,Tolerance);
-  ColorToleranceSpeed(CTS);
-  SetColorSpeed2Modifiers(0.2, 0.2);
+  SetToleranceSpeed2Modifiers(TreeHue,TreeSat);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,TreeColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,TreeTolerance);
+  SetColorToleranceSpeed(CTS);
+  SetToleranceSpeed2Modifiers(0.2, 0.2);
 
-  ATPA := SplitTPAEx(TPA,Width,Height);
+  ATPA := SplitTPAEx(TPA,TreeWidth,TreeHeight);
 
   If Debug Then
-    DebugATPABounds(ATPA);
+    Try
+      DebugATPABounds(ATPA);
+    Except
+      Writeln('Box out of bounds');
+    End;
 
   If (Length(ATPA) = 0) Then
     Exit;
@@ -2459,69 +2433,65 @@ Begin
     If Debug Then
       Writeln('Empty Tree Length: '+tostr(Length(atpa[i])));
 
-    If LowerCase(CatchType)='red' Then
+    AvoidBox:=AvoidBadStuff;
+    If Debug Then
     Begin
-      AvoidDeadTree;
-      If PointInBox(Point(X,Y),DeadTreeBox) Then
-        Continue;
+      Writeln('Point: '+ToStr(Point(X,Y)));
+      Writeln('Box: '+ToStr(AvoidBox));
     End;
-
-    If LowerCase(CatchType)='green' Then
-      If FindDTM(FireDTM,XF,YF,MSX1,MSY1,MSX2,MSY2) Then
-        If PointInBox(Point(X,Y),IntToBox(XF-10,YF-60,XF+50,YF+20)) Then
-        Begin
-          If Debug Then
-            Writeln('Found fire, staying away in FindEmpyTree, staying away');
-          Continue;
-        End Else
-          If Debug Then
-          Begin
-            Writeln('Tree point is: '+ToStr(Point(X,Y)));
-            Writeln('Firebox is: '+ToStr(IntToBox(XF-10,YF-60,XF+50,YF+20)));
-          End;
-
-    If (Debug) And (LowerCase(CatchType)='green') Then
-      SMART_DrawBox(IntToBox(XF-10,YF-60,XF+50,YF+20));
+    If PointInBox(Point(X,Y),AvoidBox) Then
+      Continue;
 
     If (Length(ATPA[I]) < 22) Then
       Continue;
 
-    CaughtBox:=GetTPABounds(ATPA[I]);
-    CaughtBox:=IntToBox(CaughtBox.X1-10,CaughtBox.Y1-10,CaughtBox.X2+10,CaughtBox.Y2+10);
-    If FindDTMRotated(Check,X,Y,CaughtBox.X1,CaughtBox.Y1,CaughtBox.X2,CaughtBox.Y2,-Pi,Pi,Pi/30,aFound) Then
-      Continue;
+    AvoidBox:=GetTPABounds(ATPA[I]);
+    AvoidBox:=IntToBox(AvoidBox.X1-10,AvoidBox.Y1-10,AvoidBox.X2+10,AvoidBox.Y2+10);
 
-    If SetTrap<>1 Then
-      If AvoidSetTraps(CaughtBox) Then
+    If Debug Then
+    Begin
+      smartImage.clear;
+      smartImage.drawBox(AvoidBox, false, clRed);
+      writeln('This is the Potential Rope box');
+    End;
+
+
+    If Not Collect Then
+      If AvoidSetTraps(AvoidBox) Then
         Continue;
 
-    HumanMMouse(X+Increase,Y,0,2);
+    Mouse(Point(X+GaussRangeInt(-1,1),Y+GaussRangeInt(-3,3)),Mouse_Move,Mouse_Break);
 
-    If SetTrap=1 Then
+    If Collect Then
     Begin
-      If (WaitUpTextMulti(['Dism','sman','mant','antle'],RandomRange(200,300))) Then
+      If (IsMouseOverText(['Dism','sman','mant','antle'],RandomRange(200,300))) Then
       Begin
         If Debug Then
           Writeln('Found dismantle option, clicking');
 
-        Case Random(10) Of
+        Case GaussRangeInt(0,10) Of
           0..8:
           Begin
-            ClickMouse2(True);
-            If DidRedClick Then
+            If DidClick(True) Then
             Begin
+              SetLength(TPA,0);
+              SetLength(ATPA,0);
               Release;
+              Timeout.Reset;
+              Timeout.Start;
               Exit;
             End;
           End;
           8,9:
           Begin
-            ClickMouse2(False);
+            FastClick(Mouse_Right);
 
-            If WaitOptionMulti(['Dism','sman','mant','antle'],RandomRange(400,500)) Then
+            If chooseOption.select(['Dism','sman','mant','antle']) Then
             Begin
               If Debug Then
                 Writeln('Found option to dismantle');
+              SetLength(TPA,0);
+              SetLength(ATPA,0);
               Release;
               Exit;
             End;
@@ -2530,7 +2500,7 @@ Begin
       End;
     End Else
     Begin
-      If (WaitUpTextMulti(['Set'],RandomRange(200,300))) Then
+      If (IsMouseOverText(['Set'],RandomRange(200,300))) Then
       Begin
         GetMousePos(XT,YT);
 
@@ -2540,25 +2510,38 @@ Begin
         If Debug Then
           Writeln('Found uptext set, clicking');
 
-        Case Random(10) Of
+        Case GaussRangeInt(0,10) Of
           0..8:
           Begin
-            ClickMouse2(True);
-            If DidRedClick Then
+            If DidClick(true) Then
             Begin
               Release;
+              SetLength(TPA,0);
+              SetLength(ATPA,0);
+              Timeout.Reset;
+              Timeout.Start;
+              Exit;
+            End Else
+            Begin
+              Failsafe;
+              SetLength(TPA,0);
+              SetLength(ATPA,0);
               Exit;
             End;
           End;
           8,9:
           Begin
-            ClickMouse2(False);
+            FastClick(Mouse_Right);
 
-            If WaitOption('Set',RandomRange(400,500)) Then
+            If chooseOption.select(['Set']) Then
             Begin
               If Debug Then
                 Writeln('Found option set');
               Release;
+              Timeout.Reset;
+              Timeout.Start;
+              SetLength(TPA,0);
+              SetLength(ATPA,0);
               Exit;
             End;
           End;
@@ -2566,479 +2549,43 @@ Begin
       End;
     End;
   End;
-End;
-
-Procedure PaintOnSmart;
-Begin
-  If OnScreenProggy Then
-  Begin
-    SMART_DrawBitmap(True, proggy,Point(6,344));
-    SMART_DrawText(307,356,SmallChars,'v'+ScriptVersion,clWhite);
-    SMART_DrawText(137,380,StatChars,ToStr(SalamanderCount),clWhite);
-    SMART_DrawText(137,396,StatChars,ToStr(SalamandersPH),clWhite);
-    SMART_DrawText(83,415,StatChars,ToStr(XP),clWhite);
-    SMART_DrawText(83,432,StatChars,ToStr(XPH),clWhite);
-    SMART_DrawText(100,449,StatChars,ToStr(MsToTime64(CurrentTime)),clWhite);
-  End;
-End;
-
-Procedure ProgressReport;
-Begin
-  If Not Debug Then
-    ClearDebug;
-
-  CurrentTime:= GetSystemTime - StartTime;
-  XP := (GetXPBarTotal - StartingExperience);
-  XPH := Round(XP * (3600.0 / (GetTimeRunning / 1000.0)));
-  SalamandersPH := Round((SalamanderCount * (3600.0 / (GetTimeRunning / 1000.0))));
-
-  If CurrentLevel<99 Then
-    If (StartingXP - XP) < 0 Then
-    Begin
-      StartingXP:= (XpTillNextLevel(Skill_Hunter)+XP);
-      Writeln('Gained a level!!');
-      LevelsGained := LevelsGained + 1;
-    End;
-
-  If ((CurrentLevel+LevelsGained)>=40) Then
-    Level:=3;
-
-  If XPH < 1000 Then
-    XPH:=1000.0;
-
-  XPTL:= Round(((StartingXP-XP) / (XPH/1000.0))*3600.0);
-
-  Writeln('========AshamanSalamander v'+ScriptVersion+'=========');
-  Writeln('Time Running: ' + ToStr(MsToTime64(CurrentTime)));
-  Writeln('Catching: ' + CatchType+' Salamanders');
-  Writeln('Salamanders Caught: ' + ToStr(SalamanderCount)+'    TTL: '+MsToTime(XPTL, Time_Formal));
-  Writeln('Experience Earned: ' + IntToStr(XP)+ '   Levels Gained: ' +IntToStr(LevelsGained));
-  Writeln('Experience/Hour: ' + ToStr(XPH));
-  Writeln('Salamanders/H: ' + ToStr(SalamandersPH));
-  Writeln('=======================================');
-
-  PaintOnSmart;
-
-  Stats_IncVariable('Hunter EXP (Gained)', 272);
-  Stats_IncVariable('Items Picked Up', 1);
-  Stats_Commit;
-End;
-
-Procedure CheckNet;
-Var
-  X,Y,T: Integer;
-Label
-  Jumper;
-Begin
-  CheckStuff;
-  If Not WaitLoggedIn(1000) Then
-    Exit;
-
-  If QuickClick Then
-    GoTo Jumper;
-
-  If Not FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
-    Exit;
-
-  If Debug Then
-    Writeln('Checking for Caught Salamanders');
-
-  If FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound) Then
-  Begin
-    If Debug Then
-      Writeln('Found check net dtm');
-
-    If Not IsUpTextMultiCustom(['Chec','heck']) Then
-      HumanMMouse(X,Y,3,3);
-
-    If WaitUpTextMulti(['Chec','heck'],RandomRange(500,650)) Then
-    Begin
-      Case Random(10) Of
-        0..8:
-        Begin
-          ClickMouse2(True);
-          If DidRedClick Then
-          Begin
-            If Debug Then
-              Writeln('Chose check net option');
-            InvCnt := InvCount;
-            MarkTime(T);
-            Repeat
-              If TimeFromMark(T) > 4400 Then
-                Exit;
-              Wait(Random(100));
-              If Not WaitLoggedIn(1000) Then
-                Exit;
-            Until (InvCount = InvCnt + 3);
-            SalamanderCount := SalamanderCount + 1;
-            ProgressReport;
-          End;
-          QuickClick:=False;
-          Exit;
-        End;
-      End;
-
-      ClickMouse2(False);
-
-      Jumper:
-      If WaitOptionMulti(['Check'],800) Then
-      Begin
-        If Debug Then
-          Writeln('Chose check net option');
-        InvCnt := InvCount;
-        MarkTime(T);
-        Repeat
-          If TimeFromMark(T) > 4400 Then
-            Exit;
-          Wait(Random(100));
-          If Not WaitLoggedIn(1000) Then
-            Exit;
-        Until (InvCount = InvCnt + 3);
-        SalamanderCount := SalamanderCount + 1;
-        ProgressReport;
-      End;
-      QuickClick:=False;
-    End;
-  End;
-
-  If FindBlackChatMessage('advanced') Then
-  Begin
-    WriteLn('Gained a Level!');
-    HoverSkill('Hunter',False);
-    Wait(RandomRange(1500,2100));
-    ExamineInv;
-  End;
-End;
-
-Function RedDots: Boolean;
-Var
-  CTS: Integer;
-  TPA: TPointArray;
-Begin
-  Result:=False;
-
-  CTS := GetColorToleranceSpeed;
-  ColorToleranceSpeed(1);
-  FindColorsSpiralTolerance(MMCX,MMCY,TPA,1314513,592,75,644,102,43);
-  ColorToleranceSpeed(CTS);
-  SetColorSpeed2Modifiers(0.2, 0.2);
-
-  If Length(TPA)> 0 Then
-  Begin
-    If Debug Then
-      Writeln(tostr(TPA));
-    Result:=True;
-  End;
-End;
-
-Procedure Walktospot;
-Var
-  X,Y: Integer;
-Begin
-  CheckStuff;
-  If Not WaitLoggedIn(1000) Then
-    Exit;
-
-  If Debug Then
-    Writeln('Walking to main spot');
-
-  If Lowercase(CatchType) = 'red' Then
-  Begin
-    If FindDTM(RSpotDTM,X,Y,MMX1,MMY1,MMX2,MMY2) Then
-    Begin
-      If Debug Then
-        Writeln('Found start spot red');
-
-      HumanMMouse(X,Y,2,2);
-      ClickMouse2(True);
-      Wait(RandomRange(600,700));
-      If IsMoving Then
-      Begin
-        Repeat
-          Wait(Random(100));
-          If Not WaitLoggedIn(1000) Then
-            Exit;
-        Until(Not IsMoving);
-        Writeln('You are now in the correct spot, good luck!');
-      End;
-    End Else
-      Writeln('You are not in the correct spot!!');
-  End Else
-  Begin
-    If FindDTM(GSpotDTM,X,Y,575,45,680,127) Then
-    Begin
-      If Debug Then
-        Writeln('Found green main spot');
-
-      HumanMMouse(X,Y,2,2);
-      ClickMouse2(True);
-      Wait(RandomRange(600,700));
-      If IsMoving Then
-      Begin
-        Repeat
-          Wait(Random(100));
-          If Not WaitLoggedIn(1000) Then
-            Exit;
-        Until(Not IsMoving);
-        If Debug Then
-          Writeln('Repositioned.');
-      End;
-    End Else
-    Begin
-      If Debug Then
-        Writeln('DID NOT FIND GREEN SPOT, TRY TO MANUALLY CORRECT');
-
-      HumanMMouse(187,304,3,3);
-      ClickMouse2(False);
-      WaitOptionMulti(['Walk','Wal','alk','here'],RandomRange(500,700));
-      Wait(RandomRange(600,700));
-      If IsMoving Then
-      Begin
-        Repeat
-          Wait(Random(100));
-          If Not WaitLoggedIn(1000) Then
-            Exit;
-        Until(Not IsMoving);
-        If Debug Then
-          Writeln('Repositioned.');
-      End;
-    End;
-  End;
-End;
-
-Procedure WorldHop;
-Var
-  X,Y: Integer;
-Begin
-  Repeat
-    If Length(GetMiniMapDotsIn('w',610,74,642,102))>0 Then
-    Begin
-      If Debug Then
-        WriteLn('Someone is in this spot, hopping.');
-
-      ExitToLobby;
-      Wait(RandomRange(5000,6000));
-      ChangeWorld(RandomWorld(True,False));
-      Wait(RandomRange(30000,45000));
-      CheckStuff;
-    End;
-    Wait(Random(100));
-    If Not WaitLoggedIn(1000) Then
-      Exit;
-  Until ((Length(GetMiniMapDotsIn('w',615,75,642,102))=0) And (Not FindDTMRotated(Check,X,Y,SearchX1,SearchY1,SearchX2,SearchY2,-Pi,Pi,Pi/30,aFound)));
-
-  If Debug Then
-    WriteLn('Found an open world, starting.');
-
-  NumberofTraps := CountItems('DTM',RopeDTM,[]);
-End;
-
-Procedure CorrectPOS;
-Var
-  X,Y:Integer;
-Begin
-  If FindDTMRotated(PositionDTM,X,Y,MSX1,MMY1,MMX2,MMY2,-Pi,Pi,Pi/30,aFound) Then
-  Begin
-    HumanMMouse(165,270-50,3,3);
-    If WaitUpText('alk',900) Then
-      ClickMouse2(True) Else
-      Begin
-        ClickMouse2(False);
-        WaitOption('alk',900);
-      End;
-    Wait(RandomRange(600,700));
-    If IsMoving Then
-    Begin
-      Repeat
-        Wait(Random(100));
-        If Not WaitLoggedIn(1000) Then
-          Break;
-      Until(Not IsMoving);
-      If Debug Then
-        Writeln('Repositioned.');
-    End;
-  End Else
-    If Debug Then
-      Writeln('Bad position not found');
-End;
-
-Procedure Setup;
-Begin
-  ClearDebug;
-  AutoUpdateMe;
-
-  If Not RestartScript Then
-  Begin
-    {$IFDEF SIMBAMAJOR980}
-      SMART_SERVER := 10;
-      SMART_MEMBERS := TRUE;
-      SMART_SIGNED := TRUE;
-      SMART_SUPERDETAIL := FALSE;
-    {$ELSE}
-      SRL_SIXHOURFIX := TRUE;
-      SMART_FIXSPEED := TRUE;
-    {$ENDIF}
-
-    SetupSRL;
-
-    If (SRLStats_Username = '') Then
-      SetupSRLStats(754, 'Anonymous', 'anon1337')
-    Else
-      SetupSRLStats(754, SRLStats_Username, SRLStats_Password);
-
-    DeclarePlayers;
-    AddOnTerminate('FR33DTM');
-    SetDTM;
-  End;
-
-  If RestartScript Then
-  Begin
-    Writeln('Taking a break');
-    Wait(RandomRange(30000,600000));
-  End;
-
-  LoginPlayer;
-
-  If Not WaitLoggedIn(1000) Then
-    Repeat
-      Wait(Random(100));
-    Until LoggedIn;
-
-  Wait(RandomRange(3000,4000));
-
-  ClearDebug;
-
-  MarkTime(TrapTime);
-  MarkTime(MiniBreak);
-  MiniBreakTime:=RandomRange(1800000,3600000);
-
-  RunTime:= Round(TimetoRun * 60 * 60 * 1000 + Random(300000));
-  Writeln('You are going to run for ' + MsToTime(RunTime, Time_Formal));
-  Writeln('Make sure you are starting the script with a fresh smart!');
-
-
-  SetTrap:=0;
-  PTS:= 1;                  // ***Pouch To Summon.. 1 for arctic bear, 0 for nothing***
-  SetRun(True);
-
-  NumberofTraps := CountItems('DTM',RopeDTM,[]);
-  Writeln('You have '+IntToStr(NumberofTraps)+' traps in your inventory.');
-
-  If NumberofTraps < 2 Then
-  Begin
-    Writeln('You have less than 2 traps, logging off');
-    Logout;
-    TerminateScript;
-  End;
-
-  If GetSkillLevel(Skill_Hunter) < 40 Then
-    Level:= 2 Else
-    Level:= 3;
-  Writeln('You can use '+IntToStr(Level)+' trap spots with my script at your level.');
-
-  If Not RestartScript Then
-  Begin
-    If PlaySounds Then
-      If (Not FileExists(ScriptPath+'noyelling.wav')) Then
-        writeln('No audio file found to alert when another person logs in. Please download audio file from OP.');
-
-    SoundPath:=ScriptPath+'noyelling.wav';
-
-    StartTime:=GetSystemTime;
-    CurrentLevel:= GetSkillLevel(Skill_Hunter);
-    StartingXP:= XpTillNextLevel(Skill_Hunter);
-    LevelsGained:= 0;
-    GameTab(Tab_Inv);
-    ToggleXPBar(True);
-    StartingExperience := GetXPBarTotal;
-
-    If LowerCase(CatchType) = 'red' Then
-    Begin
-      Writeln('You are catching Red Salamanders');
-      SearchX1         := 102;
-      SearchY1         := 100;
-      SearchX2         := 417;
-      SearchY2         := 340-12;
-      Check     := CheckDTM;
-      Sal       := SalDTM;
-      Color     := 2106666;
-      Tolerance := 4;
-      Hue       := 0.26;
-      Sat       := 0.26;
-      Width     := 10;
-      Height    := 14;
-      Increase  := 3;
-    End Else
-    Begin
-      Writeln('You are catching Green Salamanders');
-      SearchX1         := 51;
-      SearchY1         := 92-50;
-      SearchX2         := 445;
-      SearchY2         := 369-50;
-      Check     := GCheckDTM;
-      Sal       := GSalDTM;
-      Color     := 2237218;
-      Tolerance := 3;
-      Hue       := 0.00;
-      Sat       := 1.33;
-      Width     := 10;
-      Height    := 14;
-      Increase  := 2;
-    End;
-  End;
-
-  RestartScript:=False;
-  ToggleActionBar(False);
-End;
-
-Procedure MainLoop;
-Begin
-  Wait(Random(100));
-  If Lowercase(CatchType) = 'green' Then
-  Begin
-    Runaways;
-    CorrectPOS;
-  End;
-
-  FindEmptyTree;
-  Wait(Random(100));
-  CheckNet;
-  Wait(Random(100));
-  If (RedDots) Or (TimeFromMark(TrapTime)>(8000+Random(15000))) Then
-    FailedTrap;
-  SummoningRenew(PTS);
+  SetLength(TPA,0);
+  SetLength(ATPA,0);
 End;
 
 Procedure Cleanup;
 Var
-  T: Integer;
+  WaitTime: Integer;
+  T: TTimeMarker;
 Begin
-  SetTrap:=1;
-  If Debug Then
-    Writeln('Collecting supplies to hop');
-  MarkTime(T);
+  Writeln('Collecting supplies to hop');
+  T.Reset;
+  T.Start;
+  WaitTime:=GaussRangeInt(80000,120000);
   Repeat
-    Mainloop;
-    If Not WaitLoggedIn(1000) Then
+    CheckNet(True,True);
+    FindEmptyTree(True);
+    FailedTrap;
+    If Not IsLoggedIn Then
       Exit;
-  Until ((CountItems('DTM',RopeDTM,[])=(NumberofTraps)) Or (TimeFromMark(T)> RandomRange(80000,90000)));
-  SetTrap:=0;
+  Until ((TabBackPack.CountDTM(RopeDTM)=(NumberofTraps)) Or (T.GetTime > WaitTime));
 End;
 
 Function Crasher: Boolean;
 Begin
-  Result := False
+  Result := False;
 
   If Crashed Then
   Begin
-    If (Length(GetMiniMapDotsIn('w',610,74,642,102))>0) Then
+    If Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))>0 Then
     Begin
-      If TimeFromMark(Crash)>RandomRange(60000,65000) Then
+      If Crash.GetTime>GaussRangeInt(45000,75000) Then
       Begin
         If PlaySounds Then
           PlaySound(SoundPath);
 
-        MarkTime(Crash);
+        Crash.Reset;
+        Crash.Start;
         Crashed := False;
         Writeln('Another Player has been here too long, hopping');
         Result:=True;
@@ -3049,11 +2596,11 @@ Begin
       If Debug Then
         Writeln('The other player left, we are good');
       Crashed:=False;
-      Crash:=0;
+      Crash.Reset;
     End;
   End Else
   Begin
-    If (Length(GetMiniMapDotsIn('w',610,74,642,102))>0) Then
+    If Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))>0 Then
     Begin
       If PlaySounds Then
         PlaySound(SoundPath);
@@ -3061,13 +2608,14 @@ Begin
       If Hopper Then
       Begin
         Writeln('Found another player, if they dont leave in 60 seconds we gonna hop');
-        MarkTime(Crash);
+        Crash.Reset;
+        Crash.Start;
         Crashed:=True;
       End;
     End;
   End;
 
-  If FindBlackChatMessage('isn') Then
+  If ConversationBox.FindChat(['isn']) Then
   Begin
     Writeln('You have been crashed. Attempting to Hop');
     Result:=True;
@@ -3075,60 +2623,185 @@ Begin
   End;
 End;
 
-Label
-  Restartd;
+Procedure Setup(Initial,ForceRestart:Boolean);
 Begin
-  Restartd:
-  Setup;
-  Repeat
-    If LowerCase(CatchType) = 'red' Then
-      MakeCompass('N') Else
-      MakeCompass('S');
+  ClearDebug;
+  AutoUpdateMe;
 
-    SetAngle(SRL_ANGLE_HIGH);
-    WalkToSpot;
-    WorldHop;
-    SummoningRenew(PTS);
+  If Initial Then
+  Begin
+    SmartEnableDrawing := True;
+    DisableSRLDebug:=True;
+    DeclarePlayers;
+    SetupSRL;
+    SetDTM;
+    AddOnTerminate('fr33dtm');
+    StatsSetup(754, SRLStats_Username, SRLStats_Password);
+  End Else
+    Wait(GaussRangeInt(3000,8000));
 
-    MarkTime(RunTimer);
-    Repeat
-      Mainloop;
-      If Crasher Then
+  Players[CurrentPlayer].Login;
+
+  Writeln('Thinking a little bit...give me a second');
+  Wait(GaussRangeInt(3000,8000));
+
+  Minimap.ClickCompass;
+  MainScreen.SetAngle(MS_ANGLE_HIGH);
+
+  WorldHop;
+
+  Timeout.Reset;
+  Timeout.Start;
+  TimeoutRange:= GaussRangeInt(3000,10000);
+
+  TrapTime.Reset;
+  TrapTime.Start;
+
+  MiniBreak.Reset;
+  MiniBreak.Start;
+  MiniBreakTime:=RandomRange(1800000,3600000);
+
+  If ForceRestart Then
+  Begin
+    RunTimer.Reset;
+    RunTimer.Start;
+    RunTime:= Round(TimetoRun * 60 * 60 * 1000 + Random(600000));
+  End;
+
+  Writeln('You are going to run for ' + MsToTime(RunTime, Time_Formal));
+  Writeln('Make sure you are starting the script with a fresh smart!');
+
+  PTS:= 1;                  // ***Pouch To Summon.. 1 for arctic bear, 0 for nothing***
+  Minimap.ToggleRun(0);
+
+  NumberofTraps := TabBackpack.CountDTM(RopeDTM);
+  Writeln('You have '+IntToStr(NumberofTraps)+' traps in your inventory.');
+
+  If NumberofTraps < 2 Then
+  Begin
+    Writeln('You have less than 2 traps, logging off');
+    Players[CurrentPlayer].Logout;
+    TerminateScript;
+  End;
+
+  CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
+
+  If CurrentLevel < 40 Then
+    Level:= 2 Else
+    Level:= 3;
+  Writeln('You can use '+IntToStr(Level)+' trap spots with my script at your level.');
+  TabBackpack.Open;
+
+  If Initial Then
+  Begin
+    If PlaySounds Then
+      If (Not FileExists(ScriptPath+'noyelling.wav')) Then
+        writeln('No audio file found to alert when another person logs in. Please download audio file from OP.');
+
+    SoundPath:=ScriptPath+'noyelling.wav';
+
+    StartTime:=GetSystemTime;
+
+   // StartingXP:= XpTillNextLevel(Skill_Hunter);
+   // StartingExperience := GetXPBarTotal;
+
+
+    Case Lowercase(CatchType) Of
+      'green':
       Begin
-        WalkToSpot;
-        WorldHop;
-        MarkTime(MiniBreak);
-      End;
-      If Not WaitLoggedIn(1000) Then
-        Exit;
-      Wait(Random(100));
-    Until (RunTime < TimeFromMark(RunTimer)) or (Not(WaitLoggedIn(1000)));
-
-    If WaitLoggedIn(1000) Then
-    Begin
-      Cleanup;
-      Logout;
-      Writeln('Time Ran: ' + TimeRunning);
-
-      If HowManyPlayers <= 1 Then
-      Begin
-        {$IFDEF SMARTManager}
-          SMARTManager;
-        {$ELSE}
-          {$IFDEF SIMBAMAJOR990}
-            SixHourFix;
-            RestartScript:=True;
-            Break;
-          {$ENDIF}
-        {$ENDIF}
-        TerminateScript;
+        Writeln('You are catching Green Salamanders');
+        TreeColor           := 2305570;
+        TreeTolerance       := 3;
+        TreeHue             := 0.47;
+        TreeSat             := 0.90;
+        TreeWidth           := 10;
+        TreeHeight          := 14;
+        TreeIncrease        := 0;
+        AvoidHue            := 0.04;
+        AvoidSat            := 0.18;
+        AvoidColor          := 3624072;
+        AvoidTolerance      := 9;
+        GroundRopeHue       := 0.37;
+        GroundRopeSat       := 1.86;
+        GroundRopeColor     := 1525585;
+        GroundRopeTolerance := 8;
+        SallyHue            := 0.23;
+        SallySat            := 1.02;
+        SallyColor          := 2114334;
+        SallyTolerance      := 7;
+        NetHue              := 5.03;
+        NetSat              := 2.60;
+        NetColor            := 1253659;
+        NetTolerance        := 3;
+        SetRopeHue          := 0.07;
+        SetRopeSat          := 3.09;
+        SetRopeColor        := 1727355;
+        SetRopeTolerance    := 7;
+        SearchX1            :=82;
+        SearchY1            :=75;
+        SearchX2            :=503;
+        SearchY2            :=314;
+        Sal                 :=GSalDTM;
       End;
     End;
-    NextPlayer(Players[CurrentPlayer].Active);
-    MarkTime(RunTimer);
-  Until (AllPlayersInactive);
+  End;
+End;
 
-  If RestartScript Then
+Procedure MainLoop;
+Begin
+  If Not IsLoggedIn Then
+  Begin
+    Players[CurrentPlayer].Login;
+    Wait(GaussRangeInt(5000,12000));
+    Setup(False,False);
+  End;
+
+  CheckNet(True,False);
+  FindEmptyTree(False);
+
+  If (Length(Minimap.GetDots(MM_DOT_ITEM,IntToBox(663,86,719,127)))>0) Or (TrapTime.GetTime > (5000+GaussRangeInt(0,5000))) Then
+  Begin
+    FailedTrap;
+    FindEmptyTree(False);
+  End;
+
+  If Timeout.GetTime > TimeoutRange Then
+  Begin
+    TimeoutRange:= GaussRangeInt(3000,10000);
+    Case GaussRangeInt(0,10) Of
+      0..3: OffMM(GaussRangeInt(0,5),4000,3000);
+      4..5: CheckMovingObjs(False);
+      5..7: CheckMovingObjs(True);
+      8..10: TabStats.GetSkillLevel(Skill_Hunter);
+    End;
+    Wait(GaussRangeInt(0,4000));
+    TabBackpack.Open;
+    Timeout.Reset;
+    Timeout.Start;
+  End;
+
+  If Crasher Then
+  Begin
+    Timeout.Reset;
+    Timeout.Start;
+    WorldHop;
+  End;
+
+  If RunTime < RunTimer.GetTime Then
+  Begin
+    Cleanup;
+    Players[CurrentPlayer].Logout;
+    Writeln('Going to force client restart (or shut down if you aint doin that), hold up');
     If Restart Then
-      GoTo Restartd;
+      SixHourFix Else
+      TerminateScript;
+    Setup(False,True);
+  End;
+End;
+
+Begin
+  Setup(True,True);
+  Repeat
+    MainLoop;
+  Until False;
 End.
