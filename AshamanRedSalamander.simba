@@ -3,7 +3,7 @@ program Ashaman2IOSalamander;
 {$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v7.1
+Ashaman2IOSalamander v7.2
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -72,7 +72,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '7.1';
+  ScriptVersion = '7.2';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -1777,7 +1777,7 @@ End;
 Procedure Failsafe;
 Begin
   Mouse(Point(289+GaussRangeInt(-10,10),203+GaussRangeInt(-10,10)),Mouse_Left,Mouse_Human);
-  Wait(GaussRangeInt(400,2000));
+  Wait(GaussRangeInt(1000,3000));
 End;
 
 Function AvoidBadStuff: Tbox;
@@ -1787,6 +1787,9 @@ Var
   ATPA: T2DPointArray;
   TempBox: TBox;
 Begin
+  If Not IsLoggedIn Then
+    Exit;
+
   CTS := GetToleranceSpeed;
   SetColorToleranceSpeed(2);
 
@@ -1825,6 +1828,9 @@ Var
   CTS: Integer;
   TPA: TPointArray;
 Begin
+  If Not IsLoggedIn Then
+    Exit;
+
   CTS := GetToleranceSpeed;
   SetColorToleranceSpeed(2);
   SetToleranceSpeed2Modifiers(SetRopeHue,SetRopeSat);
@@ -1895,6 +1901,8 @@ Begin
 
   For I:=0 To H Do
   Begin
+    If Not IsLoggedIn Then
+      Exit;
     MiddleTPAEx(ATPA[I],X,Y);
 
     If Debug Then
@@ -1923,6 +1931,9 @@ Begin
 
     With NetBox Do
     Begin
+      If Not IsLoggedIn Then
+        Exit;
+
       SetColorToleranceSpeed(2);
       SetToleranceSpeed2Modifiers(SallyHue,SallySat);
 
@@ -1976,6 +1987,9 @@ Begin
   MidSortBoxArrayFrom(TBA,Point(XX,YY));
   For H := 0 To High(TBA) Do
   Begin
+    If Not IsLoggedIn Then
+      Exit;
+
     MBP := MiddleBox(TBA[H]);
 
     If Not (IsMouseOverText(['Chec','heck'],RandomRange(0,0))) Then
@@ -1996,7 +2010,7 @@ Begin
               T.Start;
               Repeat
                 Wait(GaussRangeInt(100,200));
-                If Not isloggedin Then
+                If Not IsLoggedIn Then
                   Exit;
               Until ((tabBackpack.count() > Invcnt) Or (T.Gettime > 6000));
               Wait(GaussRangeInt(0,1000));
@@ -2034,7 +2048,7 @@ Begin
         T.Start;
         Repeat
           Wait(GaussRangeInt(100,200));
-          If Not isloggedin Then
+          If Not IsLoggedIn Then
             Exit;
         Until ((tabBackpack.count() > Invcnt) Or (T.Gettime > 6000));
         Wait(GaussRangeInt(0,1000));
@@ -2065,7 +2079,8 @@ Begin
         WriteLn('Someone is in this spot, hopping.');
 
       Players[CurrentPlayer].ExitToLobby;
-      Wait(GaussRangeInt(5000,6000));
+      Wait(GaussRangeInt(1000,2000));
+      Players[CurrentPlayer].World := -1;
       LobbyWorlds.SelectRandomWorld(True);
       Wait(GaussRangeInt(30000,45000));
     End;
@@ -2226,7 +2241,7 @@ Begin
   SetColorToleranceSpeed(CTS);
   SetToleranceSpeed3Modifier(0);
 
-  ATPA := SplitTPAEx(TPA,3,3);
+  ATPA := SplitTPAEx(TPA,5,5);
 
   If Debug Then
     Try
@@ -2645,7 +2660,7 @@ Begin
   Players[CurrentPlayer].Login;
 
   Writeln('Thinking a little bit...give me a second');
-  Wait(GaussRangeInt(3000,8000));
+  Wait(GaussRangeInt(0,4000));
 
   Minimap.ClickCompass;
   MainScreen.SetAngle(MS_ANGLE_HIGH);
@@ -2728,7 +2743,7 @@ Begin
         GroundRopeColor     := 1658968;
         GroundRopeTolerance := 5;
         GroundRope2Mod      := 0.10;
-        GroundRope2Color    := 604237;
+        GroundRope2Color    := 735566;
         GroundRope2Tolerance:= 27;
         SallyHue            := 0.32;
         SallySat            := 1.02;
@@ -2769,7 +2784,7 @@ Begin
         GroundRopeColor     := 1658968;
         GroundRopeTolerance := 5;
         GroundRope2Mod      := 0.10;
-        GroundRope2Color    := 604237;
+        GroundRope2Color    := 735566;
         GroundRope2Tolerance:= 27;
         SallyHue            := 0.16;
         SallySat            := 0.87;
@@ -2779,9 +2794,9 @@ Begin
         NetSat              := 2.69;
         NetColor            := 858400;
         NetTolerance        := 1;
-        SetRopeHue          := 0.03;
+        SetRopeHue          := 0.05;
         SetRopeSat          := 0.32;
-        SetRopeColor        := 878739;
+        SetRopeColor        := 878995;
         SetRopeTolerance    := 4;
         SearchX1            := 160;
         SearchY1            := 120;
@@ -2805,11 +2820,7 @@ End;
 Procedure MainLoop;
 Begin
   If Not IsLoggedIn Then
-  Begin
-    Players[CurrentPlayer].Login;
-    Wait(GaussRangeInt(5000,12000));
     Setup(False,False);
-  End;
 
   CheckNet(True,False);
   FindEmptyTree(False);
@@ -2858,7 +2869,6 @@ End;
 
 Begin
   Setup(True,True);
-  Repeat
+  While (Players.GetActive() > 0) do
     MainLoop;
-  Until False;
 End.
