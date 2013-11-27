@@ -3,7 +3,7 @@ program Ashaman2IOSalamander;
 {$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v7.0
+Ashaman2IOSalamander v7.1
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -30,13 +30,13 @@ Const
   TimetoRun         = 5.2;        // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
   Restart           = True;       // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, false shuts down***
   HealthMin         = 300;        // ***DISABLE FOR NOW - If health is below this amount script will log out (Only for low levels at green salamanders)***
-  CatchType         = 'Green';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
   PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
   Hopper            = False;      // ***Hops if another player logs into your world and stays for more than 60 seconds***
 
 Procedure DeclarePlayers;
 Begin
-  Players.Setup(['Account1Name'], 'PlayerFile'); //***Fill this out, Account1Name = Name of the account in player manager, PlayerFile = name of the player file***
+  Players.Setup(['Player1'], 'PlayerList'); //***Fill this out, Player1 = Name of the account in player manager, PlayerList = name of the player file***
   SetLength(Players,1);
 
   //***If NOT using the player manager, fill out the loginname and password below, otherwise ignore those two***
@@ -59,10 +59,11 @@ End;
 
 Var
   SalamanderCount,XP,RunTime,StartingExperience,Invcnt,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
-  LevelsGained,XPTL,XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange: Integer;
-  GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance: Integer;
+  LevelsGained,XPTL,XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
+  GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance,XPInc: Integer;
   RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
   aFound,TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
+  GroundRope2Mod: Extended;
   StartTime,CurrentTime: Int64;
   TrapTime,RunTimer,MiniBreak,Timeout,Crash: TTimeMarker;
   SoundPath: String;
@@ -71,7 +72,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '7.0';
+  ScriptVersion = '7.1';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -273,22 +274,8 @@ end;
 Procedure SetDTM;
 Begin
   Case LowerCase(CatchType) Of
-    'red':
-    Begin
-      RSpotDTM := DTMFromString('mWAAAAHicY2FgYChkYmDIBuJyIM4D4mCgWCAQBwBxJBD/fsPNUOqhwRAdGQnG/4Fi/EiYEQ2DAADrJwk8');
-      SalDTM := DTMFromString('mQwAAAHicY2ZgYHBiYmDwAGJbIOZiZGBgAmIBIA6S4mFwFOVk8JPkZuAHqoNhRiQMBABmpgJp');
-      SWDTM := DTMFromString('mQwAAAHicY2ZgYChiYmAoY4LQYUB+JBAHAvH///8ZomNiwJgfyIdhRiQMBAA7wQe3');
-      NWDTM := DTMFromString('mQwAAAHicY2ZgYChhYmAoA+IqIA4D8iOBOAmI////zxAdEwPG/EA+DDMiYSAAAEDSB9I=');
-      CheckDTM := DTMFromString('mQwAAAHicY2ZgYFgKxMuBeAYQszIyMPwH0oxAut5EiEFOXJDBw1yMgR8oBsOMSBgIAN37BL8=');
-    End;
-    'green':
-    Begin
-      GSpotDTM := DTMFromString('mWAAAAHicY2FgYMhnYmAoA+IsKA4AivkAsR8QRwKxi7U2Q1R4KBz/B4rxI2FGNAwCAKfPB/U=');
-      GSalDTM := DTMFromString('mWAAAAHicY2FgYGBkYWD4w8zAwAykOYBYi5GBQR+IVYFYHoj5FPgY+FUEGATVBSFsoB5kzIiGQQAAtKgDAQ==');
-      GCheckDTM := DTMFromString('mWAAAAHicY2FgYNjLxMCwB4j3AfEhII5jZGBIAuIoIA4DYgljcQY5aVEGCRNxBgkZEQZ+oB5kzIiGQQAAiv8GFQ==');
-      PositionDTM := DTMFromString('mrAAAAHic42BgYChhYmDIBOJYII4D4gogzgfiZiDuBOJ2oJo2IG4F4qlAXAjE84F4LhAXAPH///8ZCr3UGapThMDYpzgZjP0rMxhcM6MY+IFq8GFGAhgGAPoQEqU=');
-      FireDTM := DTMFromString('mQwAAAHicY2ZgYFAFYm0gVoLSJkCsAsTxgQYMFhamDDfmyDLwA/kwzIiEgQAAnsgEPw==');
-    End;
+    'red': SalDTM := DTMFromString('mWAAAAHicY2FgYFjHxMCwGYhXA/F2IL7MyMBwDohvAfFpIA6R5mHwluBiCJDkZnAU4WTgB+pBxoxoGAQA/gsIFA==');
+    'green': GSalDTM := DTMFromString('mWAAAAHicY2FgYGBkYWD4w8zAwAykOYBYi5GBQR+IVYFYHoj5FPgY+FUEGATVBSFsoB5kzIiGQQAAtKgDAQ==');
   End;
   RopeDTM := DTMFromString('mbQAAAHicY2VgYJjGDMHzgLgfiGcB8TZGBoYNQLwVincCsaOJLIOvBTeDm4U8g7cZF4OzIScDP1A/OmbEgsEAAOBYCa0=');
   If OnScreenProggy Then
@@ -1657,22 +1644,8 @@ End;
 Procedure Fr33DTM;
 Begin
   Case LowerCase(CatchType) Of
-    'red':
-    Begin
-      FreeDTM(RSpotDTM);
-      FreeDTM(SalDTM);
-      FreeDTM(SWDTM);
-      FreeDTM(NWDTM);
-      FreeDTM(CheckDTM);
-    End;
-    'green':
-    Begin
-      FreeDTM(GSpotDTM);
-      FreeDTM(GSalDTM);
-      FreeDTM(GCheckDTM);
-      FreeDTM(PositionDTM);
-      FreeDTM(FireDTM);
-    End;
+    'red': FreeDTM(SalDTM);
+    'green': FreeDTM(GSalDTM);
   End;
   FreeDTM(RopeDTM);
   If OnscreenProggy Then
@@ -1765,7 +1738,7 @@ Begin
     ClearDebug;
 
   CurrentTime:= GetSystemTime - StartTime;
-  XP := (XP+152);
+  XP := (XP+XPInc);
   XPH := Round(XP * (3600.0 / (GetTimeRunning / 1000.0)));
   SalamandersPH := Round((SalamanderCount * (3600.0 / (GetTimeRunning / 1000.0))));
 
@@ -1936,8 +1909,14 @@ Begin
     If PointInBox(Point(X,Y),AvoidBox) Then
       Continue;
 
-    If (Length(ATPA[I]) < 40) Or (Length(ATPA[I]) > 185) Then
-      Continue;
+    Case LowerCase(CatchType) Of
+    'green':
+      If (Length(ATPA[I]) < 35) Or (Length(ATPA[I]) > 185) Then
+        Continue;
+    'red':
+      If (Length(ATPA[I]) < 25) Or (Length(ATPA[I]) > 500) Then
+        Continue;
+    End;
 
     NetBox := GetTPABounds(ATPA[I]);
     NetBox := IntToBox(Max(NetBox.X1,0),Max(NetBox.Y1,0),Min(NetBox.X2,Mainscreen.X2),Min(NetBox.Y2,Mainscreen.Y2));
@@ -1951,16 +1930,31 @@ Begin
       SetColorToleranceSpeed(CTS);
       SetToleranceSpeed2Modifiers(0.2, 0.2);
 
-      If (Length(TPA2) > 2) And (Length(TPA2) < 20) Then
-      Begin
-        If DebugSally Then
+      Case LowerCase(CatchType) Of
+      'green':
+        If (Length(TPA2) > 2) And (Length(TPA2) < 20) Then
         Begin
-          Writeln('Inner Sally Length: '+ToStr(Length(TPA2)));
-          Writeln('NetBox:= '+ToStr(NetBox));
-        End;
+          If DebugSally Then
+          Begin
+            Writeln('Inner Sally Length: '+ToStr(Length(TPA2)));
+            Writeln('NetBox:= '+ToStr(NetBox));
+          End;
 
-        SetArrayLength(TBA, Length(TBA)+1);
-        TBA[High(TBA)] := NetBox;
+          SetArrayLength(TBA, Length(TBA)+1);
+          TBA[High(TBA)] := NetBox;
+        End;
+      'red':
+        If (Length(TPA2) > 2) And (Length(TPA2) < 100) Then
+        Begin
+          If DebugSally Then
+          Begin
+            Writeln('Inner Sally Length: '+ToStr(Length(TPA2)));
+            Writeln('NetBox:= '+ToStr(NetBox));
+          End;
+
+          SetArrayLength(TBA, Length(TBA)+1);
+          TBA[High(TBA)] := NetBox;
+        End;
       End;
     End;
   End;
@@ -2035,7 +2029,7 @@ Begin
         Invcnt := tabBackpack.count();
         Wait(GaussRangeInt(400,900));
         Case GaussRangeInt(0,10) Of
-          4..6:MouseBox(IntToBox(289-100,203-100,289+100,203+100),Mouse_Move);
+          4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
         End;
         T.Start;
         Repeat
@@ -2145,7 +2139,7 @@ Begin
       If I=0 Then
       Begin
         Case GaussRangeInt(0,10) Of
-          4..6:MouseBox(IntToBox(289-100,203-100,289+100,203+100),Mouse_Move);
+          4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
         End;
         Repeat
           If Not QuickClick Then
@@ -2177,7 +2171,7 @@ Var
   X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
   TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
   T: TTimeMarker;
-  TPA: TPointArray;
+  TPA,TPA2: TPointArray;
   ATPA: T2DPointArray;
   AvoidBox: TBox;
 Begin
@@ -2221,8 +2215,16 @@ Begin
 
   SetToleranceSpeed2Modifiers(GroundRopeHue,GroundRopeSat);
   FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,GroundRopeColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,GroundRopeTolerance);
-  SetColorToleranceSpeed(CTS);
+  SetColorToleranceSpeed(3);
   SetToleranceSpeed2Modifiers(0.2, 0.2);
+
+  SetToleranceSpeed3Modifier(GroundRope2Mod);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA2,GroundRope2Color,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,GroundRope2Tolerance);
+  TPA:=CombineTPA(TPA,TPA2);
+  SetLength(TPA2,0);
+
+  SetColorToleranceSpeed(CTS);
+  SetToleranceSpeed3Modifier(0);
 
   ATPA := SplitTPAEx(TPA,3,3);
 
@@ -2289,7 +2291,7 @@ Begin
         Invcnt := tabBackpack.count();
         Wait(GaussRangeInt(400,900));
         Case GaussRangeInt(0,10) Of
-          4..6:MouseBox(IntToBox(289-100,203-100,289+100,203+100),Mouse_Move);
+          4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
         End;
         T.Start;
         Repeat
@@ -2721,29 +2723,82 @@ Begin
         AvoidSat            := 0.18;
         AvoidColor          := 3624072;
         AvoidTolerance      := 9;
-        GroundRopeHue       := 0.37;
-        GroundRopeSat       := 1.86;
-        GroundRopeColor     := 1525585;
-        GroundRopeTolerance := 8;
-        SallyHue            := 0.23;
+        GroundRopeHue       := 0.46;
+        GroundRopeSat       := 2.73;
+        GroundRopeColor     := 1658968;
+        GroundRopeTolerance := 5;
+        GroundRope2Mod      := 0.10;
+        GroundRope2Color    := 604237;
+        GroundRope2Tolerance:= 27;
+        SallyHue            := 0.32;
         SallySat            := 1.02;
-        SallyColor          := 2114334;
+        SallyColor          := 2048798;
         SallyTolerance      := 7;
-        NetHue              := 5.03;
-        NetSat              := 2.60;
-        NetColor            := 1253659;
-        NetTolerance        := 3;
+        NetHue              := 7.64;
+        NetSat              := 3.36;
+        NetColor            := 1187353;
+        NetTolerance        := 2;
         SetRopeHue          := 0.07;
         SetRopeSat          := 3.09;
         SetRopeColor        := 1727355;
         SetRopeTolerance    := 7;
-        SearchX1            :=82;
-        SearchY1            :=75;
-        SearchX2            :=503;
-        SearchY2            :=314;
-        Sal                 :=GSalDTM;
+        SearchX1            := 82;
+        SearchY1            := 75;
+        SearchX2            := 503;
+        SearchY2            := 314;
+        Sal                 := GSalDTM;
+        XPInc               := 152;
+      End;
+
+      'red':
+      Begin
+        Writeln('You are catching Red Salamanders');
+        TreeColor           := 1646888;
+        TreeTolerance       := 5;
+        TreeHue             := 0.21;
+        TreeSat             := 0.33;
+        TreeWidth           := 10;
+        TreeHeight          := 14;
+        TreeIncrease        := 0;
+        AvoidHue            := 0.00;
+        AvoidSat            := 0.00;
+        AvoidColor          := 0;
+        AvoidTolerance      := 0;
+        GroundRopeHue       := 0.46;
+        GroundRopeSat       := 2.73;
+        GroundRopeColor     := 1658968;
+        GroundRopeTolerance := 5;
+        GroundRope2Mod      := 0.10;
+        GroundRope2Color    := 604237;
+        GroundRope2Tolerance:= 27;
+        SallyHue            := 0.16;
+        SallySat            := 0.87;
+        SallyColor          := 863582;
+        SallyTolerance      := 11;
+        NetHue              := 0.88;
+        NetSat              := 2.69;
+        NetColor            := 858400;
+        NetTolerance        := 1;
+        SetRopeHue          := 0.03;
+        SetRopeSat          := 0.32;
+        SetRopeColor        := 878739;
+        SetRopeTolerance    := 4;
+        SearchX1            := 160;
+        SearchY1            := 120;
+        SearchX2            := 438;
+        SearchY2            := 314;
+        Sal                 := SalDTM;
+        XPInc               := 272;
       End;
     End;
+  End;
+End;
+
+Function RedDots: Boolean;
+Begin
+  Case LowerCase(CatchType) Of
+    'green': Result:=(Length(Minimap.GetDots(MM_DOT_ITEM,IntToBox(663,86,719,127)))>0);
+    'red': Result:=(Length(Minimap.GetDots(MM_DOT_ITEM,IntToBox(669,90,713,125)))>0);
   End;
 End;
 
@@ -2759,22 +2814,24 @@ Begin
   CheckNet(True,False);
   FindEmptyTree(False);
 
-  If (Length(Minimap.GetDots(MM_DOT_ITEM,IntToBox(663,86,719,127)))>0) Or (TrapTime.GetTime > (5000+GaussRangeInt(0,5000))) Then
+  If (RedDots) Or (TrapTime.GetTime > (5000+GaussRangeInt(0,5000))) Then
   Begin
     FailedTrap;
+    TrapFail:=False;
     FindEmptyTree(False);
   End;
 
   If Timeout.GetTime > TimeoutRange Then
   Begin
     TimeoutRange:= GaussRangeInt(3000,10000);
-    Case GaussRangeInt(0,10) Of
+    Case GaussRangeInt(0,12) Of
       0..3: OffMM(GaussRangeInt(0,5),4000,3000);
       4..5: CheckMovingObjs(False);
       5..7: CheckMovingObjs(True);
       8..10: TabStats.GetSkillLevel(Skill_Hunter);
+      11..12: Wait(GaussRangeInt(0,4000));
     End;
-    Wait(GaussRangeInt(0,4000));
+    Wait(GaussRangeInt(0,800));
     TabBackpack.Open;
     Timeout.Reset;
     Timeout.Start;
