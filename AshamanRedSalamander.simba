@@ -2790,9 +2790,9 @@ Begin
         SallySat            := 0.87;
         SallyColor          := 863582;
         SallyTolerance      := 11;
-        NetHue              := 0.88;
-        NetSat              := 2.69;
-        NetColor            := 858400;
+        NetHue              := 0.61;
+        NetSat              := 3.95;
+        NetColor            := 858401;
         NetTolerance        := 1;
         SetRopeHue          := 0.05;
         SetRopeSat          := 0.32;
