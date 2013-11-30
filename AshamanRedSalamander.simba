@@ -1,9 +1,9 @@
-program Ashaman2IOSalamander;
+Program Ashaman2IOSalamander;
 {$Define SMART}
 {$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v7.2
+Ashaman2IOSalamander v7.3
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -28,10 +28,10 @@ Const
   SRLStats_Password = '';
   OnScreenProggy    = True;       // ***Progress report on screen? Will take up more memory***
   TimetoRun         = 5.2;        // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
-  Restart           = True;       // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, false shuts down***
-  HealthMin         = 300;        // ***DISABLE FOR NOW - If health is below this amount script will log out (Only for low levels at green salamanders)***
-  CatchType         = 'Red';    // ***Set to Green if catching green salamanders, Red if catching red salamanders***
-  PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to false if you don't want that***
+  Restart           = True;       // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, False shuts down***
+  HealthMin         = 300;        // ***DISABLED FOR NOW - If health is below this amount script will log out (Only for low levels at green salamanders)***
+  CatchType         = 'Red';      // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to False if you don't want that***
   Hopper            = False;      // ***Hops if another player logs into your world and stays for more than 60 seconds***
 
 Procedure DeclarePlayers;
@@ -58,24 +58,27 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,RunTime,StartingExperience,Invcnt,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
+  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
   LevelsGained,XPTL,XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
   GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance,XPInc: Integer;
-  RSpotDTM,GSpotDTM,FireDTM,SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
-  aFound,TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
+  SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
+  TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
   GroundRope2Mod: Extended;
   StartTime,CurrentTime: Int64;
-  TrapTime,RunTimer,MiniBreak,Timeout,Crash: TTimeMarker;
+  TrapTime,RunTimer,MiniBreak,Timeout,Crash,ShutDown: TTimeMarker;
   SoundPath: String;
   Crashed,QuickClick,RestartScript,TrapFail: Boolean;
   Screen: TMufasaBitmap;
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '7.2';
+  ScriptVersion = '7.3';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
+
+
+//box sorting primarily thanks to Brandon!
 
 Procedure QuickBoxSort(var A: TIntegerArray; var B: TBoxArray; iLo, iHi: Integer; SortUp: Boolean);
 Var
@@ -266,6 +269,28 @@ begin
   STA := [' Years, ', ' Months, ', ' Weeks, ', ' Days, ', ' Hours, ',
           ' Minutes and ', ' Seconds', 0];
   ConvertTime64(MS, Time[0], Time[1], Time[2], Time[3], Time[4], Time[5], Time[6]);
+
+  if time[0]= 1 then
+    sta[0]:=' Year, ';
+
+  if time[1]= 1 then
+    sta[1]:=' Month, ';
+
+  if time[2]= 1 then
+    sta[2]:=' Week, ';
+
+  if time[3]= 1 then
+    sta[3]:=' Day, ';
+
+  if time[4]= 1 then
+    sta[4]:=' Hour, ';
+
+  if time[5]= 1 then
+    sta[5]:=' Minute and ';
+
+  if time[6]= 1 then
+    sta[6]:=' Second';
+
   for i := 0 to 6 do
     if (Time[i] > 0) or (STA[7]) or (i = 6) then
       Result := Result + PadZ(IntToStr(Time[i]), STA[7]) + STA[i];
@@ -1673,8 +1698,8 @@ MmmWeGotOff
 
     Procedure MmmWeGotOff(RedTu: Variant);
 
-Moves the mouse to the choosen side of the screen, replicating
-the use of a human to move thier mouse "off-screen" as if
+Moves the Mouse to the choosen side of the screen, replicating
+the use of a human to move thier Mouse "off-screen" as if
 browsing another part of their computer.
 (What do you do when you browsing "other websites?")
 Int Type:
@@ -1705,24 +1730,24 @@ Begin
   RX := RandomRange(0, W);
   RY := RandomRange(0, H);
   Case (RedTu) Of
-    0..1: mouse(Point(Round(W/2)+RX, RandomRange(-110,-60)),Mouse_Move,Mouse_Break);
-    2: mouse(Point(RandomRange(-50,-10), Round(H/2)+RY),Mouse_Move,Mouse_Break);
-    3: mouse(Point(Round(W/2)+RX, h+RandomRange(10,50)),Mouse_Move,Mouse_Break);
-    4: mouse(Point(W+RandomRange(10,50), Round(H/2)+RY),Mouse_Move,Mouse_Break);
+    0..1: Mouse(Point(Round(W/2)+RX, RandomRange(-110,-60)),Mouse_Move,Mouse_Break);
+    2: Mouse(Point(RandomRange(-50,-10), Round(H/2)+RY),Mouse_Move,Mouse_Break);
+    3: Mouse(Point(Round(W/2)+RX, h+RandomRange(10,50)),Mouse_Move,Mouse_Break);
+    4: Mouse(Point(W+RandomRange(10,50), Round(H/2)+RY),Mouse_Move,Mouse_Break);
   End;
   RT:=(Random(rWait));
   OffTimer.Start();
   Repeat
     Wait(GaussRangeInt(100,200));
-  Until OffTimer.getTime()>(LeWait+RT);
+  Until OffTimer.GetTime()>(LeWait+RT);
 End;
 
 Procedure PaintOnSmart;
 Begin
   If OnScreenProggy Then
   Begin
-    smartImage.Clear;
-    smartimage.drawbitmap(proggy,Point(11,467));
+    SmartImage.Clear;
+    SmartImage.drawbitmap(proggy,Point(11,467));
     SmartImage.DrawText('v'+ScriptVersion,Point(320,480),clWhite);
     SmartImage.DrawText(ToStr(SalamanderCount),Point(145,505),clWhite);
     SmartImage.DrawText(ToStr(SalamandersPH),Point(145,522),clWhite);
@@ -1814,8 +1839,8 @@ Begin
 
   If Debug Then
     Try
-      smartImage.clear;
-      smartImage.drawBox(Result, false, clRed);
+      SmartImage.Clear;
+      SmartImage.DrawBox(Result, False, clRed);
     Except
       Writeln('Box out of bounds');
     End;
@@ -1845,8 +1870,7 @@ End;
 
 Function CheckNet(Click,Pickup: Boolean): Boolean;
 Var
-  X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
-  TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
+  X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF,Invcnt: Integer;
   T: TTimeMarker;
   MBP: TPoint;
   TPA,TPA2: TPointArray;
@@ -1865,15 +1889,10 @@ Begin
   If QuickClick Then
     GoTo Jumper;
 
-  TempSearchX1:=SearchX1;
-  TempSearchY1:=SearchY1;
-  TempSearchX2:=SearchX2;
-  TempSearchY2:=SearchY2;
-
   If Debug Then
   Begin
-    smartImage.clear;
-    smartImage.drawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2), false, clRed);
+    SmartImage.Clear;
+    SmartImage.DrawBox(IntToBox(SearchX1,SearchY1,SearchX2,SearchY2), False, clRed);
     writeln('This is the search box');
   End;
 
@@ -1881,7 +1900,7 @@ Begin
   SetColorToleranceSpeed(2);
 
   SetToleranceSpeed2Modifiers(NetHue,NetSat);
-  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,NetColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,NetTolerance);
+  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,NetColor,SearchX1,SearchY1,SearchX2,SearchY2,NetTolerance);
   SetColorToleranceSpeed(CTS);
   SetToleranceSpeed2Modifiers(0.2, 0.2);
 
@@ -1906,7 +1925,7 @@ Begin
     MiddleTPAEx(ATPA[I],X,Y);
 
     If Debug Then
-      Writeln('Net Length: '+tostr(Length(atpa[i]))+' for I:= '+ToStr(I));
+      Writeln('Net Length: '+ToStr(Length(atpa[i]))+' for I:= '+ToStr(I));
 
     AvoidBox:=AvoidBadStuff;
     If Debug Then
@@ -1972,8 +1991,8 @@ Begin
 
   If Debug Then
   Try
-    smartImage.clear;
-    smartImage.drawBoxes(TBA, false, clRed);
+    SmartImage.Clear;
+    SmartImage.DrawBoxes(TBA, False, clRed);
   Except
     Writeln('Failed Drawing Boxes.');
   End;
@@ -2006,14 +2025,16 @@ Begin
           Begin
             If DidClick(True) Then
             Begin
-              Invcnt := tabBackpack.count();
+              Invcnt := TabBackpack.count();
               T.Start;
               Repeat
                 Wait(GaussRangeInt(100,200));
                 If Not IsLoggedIn Then
                   Exit;
-              Until ((tabBackpack.count() > Invcnt) Or (T.Gettime > 6000));
+              Until ((TabBackpack.count() > Invcnt) Or (T.GetTime > 6000));
               Wait(GaussRangeInt(0,1000));
+              ShutDown.Reset;
+              ShutDown.Start;
               SalamanderCount := SalamanderCount + 1;
               ProgressReport;
             End;
@@ -2036,11 +2057,11 @@ Begin
         End;
 
 
-      If chooseOption.select(['Check']) Then
+      If ChooseOption.select(['Check']) Then
       Begin
         If Debug Then
           Writeln('Found option to take, waiting to stop moving');
-        Invcnt := tabBackpack.count();
+        Invcnt := TabBackpack.count();
         Wait(GaussRangeInt(400,900));
         Case GaussRangeInt(0,10) Of
           4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
@@ -2050,11 +2071,13 @@ Begin
           Wait(GaussRangeInt(100,200));
           If Not IsLoggedIn Then
             Exit;
-        Until ((tabBackpack.count() > Invcnt) Or (T.Gettime > 6000));
+        Until ((TabBackpack.count() > Invcnt) Or (T.GetTime > 6000));
         Wait(GaussRangeInt(0,1000));
         SalamanderCount := SalamanderCount + 1;
         Timeout.Reset;
         Timeout.Start;
+        ShutDown.Reset;
+        ShutDown.Start;
         If Not Pickup Then
           ProgressReport;
       End;
@@ -2089,15 +2112,18 @@ Begin
       Exit;
   Until ((Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))=0) And (Not CheckNet(False,False)));
 
+  ShutDown.Reset;
+  ShutDown.Start;
+
   If Debug Then
     WriteLn('Found an open world, starting.');
 
-  NumberofTraps := tabbackpack.countdtm(RopeDTM);
+  NumberofTraps := TabBackpack.CountDTM(RopeDTM);
 End;
 
 Procedure Release;
 Var
-  XX,X,Y,YY,I,Ropes: Integer;
+  XX,X,Y,YY,I,Ropes,Invcnt: Integer;
   T: TTimeMarker;
   RopeBox: TBox;
 Begin
@@ -2110,7 +2136,7 @@ Begin
   RopeBox:=TabBackpack.GetBounds;
   RopeBox:=IntToBox(Max(0,RopeBox.X1),Max(0,RopeBox.Y1),Min(799,RopeBox.X2),Min(599,RopeBox.Y2));
 
-  Ropes:=Tabbackpack.countdtm(RopeDTM);
+  Ropes:=TabBackpack.CountDTM(RopeDTM);
 
   For I:=0 To 1 Do
   Begin
@@ -2127,14 +2153,14 @@ Begin
           Wait(GaussRangeInt(1200,1800)) Else
           Wait(GaussRangeInt(750,1100));
         ChooseOption.Select(['ease']);
-        InvCnt := tabbackpack.count;
+        InvCnt := TabBackpack.count;
         T.Reset;
         T.Start;
         Repeat
           If T.GetTime>3500 Then
             Break;
           Wait(GaussRangeInt(100,200));
-        Until Not (tabbackpack.count = InvCnt) Or Not (tabbackpack.countdtm(RopeDTM) = Ropes);
+        Until Not (TabBackpack.count = InvCnt) Or Not (TabBackpack.CountDTM(RopeDTM) = Ropes);
         Wait(GaussRangeInt(600,800));
         If (TabBackpack.CountDTM(Sal)=0) Then
           Exit Else
@@ -2147,7 +2173,7 @@ Begin
       End;
     End Else
     Begin
-      InvCnt := tabbackpack.count;
+      InvCnt := TabBackpack.count;
       T.Reset;
       T.Start;
       Wait(GaussRangeInt(400,900));
@@ -2163,8 +2189,8 @@ Begin
           If T.GetTime>4500 Then
             Break;
           Wait(GaussRangeInt(100,200));
-        Until Not (tabbackpack.count = InvCnt) Or Not (tabbackpack.countdtm(RopeDTM) = Ropes);
-        If Not (tabbackpack.countdtm(RopeDTM) = Ropes) Then
+        Until Not (TabBackpack.count = InvCnt) Or Not (TabBackpack.CountDTM(RopeDTM) = Ropes);
+        If Not (TabBackpack.CountDTM(RopeDTM) = Ropes) Then
         Begin
           Wait(GaussRangeInt(1500,1900));
           Exit;
@@ -2183,8 +2209,8 @@ End;
 
 Procedure FailedTrap;
 Var
-  X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
-  TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
+  X,Y,H,I,Tries,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
+  Invcnt: Integer;
   T: TTimeMarker;
   TPA,TPA2: TPointArray;
   ATPA: T2DPointArray;
@@ -2199,15 +2225,10 @@ Begin
   TrapTime.Reset;
   TrapTime.Start;
 
-  TempSearchX1:=SearchX1;
-  TempSearchY1:=SearchY1;
-  TempSearchX2:=SearchX2;
-  TempSearchY2:=SearchY2;
-
   If Debug Then
   Begin
-    smartImage.clear;
-    smartImage.drawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2), false, clRed);
+    SmartImage.Clear;
+    SmartImage.DrawBox(IntToBox(SearchX1,SearchY1,SearchX2,SearchY2), False, clRed);
     writeln('This is the search box');
   End;
 
@@ -2229,12 +2250,12 @@ Begin
     SearchFromY:= (MainScreen.PlayerPoint.Y - 35);
 
   SetToleranceSpeed2Modifiers(GroundRopeHue,GroundRopeSat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,GroundRopeColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,GroundRopeTolerance);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,GroundRopeColor,SearchX1,SearchY1,SearchX2,SearchY2,GroundRopeTolerance);
   SetColorToleranceSpeed(3);
   SetToleranceSpeed2Modifiers(0.2, 0.2);
 
   SetToleranceSpeed3Modifier(GroundRope2Mod);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA2,GroundRope2Color,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,GroundRope2Tolerance);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA2,GroundRope2Color,SearchX1,SearchY1,SearchX2,SearchY2,GroundRope2Tolerance);
   TPA:=CombineTPA(TPA,TPA2);
   SetLength(TPA2,0);
 
@@ -2260,7 +2281,7 @@ Begin
     MiddleTPAEx(ATPA[I],X,Y);
 
     If Debug Then
-      Writeln('Rope Length: '+tostr(Length(atpa[i])));
+      Writeln('Rope Length: '+ToStr(Length(atpa[i])));
 
     AvoidBox:=AvoidBadStuff;
     If Debug Then
@@ -2290,20 +2311,20 @@ Begin
       GetMousePos(XT,YT);
 
       If Debug Then
-        Writeln('X: '+tostr(XT)+' Y: '+tostr(YT));
+        Writeln('X: '+ToStr(XT)+' Y: '+ToStr(YT));
 
       If Debug Then
         Writeln('Found uptext set, clicking');
 
       FastClick(Mouse_Right);
 
-      If chooseOption.select(['ishin','hing','net','Rope','ope']) Then
+      If ChooseOption.select(['ishin','hing','net','Rope','ope']) Then
       Begin
         If Debug Then
           Writeln('Found option to take, waiting to stop moving');
         SetLength(TPA,0);
         SetLength(ATPA,0);
-        Invcnt := tabBackpack.count();
+        Invcnt := TabBackpack.Count();
         Wait(GaussRangeInt(400,900));
         Case GaussRangeInt(0,10) Of
           4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
@@ -2311,39 +2332,43 @@ Begin
         T.Start;
         Repeat
           Wait(GaussRangeInt(100,200));
-          If Not isloggedin Then
+          If Not IsLoggedIn Then
             Exit;
-        Until (((tabBackpack.count() > Invcnt) And (Not((minimap.isPlayerMoving())))) Or (T.Gettime > 6000));
+        Until (((TabBackpack.Count() > Invcnt) And (Not((Minimap.IsPlayerMoving)))) Or (T.GetTime > 6000));
 
         If Not TrapFail Then
         Begin
           If Debug Then
             Writeln('Trying to pick up second part of trap');
 
-          Mouse(Point(289+GaussRangeInt(-5,5),203+GaussRangeInt(-5,5)),Mouse_Right,Mouse_Human);
-
-
-          Invcnt := tabBackpack.count();
-          If chooseOption.select(['ishin','hing','net','Rope','ope']) Then
+          For Tries:=0 To 2 Do
           Begin
-            If Debug Then
-              Writeln('Found option to pick up second part of trap');
+            Mouse(Point(289+GaussRangeInt(-5,5),203+GaussRangeInt(-5,5)),Mouse_Right,Mouse_Human);
 
-            TrapFail:=False;
-            T.Start;
-            Repeat
-              Wait(GaussRangeInt(100,200));
-              If Not isloggedin Then
-                Exit;
-            Until ((tabBackpack.count() = Invcnt +1) Or (T.Gettime > 6000));
-            Timeout.Reset;
-            Timeout.Start;
-          End
-          Else
-          Begin
-            If Debug Then
-              Writeln('Didnt find second part of trap, trying again');
-            TrapFail:=True;
+
+            Invcnt := TabBackpack.Count();
+            If chooseOption.select(['ishin','hing','net','Rope','ope']) Then
+            Begin
+              If Debug Then
+                Writeln('Found option to pick up second part of trap');
+
+              TrapFail:=False;
+              T.Start;
+              Repeat
+                Wait(GaussRangeInt(100,200));
+                If Not IsLoggedIn Then
+                  Exit;
+              Until ((TabBackpack.Count() = Invcnt +1) Or (T.GetTime > 6000));
+              Timeout.Reset;
+              Timeout.Start;
+              Exit;
+            End
+            Else
+            Begin
+              If Debug Then
+                Writeln('Didnt find second part of trap, trying again');
+              TrapFail:=True;
+            End;
           End;
         End;
         Exit;
@@ -2357,7 +2382,6 @@ End;
 Procedure FindEmptyTree(Collect:Boolean);
 Var
   X,Y,H,I,CTS,XX,YY,SearchFromX,SearchFromY,XF,YF: Integer;
-  TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2: Integer;
   TPA: TPointArray;
   ATPA: T2DPointArray;
   AvoidBox: TBox;
@@ -2367,18 +2391,18 @@ Begin
 
   If Debug Then
   Begin
-    Writeln(ToStr(tabbackpack.countdtm(RopeDTM))+' Ropes in inventory');
-    Writeln(ToStr(tabbackpack.countdtm(GSalDTM))+' Sally in inventory');
+    Writeln(ToStr(TabBackpack.CountDTM(RopeDTM))+' Ropes in inventory');
+    Writeln(ToStr(TabBackpack.CountDTM(GSalDTM))+' Sally in inventory');
   End;
 
-  If ((tabbackpack.countdtm(RopeDTM))=(NumberofTraps-Level)) Or (tabbackpack.countdtm(RopeDTM)=0) And (Not (Collect))  Then
+  If ((TabBackpack.CountDTM(RopeDTM))=(NumberofTraps-Level)) Or (TabBackpack.CountDTM(RopeDTM)=0) And (Not (Collect))  Then
   Begin
     If Debug Then
       Writeln('No more traps to setup');
     Exit;
   End;
 
-  If ((tabbackpack.countdtm(RopeDTM))=0) Then
+  If ((TabBackpack.CountDTM(RopeDTM))=0) Then
   Begin
     NumberofTraps := NumberofTraps-1;
     Writeln('Lost a trap');
@@ -2395,15 +2419,10 @@ Begin
     If Debug Then
       Writeln('Looking for Laid Traps');
 
-  TempSearchX1:=SearchX1;
-  TempSearchY1:=SearchY1;
-  TempSearchX2:=SearchX2;
-  TempSearchY2:=SearchY2;
-
   If Debug Then
   Begin
-    smartImage.clear;
-    smartImage.drawBox(IntToBox(TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2), false, clRed);
+    SmartImage.Clear;
+    SmartImage.DrawBox(IntToBox(SearchX1,SearchY1,SearchX2,SearchY2), False, clRed);
     writeln('This is the search box');
   End;
 
@@ -2425,7 +2444,7 @@ Begin
     SearchFromY:= (MainScreen.PlayerPoint.Y - 35);
 
   SetToleranceSpeed2Modifiers(TreeHue,TreeSat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,TreeColor,TempSearchX1,TempSearchY1,TempSearchX2,TempSearchY2,TreeTolerance);
+  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,TreeColor,SearchX1,SearchY1,SearchX2,SearchY2,TreeTolerance);
   SetColorToleranceSpeed(CTS);
   SetToleranceSpeed2Modifiers(0.2, 0.2);
 
@@ -2448,7 +2467,7 @@ Begin
     MiddleTPAEx(ATPA[I],X,Y);
 
     If Debug Then
-      Writeln('Empty Tree Length: '+tostr(Length(atpa[i])));
+      Writeln('Empty Tree Length: '+ToStr(Length(ATPA[I])));
 
     AvoidBox:=AvoidBadStuff;
     If Debug Then
@@ -2467,9 +2486,9 @@ Begin
 
     If Debug Then
     Begin
-      smartImage.clear;
-      smartImage.drawBox(AvoidBox, false, clRed);
-      writeln('This is the Potential Rope box');
+      SmartImage.Clear;
+      SmartImage.DrawBox(AvoidBox, False, clRed);
+      Writeln('This is the Potential Rope box');
     End;
 
 
@@ -2503,7 +2522,7 @@ Begin
           Begin
             FastClick(Mouse_Right);
 
-            If chooseOption.select(['Dism','sman','mant','antle']) Then
+            If ChooseOption.select(['Dism','sman','mant','antle']) Then
             Begin
               If Debug Then
                 Writeln('Found option to dismantle');
@@ -2522,7 +2541,7 @@ Begin
         GetMousePos(XT,YT);
 
         If Debug Then
-          Writeln('X: '+tostr(XT)+' Y: '+tostr(YT));
+          Writeln('X: '+ToStr(XT)+' Y: '+ToStr(YT));
 
         If Debug Then
           Writeln('Found uptext set, clicking');
@@ -2550,7 +2569,7 @@ Begin
           Begin
             FastClick(Mouse_Right);
 
-            If chooseOption.select(['Set']) Then
+            If ChooseOption.select(['Set']) Then
             Begin
               If Debug Then
                 Writeln('Found option set');
@@ -2585,7 +2604,7 @@ Begin
     FailedTrap;
     If Not IsLoggedIn Then
       Exit;
-  Until ((TabBackPack.CountDTM(RopeDTM)=(NumberofTraps)) Or (T.GetTime > WaitTime));
+  Until ((TabBackpack.CountDTM(RopeDTM)=(NumberofTraps)) Or (T.GetTime > WaitTime));
 End;
 
 Function Crasher: Boolean;
@@ -2711,6 +2730,9 @@ Begin
 
   If Initial Then
   Begin
+    ShutDown.Reset;
+    ShutDown.Start;
+
     If PlaySounds Then
       If (Not FileExists(ScriptPath+'noyelling.wav')) Then
         writeln('No audio file found to alert when another person logs in. Please download audio file from OP.');
@@ -2825,6 +2847,12 @@ Begin
   CheckNet(True,False);
   FindEmptyTree(False);
 
+  If ShutDown.GetTime > (600000 + Random(30000)) Then
+  Begin
+    Writeln('We haven''t caught a sally in over ten minutes, shutting down failsafe');
+    TerminateScript;
+  End;
+
   If (RedDots) Or (TrapTime.GetTime > (5000+GaussRangeInt(0,5000))) Then
   Begin
     FailedTrap;
@@ -2869,6 +2897,6 @@ End;
 
 Begin
   Setup(True,True);
-  While (Players.GetActive() > 0) do
+  While (Players.GetActive() > 0) Do
     MainLoop;
 End.
