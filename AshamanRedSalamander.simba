@@ -3,7 +3,7 @@ Program Ashaman2IOSalamander;
 {$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v7.3
+Ashaman2IOSalamander v7.4
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -31,6 +31,7 @@ Const
   Restart           = True;       // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, False shuts down***
   HealthMin         = 300;        // ***DISABLED FOR NOW - If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType         = 'Red';      // ***Set to Green if catching green salamanders, Red if catching red salamanders***
+  CurrentLevel      = 80;         // ***What is your current level? Doesn't really matter as long as it's above 40 (for three traps)***
   PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to False if you don't want that***
   Hopper            = False;      // ***Hops if another player logs into your world and stays for more than 60 seconds***
 
@@ -58,7 +59,7 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
+  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease: Integer;
   LevelsGained,XPTL,XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
   GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance,XPInc: Integer;
   SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
@@ -72,7 +73,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '7.3';
+  ScriptVersion = '7.4';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -240,7 +241,7 @@ Begin
       WriteLn('Newer script version online!');
       WriteLn('Autoupdating to newer version.');
       NewScript := GetPage('http://ashamanredsalamander.googlecode.com/git/AshamanRedSalamander.simba');
-      NeiFeilNennen := ScriptPath+ 'Ashaman2IOSalamander V'+OnlineVersion+' by Ashaman88.simba';
+      NeiFeilNennen := ScriptPath+ 'Ashaman2IOSalamander V'+OnlineVersion+'.simba';
       Neifile := Rewritefile(NeiFeilNennen, true);
       Try
         WriteFileString(Neifile, NewScript);
@@ -258,43 +259,6 @@ Begin
   End Else
     WriteLn('!!!!! Not checking for latest version, you may be outdated!');
 End;
-
-function MsToTime64(MS: int64): string;
-var
-  STA: TVariantArray;
-  Time: array [0..6] of Integer;
-  i: Integer;
-begin
-  Result := '';
-  STA := [' Years, ', ' Months, ', ' Weeks, ', ' Days, ', ' Hours, ',
-          ' Minutes and ', ' Seconds', 0];
-  ConvertTime64(MS, Time[0], Time[1], Time[2], Time[3], Time[4], Time[5], Time[6]);
-
-  if time[0]= 1 then
-    sta[0]:=' Year, ';
-
-  if time[1]= 1 then
-    sta[1]:=' Month, ';
-
-  if time[2]= 1 then
-    sta[2]:=' Week, ';
-
-  if time[3]= 1 then
-    sta[3]:=' Day, ';
-
-  if time[4]= 1 then
-    sta[4]:=' Hour, ';
-
-  if time[5]= 1 then
-    sta[5]:=' Minute and ';
-
-  if time[6]= 1 then
-    sta[6]:=' Second';
-
-  for i := 0 to 6 do
-    if (Time[i] > 0) or (STA[7]) or (i = 6) then
-      Result := Result + PadZ(IntToStr(Time[i]), STA[7]) + STA[i];
-end;
 
 Procedure SetDTM;
 Begin
@@ -1753,7 +1717,7 @@ Begin
     SmartImage.DrawText(ToStr(SalamandersPH),Point(145,522),clWhite);
     SmartImage.DrawText(ToStr(XP),Point(95,540),clWhite);
     SmartImage.DrawText(ToStr(XPH),Point(91,557),clWhite);
-    SmartImage.DrawText(ToStr(MsToTime64(CurrentTime)),Point(110,570),clWhite);
+    SmartImage.DrawText(ToStr(TimeRunning),Point(110,570),clWhite);
   End;
 End;
 
@@ -1784,7 +1748,7 @@ Begin
  // XPTL:= Round(((StartingXP-XP) / (XPH/1000.0))*3600.0);
 
   Writeln('========AshamanSalamander v'+ScriptVersion+'=========');
-  Writeln('Time Running: ' + ToStr(MsToTime64(CurrentTime)));
+  Writeln('Time Running: ' + ToStr(TimeRunning));
   Writeln('Catching: ' + CatchType+' Salamanders');
   Writeln('Salamanders Caught: ' + ToStr(SalamanderCount));//+'    TTL: '+MsToTime(XPTL, Time_Formal));
   Writeln('Experience Earned: ' + IntToStr(XP));//+ '   Levels Gained: ' +IntToStr(LevelsGained));
@@ -2667,7 +2631,6 @@ Begin
   If Initial Then
   Begin
     SmartEnableDrawing := True;
-    DisableSRLDebug:=True;
     DeclarePlayers;
     SetupSRL;
     SetDTM;
@@ -2676,7 +2639,11 @@ Begin
   End Else
     Wait(GaussRangeInt(3000,8000));
 
-  Players[CurrentPlayer].Login;
+  If Not Players[CurrentPlayer].Login Then
+    TerminateScript;
+
+  If Not Debug Then
+    DisableSRLDebug:=True;
 
   Writeln('Thinking a little bit...give me a second');
   Wait(GaussRangeInt(0,4000));
@@ -2720,7 +2687,7 @@ Begin
     TerminateScript;
   End;
 
-  CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
+//  CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
 
   If CurrentLevel < 40 Then
     Level:= 2 Else
@@ -2853,7 +2820,7 @@ Begin
     TerminateScript;
   End;
 
-  If (RedDots) Or (TrapTime.GetTime > (5000+GaussRangeInt(0,5000))) Then
+  If (RedDots) Or (TrapTime.GetTime > (1000+GaussRangeInt(0,5000))) Then
   Begin
     FailedTrap;
     TrapFail:=False;
