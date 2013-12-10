@@ -3,7 +3,7 @@ Program Ashaman2IOSalamander;
 {$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v7.4
+Ashaman2IOSalamander v7.5
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -73,7 +73,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '7.4';
+  ScriptVersion = '7.5';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -1868,7 +1868,7 @@ Begin
   SetColorToleranceSpeed(CTS);
   SetToleranceSpeed2Modifiers(0.2, 0.2);
 
-  ATPA := SplitTPAEx(TPA,5,5);
+  ATPA := SplitTPAEx(TPA,7,7);
 
   If Debug Then
     Try
@@ -1905,7 +1905,7 @@ Begin
       If (Length(ATPA[I]) < 35) Or (Length(ATPA[I]) > 185) Then
         Continue;
     'red':
-      If (Length(ATPA[I]) < 25) Or (Length(ATPA[I]) > 500) Then
+      If (Length(ATPA[I]) < 20) Or (Length(ATPA[I]) > 500) Then
         Continue;
     End;
 
@@ -2768,13 +2768,13 @@ Begin
         AvoidSat            := 0.00;
         AvoidColor          := 0;
         AvoidTolerance      := 0;
-        GroundRopeHue       := 0.46;
+        GroundRopeHue       := 0.37;
         GroundRopeSat       := 2.73;
-        GroundRopeColor     := 1658968;
+        GroundRopeColor     := 1658200;
         GroundRopeTolerance := 5;
         GroundRope2Mod      := 0.10;
-        GroundRope2Color    := 735566;
-        GroundRope2Tolerance:= 27;
+        GroundRope2Color    := 735052;
+        GroundRope2Tolerance:= 38;
         SallyHue            := 0.16;
         SallySat            := 0.87;
         SallyColor          := 863582;
