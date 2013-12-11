@@ -73,7 +73,7 @@ Var
   DeadTreeBox: TBox;
 
 Const
-  ScriptVersion = '7.5';
+  ScriptVersion = '7.6';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -2768,13 +2768,13 @@ Begin
         AvoidSat            := 0.00;
         AvoidColor          := 0;
         AvoidTolerance      := 0;
-        GroundRopeHue       := 0.37;
+        GroundRopeHue       := 0.48;
         GroundRopeSat       := 2.73;
-        GroundRopeColor     := 1658200;
+        GroundRopeColor     := 1658712;
         GroundRopeTolerance := 5;
         GroundRope2Mod      := 0.10;
-        GroundRope2Color    := 735052;
-        GroundRope2Tolerance:= 38;
+        GroundRope2Color    := 669259;
+        GroundRope2Tolerance:= 35;
         SallyHue            := 0.16;
         SallySat            := 0.87;
         SallyColor          := 863582;
