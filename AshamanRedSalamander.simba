@@ -3,7 +3,7 @@ Program Ashaman2IOSalamander;
 {$Include srl-6/srl.simba}
 
 {
-Ashaman2IOSalamander v7.5
+Ashaman2IOSalamander v7.6
 -Make sure you have at least 3 nets and ropes (if you can use that many)  ---- If doing summoning - recommended 12 pouches and 3 4-dose summoning potions (at least)
 -Have at least 3 open spaces of inventory
 -Make sure all characters are standing in the area around the three trees. See picture
@@ -26,12 +26,10 @@ Ashaman2IOSalamander v7.5
 Const
   SRLStats_Username = '';         // ***Leave blank if you don't have a stats account***
   SRLStats_Password = '';
-  OnScreenProggy    = True;       // ***Progress report on screen? Will take up more memory***
+
   TimetoRun         = 5.2;        // ***Enter number of hours to run until script picks up traps and Smart restarts to avoid losing traps or time per character (DONT DO MORE THAN 5.5 OR YOU WILL LOSE TRAPS)***
   Restart           = True;       // ***After timetorun is hit, do you want to stop the script or just take a break? True restarts smart and keeps going, False shuts down***
-  HealthMin         = 300;        // ***DISABLED FOR NOW - If health is below this amount script will log out (Only for low levels at green salamanders)***
   CatchType         = 'Red';      // ***Set to Green if catching green salamanders, Red if catching red salamanders***
-  CurrentLevel      = 80;         // ***What is your current level? Doesn't really matter as long as it's above 40 (for three traps)***
   PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to False if you don't want that***
   Hopper            = False;      // ***Hops if another player logs into your world and stays for more than 60 seconds***
 
@@ -59,8 +57,8 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease: Integer;
-  LevelsGained,XPTL,XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
+  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
+  XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
   GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance,XPInc: Integer;
   SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
   TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
@@ -68,12 +66,12 @@ Var
   StartTime,CurrentTime: Int64;
   TrapTime,RunTimer,MiniBreak,Timeout,Crash,ShutDown: TTimeMarker;
   SoundPath: String;
-  Crashed,QuickClick,RestartScript,TrapFail: Boolean;
+  Crashed,QuickClick,RestartScript,TrapFail,OnScreenProggy: Boolean;
   Screen: TMufasaBitmap;
-  DeadTreeBox: TBox;
+  DeadTreeBox,SearchBox: TBox;
 
 Const
-  ScriptVersion = '7.6';
+  ScriptVersion = '7.7';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -141,82 +139,39 @@ Begin
   QuickBoxSort(DistArr,BoxArray,0,l,True);
 End;
 
-//by Home
-function AreaToBoxArray(const AreaX1, AreaY1, AreaX2, AreaY2, Width, Height: Integer): TBoxArray;
+function TRSChatBox.getXP: Integer;
 var
-  AreaW, AreaH: Integer;
-  BoxX, BoxY: Integer;
-  x, y, i: Integer;
+  b: TBox;
+  s: String;
+  tpa : TPointArray;
+  atpa : T2DPointArray;
+  i,cts,p: Integer;
 begin
-  // Calculate the area dimensions
-  AreaW := AreaX2 - AreaX1 + 1;
-  AreaH := AreaY2 - AreaY1 + 1;
+  b := self.getBounds();
+  b.edit(+(b.x2-b.x1)-140, +10, -5, -94);
 
-  // Calculate the number of boxes in each dimension
-  BoxX := AreaW div Width;
-  if AreaW mod Width <> 0 then Inc(BoxX);
-  BoxY := AreaH div Height;
-  if AreaH mod Height <> 0 then Inc(BoxY);
+  findColorsTolerance(tpa, 14013909, b, 4,colorSetting(2, 0.00, 0.00));
 
-  // Set the number of boxes
-  SetLength(Result, BoxX * BoxY);
-
-  // Calculate the boxes
-  i := 0;
-  for y := 0 to BoxY - 1 do
-    for x := 0 to BoxX - 1 do
-    begin
-      Result[i] := IntToBox(AreaX1 + x * Width,
-        AreaY1 + y * Height,
-        Min(AreaX2, AreaX1 + (x + 1) * Width - 1),
-        Min(AreaY2, AreaY1 + (y + 1) * Height - 1));
-      Inc(i);
-    end;
-end;
-
-Procedure CheckMovingObjs(RClick: Boolean);
-var
-  TBA: TBoxArray;
-  MidBox: TPoint;
-  TIA: TIntegerArray;
-  H,I,J,X,Y,T: Integer;
-  TPA,PBox: TPointArray;
-begin
-  if not IsLoggedIn then Exit;
-
-  SetColorToleranceSpeed(1);
-  SetToleranceSpeed2Modifiers(0.2, 0.2);
-
-  PBox := TPAFromBox(MainScreen.PlayerBox);
-  TBA := AreaToBoxArray(Mainscreen.X1, Mainscreen.Y1, Mainscreen.X2, Mainscreen.Y2, 35, 35);
-  TIA := GetPixelShift(TBA, 300);
-
-  for H := 0 to High(TBA) do
+  if length(tpa) < 2 then
   begin
-    if (TIA[H] > 100) then
-    begin
-      MidBox := MiddleBox(TBA[H]);
-      SetArrayLength(TPA, Length(TPA)+1);
-      TPA[High(TPA)] := MidBox;
-    end;
+    print('chatBox.getXP(): No XP found', TDebug.SUB);
+    Exit;
   end;
 
-  ClearTPAFromTPAWrap(TPA, PBox, TPA);
-  if (Length(TPA) < 1) then Exit;
+  atpa := tpa.cluster(5);
 
-  I := Random(Length(TPA));
-  Mouse(Point(TPA[I].X+GaussRangeInt(-10,10), TPA[I].Y+GaussRangeInt(-10,10)),Mouse_Move,Mouse_Human);
+  b:= atpa.getbounds;
+  b.edit(-2,-2,+2,+3);
 
-  if RClick then
-  begin
-    FastClick(Mouse_Right);
-    if (chooseOption.isOpen(500)) then
-      J := Length(ChooseOption.__getOptions());
-    Wait(GaussRangeInt(J*75, J*120));
+  s:=Replace(tesseractgettext(b.x1,b.y1,b.x2,b.y2, FILTER_SMALL_CHARS), ' ', '', [rfReplaceAll]);
 
-    ChooseOption.Close
-  end;
-  SetArrayLength(TPA,0);
+  P := Pos('x', S);
+  if P > 0 then
+    Result := StrToIntDef(ExtractFromStr(Copy(s, P, Length(S)), Numbers), 0)
+  else
+    Result := StrToIntDef(ExtractFromStr(S, Numbers), 0);
+
+  print('chatBox.getXP(): XP found: ' + tostr(result), TDebug.SUB);
 end;
 
 {*******************************************************************************
@@ -1641,71 +1596,6 @@ Begin
     FreeBitmap(Proggy);
 End;
 
-{*******************************************************************************
-Function HPLevel;
-By: ggzz
-Edited By: Ashaman88
-Description: Gets HP Level.
-*******************************************************************************}
-{Function HPLevel: Integer;
-Var
-  ColourString: String;
-Begin
-  Result:= GetMMLevels('HP', ColourString);
-End;      }
-
-(*
-MmmWeGotOff
-~~~~~~~~
-
-.. code-block:: pascal
-
-    Procedure MmmWeGotOff(RedTu: Variant);
-
-Moves the Mouse to the choosen side of the screen, replicating
-the use of a human to move thier Mouse "off-screen" as if
-browsing another part of their computer.
-(What do you do when you browsing "other websites?")
-Int Type:
-
-    1 = Go top side, off-screen
-    2 = Go left side, off-screen
-    3 = Go bottom side, off-screen
-    4 = Go right side, off-screen
-
-.. note::
-
-  by Le Jingle.
-
-Example:
-
-.. code-block:: pascal
-
-  MmmWeGotOff(Random(4), 0, 0);
-
-*)
-Procedure OffMM(RedTu, LeWait, rWait: Integer);
-Var
-  W,H,RX,RY,T,RT: Integer;
-  OffTimer: TTimeMarker;
-Begin
-  GetClientDimensions(W,H);
-  H:=H+50;
-  RX := RandomRange(0, W);
-  RY := RandomRange(0, H);
-  Case (RedTu) Of
-    0..1: Mouse(Point(Round(W/2)+RX, RandomRange(-110,-60)),Mouse_Move,Mouse_Break);
-    2: Mouse(Point(RandomRange(-50,-10), Round(H/2)+RY),Mouse_Move,Mouse_Break);
-    3: Mouse(Point(Round(W/2)+RX, h+RandomRange(10,50)),Mouse_Move,Mouse_Break);
-    4: Mouse(Point(W+RandomRange(10,50), Round(H/2)+RY),Mouse_Move,Mouse_Break);
-  End;
-  RT:=(Random(rWait));
-  OffTimer.Start();
-  Repeat
-    Wait(GaussRangeInt(100,200));
-  Until OffTimer.GetTime()>(LeWait+RT);
-End;
-
 Procedure PaintOnSmart;
 Begin
   If OnScreenProggy Then
@@ -1727,31 +1617,18 @@ Begin
     ClearDebug;
 
   CurrentTime:= GetSystemTime - StartTime;
-  XP := (XP+XPInc);
+  XP := (ChatBox.GetXP - StartingExperience);
   XPH := Round(XP * (3600.0 / (GetTimeRunning / 1000.0)));
   SalamandersPH := Round((SalamanderCount * (3600.0 / (GetTimeRunning / 1000.0))));
-
-  {If CurrentLevel<99 Then
-    If (StartingXP - XP) < 0 Then
-    Begin
-      StartingXP:= (XpTillNextLevel(Skill_Hunter)+XP);
-      Writeln('Gained a level!!');
-      LevelsGained := LevelsGained + 1;
-    End;    }
-
-  If ((CurrentLevel+LevelsGained)>=40) Then
-    Level:=3;
 
   If XPH < 1000 Then
     XPH:=1000.0;
 
- // XPTL:= Round(((StartingXP-XP) / (XPH/1000.0))*3600.0);
-
   Writeln('========AshamanSalamander v'+ScriptVersion+'=========');
   Writeln('Time Running: ' + ToStr(TimeRunning));
   Writeln('Catching: ' + CatchType+' Salamanders');
-  Writeln('Salamanders Caught: ' + ToStr(SalamanderCount));//+'    TTL: '+MsToTime(XPTL, Time_Formal));
-  Writeln('Experience Earned: ' + IntToStr(XP));//+ '   Levels Gained: ' +IntToStr(LevelsGained));
+  Writeln('Salamanders Caught: ' + ToStr(SalamanderCount));
+  Writeln('Experience Earned: ' + IntToStr(XP));
   Writeln('Experience/Hour: ' + ToStr(XPH));
   Writeln('Salamanders/H: ' + ToStr(SalamandersPH));
   Writeln('=======================================');
@@ -1771,7 +1648,6 @@ End;
 
 Function AvoidBadStuff: Tbox;
 Var
-  CTS,T: Integer;
   TPA: TPointArray;
   ATPA: T2DPointArray;
   TempBox: TBox;
@@ -1779,18 +1655,17 @@ Begin
   If Not IsLoggedIn Then
     Exit;
 
-  CTS := GetToleranceSpeed;
-  SetColorToleranceSpeed(2);
+  TempBox:=[SearchX1-100,SearchY1,SearchX2,SearchY2];
+  TempBox.SetLimit(Mainscreen.GetBounds);
 
-  SetToleranceSpeed2Modifiers(AvoidHue,AvoidSat);
-  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,AvoidColor,Max(0,SearchX1-100),SearchY1,SearchX2,SearchY2,AvoidTolerance);
-  SetColorToleranceSpeed(CTS);
-  SetToleranceSpeed2Modifiers(0.2, 0.2);
+  findColorsTolerance(tpa, AvoidColor, TempBox, AvoidTolerance,colorSetting(2,AvoidHue,AvoidSat)); //avoiddata
 
-  ATPA := SplitTPAEx(TPA,10,10);
-  SortATPASize(ATPA,True);
+  ATPA := TPA.Cluster(10);
+  ATPA.SortBySize;
+
   If Length(ATPA)=0 Then
     Exit;
+
   If Debug Then
   Begin
     DebugATPABounds(ATPA);
@@ -1799,7 +1674,9 @@ Begin
   End;
 
   TempBox:=GetTPABounds(ATPA[0]);
-  Result:=IntToBox(Max(0,TempBox.X1),Max(0,TempBox.Y1-100),Min(Mainscreen.X2,TempBox.X2+100),Min(Mainscreen.Y2,TempBox.Y2+50));
+  TempBox.Edit(0,-100,+100,+50);
+  TempBox.SetLimit(Mainscreen.GetBounds);
+  Result:=TempBox;
 
   If Debug Then
     Try
@@ -1814,18 +1691,12 @@ End;
 
 Function AvoidSetTraps(Tree: TBox): Boolean;
 Var
-  CTS: Integer;
   TPA: TPointArray;
 Begin
   If Not IsLoggedIn Then
     Exit;
 
-  CTS := GetToleranceSpeed;
-  SetColorToleranceSpeed(2);
-  SetToleranceSpeed2Modifiers(SetRopeHue,SetRopeSat);
-  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,SetRopeColor,Tree.X1,Tree.Y1,Tree.X2,Tree.Y2,SetRopeTolerance);
-  SetColorToleranceSpeed(CTS);
-  SetToleranceSpeed2Modifiers(0.2, 0.2);
+  findColorsTolerance(tpa, SetRopeColor, Tree, SetRopeTolerance,colorSetting(2,SetRopeHue,SetRopeSat)); //setrope
 
   If (Length(TPA) > 0) Then
     Result:=True;
@@ -1856,26 +1727,21 @@ Begin
   If Debug Then
   Begin
     SmartImage.Clear;
-    SmartImage.DrawBox(IntToBox(SearchX1,SearchY1,SearchX2,SearchY2), False, clRed);
+    SmartImage.DrawBox(SearchBox);
     writeln('This is the search box');
   End;
 
-  CTS := GetToleranceSpeed;
-  SetColorToleranceSpeed(2);
+  findColorsTolerance(tpa, NetColor, SearchBox, NetTolerance,colorSetting(2,NetHue,NetSat)); //caughtnet
 
-  SetToleranceSpeed2Modifiers(NetHue,NetSat);
-  FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA,NetColor,SearchX1,SearchY1,SearchX2,SearchY2,NetTolerance);
-  SetColorToleranceSpeed(CTS);
-  SetToleranceSpeed2Modifiers(0.2, 0.2);
+  ATPA := TPA.Cluster(7);
 
-  ATPA := SplitTPAEx(TPA,7,7);
+  SetLength(TPA,0);
 
   If Debug Then
-    Try
-      DebugATPABounds(ATPA);
-    Except
-      Writeln('Box out of bounds');
-    End;
+  Begin
+    SmartImage.Clear;
+    SmartImage.DebugATPA(ATPA);
+  End;
 
   If (Length(ATPA) = 0) Then
     Exit;
@@ -1886,7 +1752,6 @@ Begin
   Begin
     If Not IsLoggedIn Then
       Exit;
-    MiddleTPAEx(ATPA[I],X,Y);
 
     If Debug Then
       Writeln('Net Length: '+ToStr(Length(atpa[i]))+' for I:= '+ToStr(I));
@@ -1897,8 +1762,10 @@ Begin
       Writeln('Point: '+ToStr(Point(X,Y)));
       Writeln('Box: '+ToStr(AvoidBox));
     End;
-    If PointInBox(Point(X,Y),AvoidBox) Then
-      Continue;
+
+    If Lowercase(CatchType)='green' Then
+      If PointInBox(Point(X,Y),AvoidBox) Then
+        Continue;
 
     Case LowerCase(CatchType) Of
     'green':
@@ -1910,50 +1777,50 @@ Begin
     End;
 
     NetBox := GetTPABounds(ATPA[I]);
-    NetBox := IntToBox(Max(NetBox.X1,0),Max(NetBox.Y1,0),Min(NetBox.X2,Mainscreen.X2),Min(NetBox.Y2,Mainscreen.Y2));
+    NetBox.SetLimit(Mainscreen.GetBounds);
 
     With NetBox Do
     Begin
       If Not IsLoggedIn Then
         Exit;
 
-      SetColorToleranceSpeed(2);
-      SetToleranceSpeed2Modifiers(SallyHue,SallySat);
-
-      FindColorsSpiralTolerance(MainScreen.PlayerPoint.X,MainScreen.PlayerPoint.Y,TPA2,SallyColor,NetBox.X1,NetBox.Y1,NetBox.X2,NetBox.Y2,SallyTolerance);
-      SetColorToleranceSpeed(CTS);
-      SetToleranceSpeed2Modifiers(0.2, 0.2);
+      findColorsTolerance(tpa, SallyColor, NetBox, SallyTolerance,colorSetting(2,SallyHue,SallySat)); //sally in net
 
       Case LowerCase(CatchType) Of
       'green':
-        If (Length(TPA2) > 2) And (Length(TPA2) < 20) Then
         Begin
-          If DebugSally Then
+          If (Length(TPA) > 2) And (Length(TPA) < 20) Then
           Begin
-            Writeln('Inner Sally Length: '+ToStr(Length(TPA2)));
-            Writeln('NetBox:= '+ToStr(NetBox));
-          End;
+            If DebugSally Then
+            Begin
+              Writeln('Inner Sally Length: '+ToStr(Length(TPA)));
+              Writeln('NetBox:= '+ToStr(NetBox));
+            End;
 
-          SetArrayLength(TBA, Length(TBA)+1);
-          TBA[High(TBA)] := NetBox;
+            SetArrayLength(TBA, Length(TBA)+1);
+            TBA[High(TBA)] := NetBox;
+          End;
+          SetLength(TPA,0);
         End;
       'red':
-        If (Length(TPA2) > 2) And (Length(TPA2) < 100) Then
         Begin
-          If DebugSally Then
+          If (Length(TPA) > 2) And (Length(TPA) < 100) Then
           Begin
-            Writeln('Inner Sally Length: '+ToStr(Length(TPA2)));
-            Writeln('NetBox:= '+ToStr(NetBox));
-          End;
+            If DebugSally Then
+            Begin
+              Writeln('Inner Sally Length: '+ToStr(Length(TPA)));
+              Writeln('NetBox:= '+ToStr(NetBox));
+            End;
 
-          SetArrayLength(TBA, Length(TBA)+1);
-          TBA[High(TBA)] := NetBox;
+            SetArrayLength(TBA, Length(TBA)+1);
+            TBA[High(TBA)] := NetBox;
+          End;
+          SetLength(TPA,0);
         End;
       End;
     End;
   End;
 
-  If Debug Then
   Try
     SmartImage.Clear;
     SmartImage.DrawBoxes(TBA, False, clRed);
@@ -1961,10 +1828,8 @@ Begin
     Writeln('Failed Drawing Boxes.');
   End;
 
-  SetLength(TPA,0);
+
   SetLength(ATPA,0);
-  SetLength(TPA2,0);
-  SetLength(ATPA2,0);
 
   GetMousePos(XX,YY);
   MidSortBoxArrayFrom(TBA,Point(XX,YY));
@@ -1973,13 +1838,12 @@ Begin
     If Not IsLoggedIn Then
       Exit;
 
-    MBP := MiddleBox(TBA[H]);
-
     If Not (IsMouseOverText(['Chec','heck'],RandomRange(0,0))) Then
-      Mouse(Point(MBP.X+GaussRangeInt(-10,10),MBP.Y+GaussRangeInt(-10,10)),Mouse_Move,Mouse_Break);
+      MouseBox(TBA[H]);
 
     If (IsMouseOverText(['Chec','heck'],RandomRange(200,300))) Then
     Begin
+      SmartImage.Clear;
       If Debug Then
         Writeln('Found uptext Check, clicking');
 
@@ -2028,7 +1892,7 @@ Begin
         Invcnt := TabBackpack.count();
         Wait(GaussRangeInt(400,900));
         Case GaussRangeInt(0,10) Of
-          4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
+          4..6:MouseBox(Mainscreen.PlayerBox);
         End;
         T.Start;
         Repeat
@@ -2060,7 +1924,7 @@ Var
   X,Y: Integer;
 Begin
   Repeat
-    If Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))>0 Then
+    If Length(Minimap.GetDots(MM_DOT_PLAYER,[663,86,719,127]))>0 Then
     Begin
       If Debug Then
         WriteLn('Someone is in this spot, hopping.');
@@ -2074,7 +1938,7 @@ Begin
     Wait(Random(100));
     If Not IsLoggedIn Then
       Exit;
-  Until ((Length(Minimap.GetDots(MM_DOT_PLAYER,IntToBox(663,86,719,127)))=0) And (Not CheckNet(False,False)));
+  Until ((Length(Minimap.GetDots(MM_DOT_PLAYER,[663,86,719,127]))=0) And (Not CheckNet(False,False)));
 
   ShutDown.Reset;
   ShutDown.Start;
@@ -2089,7 +1953,6 @@ Procedure Release;
 Var
   XX,X,Y,YY,I,Ropes,Invcnt: Integer;
   T: TTimeMarker;
-  RopeBox: TBox;
 Begin
   If Not IsLoggedIn Then
     Exit;
@@ -2097,14 +1960,12 @@ Begin
   QuickClick:=False;
 
   GetMousePos(XX,YY);
-  RopeBox:=TabBackpack.GetBounds;
-  RopeBox:=IntToBox(Max(0,RopeBox.X1),Max(0,RopeBox.Y1),Min(799,RopeBox.X2),Min(599,RopeBox.Y2));
 
   Ropes:=TabBackpack.CountDTM(RopeDTM);
 
   For I:=0 To 1 Do
   Begin
-    If FindDTM(Sal,X,Y,RopeBox) Then
+    If FindDTM(Sal,X,Y,TabBackpack.GetBounds) Then
     Begin
       If Debug Then
         Writeln('Releasing Salamanders');
@@ -2144,7 +2005,7 @@ Begin
       If I=0 Then
       Begin
         Case GaussRangeInt(0,10) Of
-          4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
+          4..6:MouseBox(Mainscreen.PlayerBox);
         End;
         Repeat
           If Not QuickClick Then
@@ -2196,44 +2057,21 @@ Begin
     writeln('This is the search box');
   End;
 
-  CTS := GetToleranceSpeed;
-  SetColorToleranceSpeed(2);
-
-  GetMousePos(XX, YY);
-  SearchFromX := MainScreen.PlayerPoint.X;
-  SearchFromY := MainScreen.PlayerPoint.Y;
-
-  If (XX > (MainScreen.PlayerPoint.X + 30)) Then
-    SearchFromX:= (MainScreen.PlayerPoint.X + 35)
-  Else If (XX < (MainScreen.PlayerPoint.X - 30)) Then
-    SearchFromX:= (MainScreen.PlayerPoint.X - 35);
-
-  If (YY > (MainScreen.PlayerPoint.Y + 30)) Then
-    SearchFromY:= (MainScreen.PlayerPoint.Y + 35)
-  Else If (YY < (MainScreen.PlayerPoint.Y - 30)) Then
-    SearchFromY:= (MainScreen.PlayerPoint.Y - 35);
-
-  SetToleranceSpeed2Modifiers(GroundRopeHue,GroundRopeSat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,GroundRopeColor,SearchX1,SearchY1,SearchX2,SearchY2,GroundRopeTolerance);
-  SetColorToleranceSpeed(3);
-  SetToleranceSpeed2Modifiers(0.2, 0.2);
+  findColorsTolerance(tpa, GroundRopeColor, SearchBox, GroundRopeTolerance,colorSetting(2,GroundRopeHue,GroundRopeSat)); //greenrope
 
   SetToleranceSpeed3Modifier(GroundRope2Mod);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA2,GroundRope2Color,SearchX1,SearchY1,SearchX2,SearchY2,GroundRope2Tolerance);
-  TPA:=CombineTPA(TPA,TPA2);
+  findColorsTolerance(tpa2, GroundRope2Color, SearchBox, GroundRope2Tolerance,colorSetting(3,GroundRope2Mod)); //brownrope
+  TPA.Combine(TPA2);
   SetLength(TPA2,0);
 
-  SetColorToleranceSpeed(CTS);
-  SetToleranceSpeed3Modifier(0);
+  ATPA := TPA.Cluster(5);
+  atpa.filterBetween(0,10);
+  ATPA.sortFromFirstPoint(Point(289,213));
 
-  ATPA := SplitTPAEx(TPA,5,5);
+  SetLength(TPA,0);
 
-  If Debug Then
-    Try
-      DebugATPABounds(ATPA);
-    Except
-      Writeln('Box out of bounds');
-    End;
+  SmartImage.Clear;
+  SmartImage.DebugATPA(ATPA);
 
   If (Length(ATPA) = 0) Then
     Exit;
@@ -2256,22 +2094,19 @@ Begin
     If PointInBox(Point(X,Y),AvoidBox) Then
       Continue;
 
-    If (Length(ATPA[I]) < 10) Then
-      Continue;
+    Mouse(Point(X+GaussRangeInt(-10,10),Y+GaussRangeInt(-10,10)));
 
-    Mouse(Point(X+GaussRangeInt(-10,10),Y+GaussRangeInt(-10,10)),Mouse_Move,Mouse_Break);
-
-    If (IsMouseOverText([' B','Bones','ones','nes'],RandomRange(200,300))) Then
+    If (IsMouseOverText([' B','Bones','ones','nes'],RandomRange(0,10))) Then
     Begin
       If Debug Then
         Writeln('Staying away from bones!');
-      SetLength(TPA,0);
       SetLength(ATPA,0);
       Exit;
     End;
 
-    If (IsMouseOverText(['Take','heck','Set','antle','Inter'],RandomRange(200,300))) Then
+    If (IsMouseOverText(['Take','heck','Set','antle','Inter'])) Then
     Begin
+      SmartImage.Clear;
       GetMousePos(XT,YT);
 
       If Debug Then
@@ -2286,12 +2121,11 @@ Begin
       Begin
         If Debug Then
           Writeln('Found option to take, waiting to stop moving');
-        SetLength(TPA,0);
         SetLength(ATPA,0);
         Invcnt := TabBackpack.Count();
         Wait(GaussRangeInt(400,900));
         Case GaussRangeInt(0,10) Of
-          4..6:MouseBox(Mainscreen.PlayerBox,Mouse_Move);
+          4..6:MouseBox(Mainscreen.PlayerBox);
         End;
         T.Start;
         Repeat
@@ -2307,7 +2141,7 @@ Begin
 
           For Tries:=0 To 2 Do
           Begin
-            Mouse(Point(289+GaussRangeInt(-5,5),203+GaussRangeInt(-5,5)),Mouse_Right,Mouse_Human);
+            Mouse(Point(289+GaussRangeInt(-5,5),203+GaussRangeInt(-5,5)),Mouse_Right);
 
 
             Invcnt := TabBackpack.Count();
@@ -2339,7 +2173,6 @@ Begin
       End;
     End;
   End;
-  SetLength(TPA,0);
   SetLength(ATPA,0);
 End;
 
@@ -2386,40 +2219,21 @@ Begin
   If Debug Then
   Begin
     SmartImage.Clear;
-    SmartImage.DrawBox(IntToBox(SearchX1,SearchY1,SearchX2,SearchY2), False, clRed);
+    SmartImage.DrawBox(SearchBox);
     writeln('This is the search box');
   End;
 
-  CTS := GetToleranceSpeed;
-  SetColorToleranceSpeed(2);
+  findColorsTolerance(tpa, TreeColor, SearchBox, TreeTolerance,colorSetting(2,TreeHue,TreeSat)); //emptytree
 
-  GetMousePos(XX, YY);
-  SearchFromX := MainScreen.PlayerPoint.X;
-  SearchFromY := MainScreen.PlayerPoint.Y;
-
-  If (XX > (MainScreen.PlayerPoint.X + 30)) Then
-    SearchFromX:= (MainScreen.PlayerPoint.X + 35)
-  Else If (XX < (MainScreen.PlayerPoint.X - 30)) Then
-    SearchFromX:= (MainScreen.PlayerPoint.X - 35);
-
-  If (YY > (MainScreen.PlayerPoint.Y + 30)) Then
-    SearchFromY:= (MainScreen.PlayerPoint.Y + 35)
-  Else If (YY < (MainScreen.PlayerPoint.Y - 30)) Then
-    SearchFromY:= (MainScreen.PlayerPoint.Y - 35);
-
-  SetToleranceSpeed2Modifiers(TreeHue,TreeSat);
-  FindColorsSpiralTolerance(SearchFromX,SearchFromY,TPA,TreeColor,SearchX1,SearchY1,SearchX2,SearchY2,TreeTolerance);
-  SetColorToleranceSpeed(CTS);
-  SetToleranceSpeed2Modifiers(0.2, 0.2);
-
-  ATPA := SplitTPAEx(TPA,TreeWidth,TreeHeight);
+  ATPA := TPA.Cluster(TreeWidth,TreeHeight);
+  atpa.filterBetween(0,22);
+  SetLength(TPA,0);
 
   If Debug Then
-    Try
-      DebugATPABounds(ATPA);
-    Except
-      Writeln('Box out of bounds');
-    End;
+  Begin
+    SmartImage.Clear;
+    SmartImage.DebugATPA(ATPA);
+  End;
 
   If (Length(ATPA) = 0) Then
     Exit;
@@ -2442,30 +2256,33 @@ Begin
     If PointInBox(Point(X,Y),AvoidBox) Then
       Continue;
 
-    If (Length(ATPA[I]) < 22) Then
-      Continue;
-
     AvoidBox:=GetTPABounds(ATPA[I]);
-    AvoidBox:=IntToBox(AvoidBox.X1-10,AvoidBox.Y1-10,AvoidBox.X2+10,AvoidBox.Y2+10);
-
-    If Debug Then
-    Begin
-      SmartImage.Clear;
-      SmartImage.DrawBox(AvoidBox, False, clRed);
-      Writeln('This is the Potential Rope box');
-    End;
-
+    AvoidBox.Edit(-10,-10,+10,+10);
+    AvoidBox.SetLimit(Mainscreen.GetBounds);
 
     If Not Collect Then
       If AvoidSetTraps(AvoidBox) Then
         Continue;
 
-    Mouse(Point(X+GaussRangeInt(-1,1),Y+GaussRangeInt(-3,3)),Mouse_Move,Mouse_Break);
+    If Debug Then
+    Begin
+      SmartImage.Clear;
+      SmartImage.DrawBox(AvoidBox);
+    End;
+
+    If Not Debug Then
+    Begin
+      SmartImage.Clear;
+      SmartImage.DrawBox(GetTPABounds(ATPA[I]));
+    End;
+
+    Mouse(Point(X+GaussRangeInt(-1,1),Y+GaussRangeInt(-3,3)));
 
     If Collect Then
     Begin
       If (IsMouseOverText(['Dism','sman','mant','antle'],RandomRange(200,300))) Then
       Begin
+        SmartImage.Clear;
         If Debug Then
           Writeln('Found dismantle option, clicking');
 
@@ -2474,7 +2291,6 @@ Begin
           Begin
             If DidClick(True) Then
             Begin
-              SetLength(TPA,0);
               SetLength(ATPA,0);
               Release;
               Timeout.Reset;
@@ -2490,7 +2306,6 @@ Begin
             Begin
               If Debug Then
                 Writeln('Found option to dismantle');
-              SetLength(TPA,0);
               SetLength(ATPA,0);
               Release;
               Exit;
@@ -2500,8 +2315,9 @@ Begin
       End;
     End Else
     Begin
-      If (IsMouseOverText(['Set'],RandomRange(200,300))) Then
+      If (IsMouseOverText(['Set','-trap'],RandomRange(200,300))) Then
       Begin
+        SmartImage.Clear;
         GetMousePos(XT,YT);
 
         If Debug Then
@@ -2516,7 +2332,6 @@ Begin
             If DidClick(true) Then
             Begin
               Release;
-              SetLength(TPA,0);
               SetLength(ATPA,0);
               Timeout.Reset;
               Timeout.Start;
@@ -2524,7 +2339,6 @@ Begin
             End Else
             Begin
               Failsafe;
-              SetLength(TPA,0);
               SetLength(ATPA,0);
               Exit;
             End;
@@ -2540,7 +2354,6 @@ Begin
               Release;
               Timeout.Reset;
               Timeout.Start;
-              SetLength(TPA,0);
               SetLength(ATPA,0);
               Exit;
             End;
@@ -2549,7 +2362,6 @@ Begin
       End;
     End;
   End;
-  SetLength(TPA,0);
   SetLength(ATPA,0);
 End;
 
@@ -2615,7 +2427,7 @@ Begin
     End;
   End;
 
-  If ConversationBox.FindChat(['isn']) Then
+  If ChatBox.FindTextOnLines(['isn'],[0]) Then
   Begin
     Writeln('You have been crashed. Attempting to Hop');
     Result:=True;
@@ -2639,14 +2451,17 @@ Begin
   End Else
     Wait(GaussRangeInt(3000,8000));
 
-  If Not Players[CurrentPlayer].Login Then
-    TerminateScript;
+  If Not IsLoggedIn Then
+  Begin
+    If Not Players[CurrentPlayer].Login Then
+      TerminateScript;
+
+    Writeln('Just loggedin, waiting a bit');
+    Wait(RandomRange(6000,10000));
+  End;
 
   If Not Debug Then
     DisableSRLDebug:=True;
-
-  Writeln('Thinking a little bit...give me a second');
-  Wait(GaussRangeInt(0,4000));
 
   Minimap.ClickCompass;
   MainScreen.SetAngle(MS_ANGLE_HIGH);
@@ -2687,7 +2502,7 @@ Begin
     TerminateScript;
   End;
 
-//  CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
+  CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
 
   If CurrentLevel < 40 Then
     Level:= 2 Else
@@ -2709,7 +2524,7 @@ Begin
     StartTime:=GetSystemTime;
 
    // StartingXP:= XpTillNextLevel(Skill_Hunter);
-   // StartingExperience := GetXPBarTotal;
+    StartingExperience := ChatBox.GetXP;
 
 
     Case Lowercase(CatchType) Of
@@ -2732,8 +2547,8 @@ Begin
         GroundRopeColor     := 1658968;
         GroundRopeTolerance := 5;
         GroundRope2Mod      := 0.10;
-        GroundRope2Color    := 735566;
-        GroundRope2Tolerance:= 27;
+        GroundRope2Color    := 669259;
+        GroundRope2Tolerance:= 35;
         SallyHue            := 0.32;
         SallySat            := 1.02;
         SallyColor          := 2048798;
@@ -2750,6 +2565,7 @@ Begin
         SearchY1            := 75;
         SearchX2            := 503;
         SearchY2            := 314;
+        SearchBox           := [SearchX1,SearchY1,SearchX2,SearchY2];
         Sal                 := GSalDTM;
         XPInc               := 152;
       End;
@@ -2791,6 +2607,7 @@ Begin
         SearchY1            := 120;
         SearchX2            := 438;
         SearchY2            := 314;
+        SearchBox           := [SearchX1,SearchY1,SearchX2,SearchY2];
         Sal                 := SalDTM;
         XPInc               := 272;
       End;
@@ -2831,9 +2648,8 @@ Begin
   Begin
     TimeoutRange:= GaussRangeInt(3000,10000);
     Case GaussRangeInt(0,12) Of
-      0..3: OffMM(GaussRangeInt(0,5),4000,3000);
-      4..5: CheckMovingObjs(False);
-      5..7: CheckMovingObjs(True);
+      0..3: MouseOffClient(4);
+      4..7: mouseMovingObject;
       8..10: TabStats.GetSkillLevel(Skill_Hunter);
       11..12: Wait(GaussRangeInt(0,4000));
     End;
