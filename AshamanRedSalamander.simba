@@ -59,9 +59,9 @@ End;
 Var
   SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
   XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
-  GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,SetRopeColor,SetRopeTolerance,XPInc: Integer;
+  GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,NetColor2,NetTolerance2,SetRopeColor,SetRopeTolerance,XPInc: Integer;
   SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
-  TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
+  TreeHue,TreeSat,SalamandersPH,XPH,SetRopeHue,SetRopeSat,NetHue,NetSat,NetHue2,NetSat2,SallyHue,SallySat,GroundRopeHue,GroundRopeSat,AvoidHue,AvoidSat: Extended;
   GroundRope2Mod: Extended;
   StartTime,CurrentTime: Int64;
   TrapTime,RunTimer,MiniBreak,Timeout,Crash,ShutDown: TTimeMarker;
@@ -71,7 +71,7 @@ Var
   DeadTreeBox,SearchBox: TBox;
 
 Const
-  ScriptVersion = '7.7';
+  ScriptVersion = '7.8';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -1731,7 +1731,11 @@ Begin
     writeln('This is the search box');
   End;
 
-  findColorsTolerance(tpa, NetColor, SearchBox, NetTolerance,colorSetting(2,NetHue,NetSat)); //caughtnet
+  findColorsTolerance(tpa, NetColor, SearchBox, NetTolerance,colorSetting(2,NetHue,NetSat)); //caughtnet dark
+ // findColorsTolerance(tpa2, NetColor2, SearchBox, NetTolerance2,colorSetting(2,NetHue2,NetSat2));
+ // tpa.combine(tpa2);
+
+  setlength(tpa2,0);
 
   ATPA := TPA.Cluster(7);
 
@@ -2553,10 +2557,14 @@ Begin
         SallySat            := 1.02;
         SallyColor          := 2048798;
         SallyTolerance      := 7;
-        NetHue              := 7.64;
-        NetSat              := 3.36;
-        NetColor            := 1187353;
-        NetTolerance        := 2;
+        NetHue              := 1.16;
+        NetSat              := 3.14;
+        NetColor            := 856085;
+        NetTolerance        := 1;
+        NetHue2              := 0.58;
+        NetSat2              := 2.17;
+        NetColor2            := 922135;
+        NetTolerance2        := 2;
         SetRopeHue          := 0.07;
         SetRopeSat          := 3.09;
         SetRopeColor        := 1727355;
@@ -2595,10 +2603,14 @@ Begin
         SallySat            := 0.87;
         SallyColor          := 863582;
         SallyTolerance      := 11;
-        NetHue              := 0.61;
-        NetSat              := 3.95;
-        NetColor            := 858401;
+        NetHue              := 1.16;
+        NetSat              := 3.14;
+        NetColor            := 856085;
         NetTolerance        := 1;
+        NetHue2              := 0.58;
+        NetSat2              := 2.17;
+        NetColor2            := 922135;
+        NetTolerance2        := 2;
         SetRopeHue          := 0.05;
         SetRopeSat          := 0.32;
         SetRopeColor        := 878995;
