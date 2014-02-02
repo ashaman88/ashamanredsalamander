@@ -32,7 +32,7 @@ Const
   CatchType         = 'Red';      // ***Set to Green if catching green salamanders, Red if catching red salamanders***
   PlaySounds        = True;       // ***Plays a sound if another player logs into your spot, set to False if you don't want that***
   Hopper            = False;      // ***Hops if another player logs into your world and stays for more than 60 seconds***
-
+  CurrentLevel      = 80;         // ***Current Level when starting script***
 Procedure DeclarePlayers;
 Begin
   Players.Setup(['Player1'], 'PlayerList'); //***Fill this out, Player1 = Name of the account in player manager, PlayerList = name of the player file***
@@ -57,7 +57,7 @@ End;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 Var
-  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease,CurrentLevel: Integer;
+  SalamanderCount,XP,RunTime,StartingExperience,NumberofTraps,Level,SearchX1,SearchY1,SearchX2,SearchY2,TreeIncrease: Integer;
   XT,YT,PTS,MiniBreakTime,Proggy,AvoidColor,AvoidTolerance,TimeoutRange,GroundRope2Color,GroundRope2Tolerance: Integer;
   GroundRopeColor,GroundRopeTolerance,SallyColor,SallyTolerance,NetColor,NetTolerance,NetColor2,NetTolerance2,SetRopeColor,SetRopeTolerance,XPInc: Integer;
   SalDTM,RopeDTM,CheckDTM,NWDTM,SWDTM,GSalDTM,GCheckDTM,Check,Sal,PositionDTM,SetTrap,TreeColor,TreeTolerance,TreeWidth,TreeHeight: Integer;
@@ -71,7 +71,7 @@ Var
   DeadTreeBox,SearchBox: TBox;
 
 Const
-  ScriptVersion = '7.8';
+  ScriptVersion = '7.9';
   UseAutoChecker = True;
   Debug = False;
   DebugSally = False;
@@ -1655,6 +1655,9 @@ Begin
   If Not IsLoggedIn Then
     Exit;
 
+  If (Lowercase(CatchType)='red') Then
+    Exit;
+
   TempBox:=[SearchX1-100,SearchY1,SearchX2,SearchY2];
   TempBox.SetLimit(Mainscreen.GetBounds);
 
@@ -1710,7 +1713,7 @@ Var
   MBP: TPoint;
   TPA,TPA2: TPointArray;
   ATPA,ATPA2: T2DPointArray;
-  AvoidBox,NetBox: TBox;
+  AvoidBox,NetBox,NetBox2: TBox;
   TBA: TBoxArray;
 Label
   Jumper;
@@ -1731,13 +1734,13 @@ Begin
     writeln('This is the search box');
   End;
 
-  findColorsTolerance(tpa, NetColor, SearchBox, NetTolerance,colorSetting(2,NetHue,NetSat)); //caughtnet dark
+  findColorsTolerance(tpa, SetRopeColor, SearchBox, SetRopeTolerance,colorSetting(2,SetRopeHue,SetRopeSat)); //setrope
  // findColorsTolerance(tpa2, NetColor2, SearchBox, NetTolerance2,colorSetting(2,NetHue2,NetSat2));
  // tpa.combine(tpa2);
 
   setlength(tpa2,0);
 
-  ATPA := TPA.Cluster(7);
+  ATPA := TPA.Cluster(15,10);
 
   SetLength(TPA,0);
 
@@ -1746,9 +1749,6 @@ Begin
     SmartImage.Clear;
     SmartImage.DebugATPA(ATPA);
   End;
-
-  If (Length(ATPA) = 0) Then
-    Exit;
 
   H:=High(ATPA);
 
@@ -1761,7 +1761,7 @@ Begin
       Writeln('Net Length: '+ToStr(Length(atpa[i]))+' for I:= '+ToStr(I));
 
     AvoidBox:=AvoidBadStuff;
-    If Debug Then
+    If (Debug) And (Lowercase(CatchType)='green') Then
     Begin
       Writeln('Point: '+ToStr(Point(X,Y)));
       Writeln('Box: '+ToStr(AvoidBox));
@@ -1771,16 +1771,11 @@ Begin
       If PointInBox(Point(X,Y),AvoidBox) Then
         Continue;
 
-    Case LowerCase(CatchType) Of
-    'green':
-      If (Length(ATPA[I]) < 35) Or (Length(ATPA[I]) > 185) Then
-        Continue;
-    'red':
-      If (Length(ATPA[I]) < 20) Or (Length(ATPA[I]) > 500) Then
-        Continue;
-    End;
+    If (Length(ATPA[I]) < 4) Or (Length(ATPA[I]) > 25) Then
+      Continue;
 
     NetBox := GetTPABounds(ATPA[I]);
+    NetBox.Edit(-5,-5,+15,+10);
     NetBox.SetLimit(Mainscreen.GetBounds);
 
     With NetBox Do
@@ -1788,7 +1783,18 @@ Begin
       If Not IsLoggedIn Then
         Exit;
 
-      findColorsTolerance(tpa, SallyColor, NetBox, SallyTolerance,colorSetting(2,SallyHue,SallySat)); //sally in net
+      findColorsTolerance(tpa, NetColor, NetBox, NetTolerance,colorSetting(2,NetHue,NetSat)); //caughtnet dark
+
+      NetBox2:=Mainscreen.PlayerBox;
+      TPA2:=NetBox2.CreateTPA;
+
+      TPA:=TPA.clearTPAFrom(TPA2);
+      SetLength(TPA2,0);
+      If DebugSally Then
+      Begin
+        Writeln('Inner Sally Length: '+ToStr(Length(TPA)));
+        Writeln('NetBox:= '+ToStr(NetBox));
+      End;
 
       Case LowerCase(CatchType) Of
       'green':
@@ -1800,7 +1806,7 @@ Begin
               Writeln('Inner Sally Length: '+ToStr(Length(TPA)));
               Writeln('NetBox:= '+ToStr(NetBox));
             End;
-
+            NetBox := GetTPABounds(TPA);
             SetArrayLength(TBA, Length(TBA)+1);
             TBA[High(TBA)] := NetBox;
           End;
@@ -1808,14 +1814,9 @@ Begin
         End;
       'red':
         Begin
-          If (Length(TPA) > 2) And (Length(TPA) < 100) Then
+          If (Length(TPA) > 2) And (Length(TPA) < 300) Then
           Begin
-            If DebugSally Then
-            Begin
-              Writeln('Inner Sally Length: '+ToStr(Length(TPA)));
-              Writeln('NetBox:= '+ToStr(NetBox));
-            End;
-
+            NetBox := GetTPABounds(TPA);
             SetArrayLength(TBA, Length(TBA)+1);
             TBA[High(TBA)] := NetBox;
           End;
@@ -2506,7 +2507,7 @@ Begin
     TerminateScript;
   End;
 
-  CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
+ // CurrentLevel:= TabStats.GetSkillLevel(Skill_Hunter);
 
   If CurrentLevel < 40 Then
     Level:= 2 Else
@@ -2557,18 +2558,18 @@ Begin
         SallySat            := 1.02;
         SallyColor          := 2048798;
         SallyTolerance      := 7;
-        NetHue              := 1.16;
-        NetSat              := 3.14;
-        NetColor            := 856085;
-        NetTolerance        := 1;
+        NetHue              := 0.93;
+        NetSat              := 2.82;
+        NetColor            := 724241;
+        NetTolerance        := 2;
         NetHue2              := 0.58;
         NetSat2              := 2.17;
         NetColor2            := 922135;
         NetTolerance2        := 2;
-        SetRopeHue          := 0.07;
-        SetRopeSat          := 3.09;
-        SetRopeColor        := 1727355;
-        SetRopeTolerance    := 7;
+        SetRopeHue          := 0.04;
+        SetRopeSat          := 0.19;
+        SetRopeColor        := 745091;
+        SetRopeTolerance    := 8;
         SearchX1            := 82;
         SearchY1            := 75;
         SearchX2            := 503;
@@ -2603,18 +2604,18 @@ Begin
         SallySat            := 0.87;
         SallyColor          := 863582;
         SallyTolerance      := 11;
-        NetHue              := 1.16;
-        NetSat              := 3.14;
-        NetColor            := 856085;
-        NetTolerance        := 1;
+        NetHue              := 0.93;
+        NetSat              := 2.82;
+        NetColor            := 724241;
+        NetTolerance        := 2;
         NetHue2              := 0.58;
         NetSat2              := 2.17;
         NetColor2            := 922135;
         NetTolerance2        := 2;
-        SetRopeHue          := 0.05;
-        SetRopeSat          := 0.32;
-        SetRopeColor        := 878995;
-        SetRopeTolerance    := 4;
+        SetRopeHue          := 0.04;
+        SetRopeSat          := 0.19;
+        SetRopeColor        := 745091;
+        SetRopeTolerance    := 8;
         SearchX1            := 160;
         SearchY1            := 120;
         SearchX2            := 438;
